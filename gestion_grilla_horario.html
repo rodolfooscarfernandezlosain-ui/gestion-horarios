@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grilla de Horarios</title>
+    <!-- ✅ Font Awesome (sin espacios) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f4f6f9;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #16a085;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .filters .form-group {
+            flex: 1;
+            min-width: 200px;
+            margin: 0;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        select, button {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        select {
+            width: 100%;
+        }
+        button {
+            background: #16a085;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 6px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        button.btn-warning {
+            background: #f39c12;
+        }
+        button.btn-danger {
+            background: #e74c3c;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background: #ecf0f1;
+            font-weight: 600;
+            text-align: center;
+        }
+        .empleado-cell {
+            text-align: left;
+            font-weight: bold;
+            background: #f8f9fa;
+        }
+        .horario {
+            font-size: 0.9rem;
+            color: #555;
+        }
+        .trabaja {
+            background: #d4edda;
+            color: #155724;
+            font-weight: bold;
+        }
+        .no-trabaja {
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+        .snackbar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 14px 20px;
+            border-radius: 6px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .snackbar.show {
+            opacity: 1;
+        }
+        .error {
+            background: #e74c3c !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-table"></i> Grilla de Horarios Semanal</h1>
+
+        <div class="filters">
+            <div class="form-group">
+                <label>Filtrar por Local</label>
+                <select id="filtro-local" onchange="generarGrilla()">
+                    <option value="">Todos los locales</option>
+                </select>
+            </div>
+        </div>
+
+        <button onclick="generarGrilla()">
+            <i class="fas fa-sync"></i> Actualizar Grilla
+        </button>
+
+        <h2><i class="fas fa-calendar-week"></i> Horarios por Empleado</h2>
+        <div id="grilla-container">
+            <p style="text-align: center; color: #7f8c8d; padding: 30px;">
+                Selecciona un filtro y haz clic en "Actualizar Grilla" para ver los horarios.
+            </p>
+        </div>
+    </div>
+
+    <!-- Snackbar -->
+    <div id="snackbar" class="snackbar">Acción realizada</div>
+
+    <script>
+        function showToast(msg, isError = false) {
+            const sb = document.getElementById('snackbar');
+            sb.textContent = msg;
+            sb.className = 'snackbar show';
+            if (isError) sb.classList.add('error');
+            setTimeout(() => sb.className = 'snackbar', 3000);
+        }
+
+        // Cargar locales
+        function cargarLocales() {
+            let locales = [];
+            try {
+                locales = JSON.parse(localStorage.getItem('locales') || '[]');
+            } catch (e) {
+                console.error('Error leyendo locales:', e);
+            }
+
+            const select = document.getElementById('filtro-local');
+            select.innerHTML = '<option value="">Todos los locales</option>';
+            locales.forEach(l => {
+                const opt = document.createElement('option');
+                opt.value = l.nombre;
+                opt.textContent = l.nombre;
+                select.appendChild(opt);
+            });
+
+            generarGrilla();
+        }
+
+        // Generar grilla de horarios
+        function generarGrilla() {
+            const localFiltro = document.getElementById('filtro-local').value;
+
+            let empleados = [];
+            try {
+                empleados = JSON.parse(localStorage.getItem('empleados') || '[]');
+            } catch (e) {
+                console.error('Error leyendo empleados:', e);
+                return;
+            }
+
+            // Filtrar por local
+            const empleadosFiltrados = localFiltro 
+                ? empleados.filter(e => e.local === localFiltro)
+                : empleados;
+
+            if (empleadosFiltrados.length === 0) {
+                document.getElementById('grilla-container').innerHTML = 
+                    `<p style="text-align: center; color: #e74c3c;">No hay empleados para mostrar.</p>`;
+                return;
+            }
+
+            // Cargar horarios
+            let horarios = {};
+            try {
+                horarios = JSON.parse(localStorage.getItem('horarios') || '{}');
+            } catch (e) {
+                console.error('Error cargando horarios:', e);
+                horarios = {};
+            }
+
+            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            const diasNombre = {
+                'lunes': 'Lunes',
+                'martes': 'Martes',
+                'miercoles': 'Miércoles',
+                'jueves': 'Jueves',
+                'viernes': 'Viernes',
+                'sabado': 'Sábado',
+                'domingo': 'Domingo'
+            };
+
+            let html = `
+            <table id="grilla-horarios">
+                <thead>
+                    <tr>
+                        <th>Empleado</th>
+                        ${dias.map(d => `<th>${diasNombre[d]}</th>`).join('')}
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            empleadosFiltrados.forEach(emp => {
+                const dni = emp.dni;
+                const empHorario = horarios[dni] || {};
+
+                html += `<tr>`;
+                html += `<td class="empleado-cell">${emp.nombre}<br><small>${emp.puesto} - ${emp.local}</small></td>`;
+
+                // Días
+                dias.forEach(dia => {
+                    const h = empHorario[dia];
+                    if (h && h.work) {
+                        const inicio = h.start || '09:00';
+                        const fin = h.end || '17:00';
+                        html += `
+                        <td class="trabaja">
+                            <div>${inicio}</div>
+                            <div class="horario">${fin}</div>
+                        </td>`;
+                    } else {
+                        html += `<td class="no-trabaja">–</td>`;
+                    }
+                });
+
+                // Acciones
+                html += `
+                <td>
+                    <button class="btn-warning" onclick="editarEmpleado('${dni}')" style="padding:6px 10px;margin-right:5px;">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                    <button class="btn-danger" onclick="eliminarEmpleado('${dni}')">
+                        <i class="fas fa-trash"></i> Eliminar
+                    </button>
+                </td>`;
+
+                html += `</tr>`;
+            });
+
+            html += `</tbody></table>`;
+            document.getElementById('grilla-container').innerHTML = html;
+        }
+
+        // Redirigir a edición de empleado
+        function editarEmpleado(dni) {
+            localStorage.setItem('edit_empleado_dni', dni);
+            window.location.href = 'gestion_empleados.html';
+        }
+
+        // Eliminar empleado
+        function eliminarEmpleado(dni) {
+            if (!confirm('¿Eliminar este empleado?')) return;
+
+            let empleados = [];
+            try {
+                empleados = JSON.parse(localStorage.getItem('empleados') || '[]');
+            } catch (e) {
+                showToast('❌ Error al cargar empleados', true);
+                return;
+            }
+
+            const index = empleados.findIndex(e => e.dni === dni);
+            if (index === -1) return;
+
+            const nombre = empleados[index].nombre;
+            empleados.splice(index, 1);
+
+            try {
+                localStorage.setItem('empleados', JSON.stringify(empleados));
+                // También eliminar su horario
+                let horarios = {};
+                try {
+                    horarios = JSON.parse(localStorage.getItem('horarios') || '{}');
+                    delete horarios[dni];
+                    localStorage.setItem('horarios', JSON.stringify(horarios));
+                } catch (e) { }
+
+                showToast(`🗑️ ${nombre} eliminado`);
+                generarGrilla();
+            } catch (e) {
+                showToast('❌ Error al guardar', true);
+            }
+        }
+
+        // Inicializar
+        window.onload = function () {
+            cargarLocales();
+        };
+    </script>
+
+    <!-- ✅ Botón flotante - SIEMPRE VISIBLE Y IGUAL QUE LOS DEMÁS -->
+    <script>
+        // Botón flotante infalible
+        function crearBotonMenu() {
+            if (document.getElementById('btn-menu-flotante')) return;
+            const btn = document.createElement('button');
+            btn.id = 'btn-menu-flotante';
+            btn.textContent = '☰ Menú';
+            btn.title = 'Volver al menú principal';
+            btn.style.cssText = `
+                position: fixed !important;
+                top: 20px !important;
+                right: 20px !important;
+                z-index: 99999 !important;
+                padding: 12px 16px !important;
+                font-size: 14px !important;
+                font-weight: bold !important;
+                color: white !important;
+                background-color: #2980b9 !important;
+                border: none !important;
+                border-radius: 6px !important;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
+                cursor: pointer !important;
+                opacity: 1 !important;
+                display: block !important;
+                transition: all 0.2s ease !important;
+            `;
+            btn.onclick = () => window.location.href = 'app_gestion.html';
+            document.body.appendChild(btn);
+        }
+
+        // Intentar hasta que el body exista
+        let intentos = 0;
+        const maxIntentos = 100;
+        const intervalo = setInterval(() => {
+            if (document.body || intentos >= maxIntentos) {
+                clearInterval(intervalo);
+                setTimeout(crearBotonMenu, 200);
+            }
+            intentos++;
+        }, 100);
+
+        document.addEventListener('DOMContentLoaded', crearBotonMenu);
+    </script>
+</body>
+</html>

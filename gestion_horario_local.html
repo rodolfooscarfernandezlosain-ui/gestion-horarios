@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horarios por Local</title>
+    <!-- ✅ Font Awesome (sin espacios) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f4f6f9;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        select, input, button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button.btn-warning {
+            background: #f39c12;
+        }
+        button.btn-danger {
+            background: #e74c3c;
+        }
+        .dia {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border: 1px solid #ecf0f1;
+        }
+        .dia-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .turno {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .horario-pico {
+            margin-top: 10px;
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #bbdefb;
+        }
+        .puestos {
+            margin-top: 10px;
+            background: #e8f5e8;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #ecf0f1;
+        }
+        .snackbar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .snackbar.show {
+            opacity: 1;
+        }
+        .error {
+            background: #e74c3c !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-building"></i> Horarios por Local</h1>
+
+        <div class="form-group">
+            <label>Local *</label>
+            <select id="local-select" required>
+                <option value="">-- Selecciona un local --</option>
+            </select>
+        </div>
+
+        <div id="horario-container">
+            <p style="text-align: center; color: #7f8c8d;">Selecciona un local.</p>
+        </div>
+
+        <button onclick="guardarHorario()" class="btn-success">
+            <i class="fas fa-save"></i> Guardar Configuración
+        </button>
+
+        <h2><i class="fas fa-list"></i> Configuraciones Guardadas</h2>
+        <table id="tabla-horarios">
+            <thead>
+                <tr>
+                    <th>Local</th>
+                    <th>Días de Apertura</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tbody-horarios"></tbody>
+        </table>
+    </div>
+
+    <div id="snackbar" class="snackbar">Acción realizada</div>
+
+    <script>
+        function showToast(msg, isError = false) {
+            const sb = document.getElementById('snackbar');
+            sb.textContent = msg;
+            sb.className = 'snackbar show';
+            if (isError) sb.classList.add('error');
+            setTimeout(() => sb.className = 'snackbar', 3000);
+        }
+
+        function cargarLocales() {
+            const locales = JSON.parse(localStorage.getItem('locales') || '[]');
+            const select = document.getElementById('local-select');
+            select.innerHTML = '<option value="">-- Selecciona un local --</option>';
+            locales.forEach(loc => {
+                const opt = document.createElement('option');
+                opt.value = loc.nombre;
+                opt.textContent = loc.nombre;
+                select.appendChild(opt);
+            });
+        }
+
+        // Cargar puestos desde localStorage
+        function cargarPuestos() {
+            let puestos = [];
+            try {
+                puestos = JSON.parse(localStorage.getItem('puestos') || '[]');
+            } catch (e) {
+                console.error('Error cargando puestos:', e);
+                // Puestos de prueba si falla
+                return ['Cajero', 'Repositor', 'Supervisor'];
+            }
+            return puestos.map(p => p.nombre);
+        }
+
+        function cargarHorario() {
+            const nombre = document.getElementById('local-select').value;
+            if (!nombre) {
+                document.getElementById('horario-container').innerHTML = 
+                    '<p style="text-align: center; color: #7f8c8d;">Selecciona un local.</p>';
+                return;
+            }
+
+            let horarios = {};
+            try {
+                horarios = JSON.parse(localStorage.getItem('horarios_locales') || '{}');
+            } catch (e) { }
+
+            const datos = horarios[nombre] || {};
+            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            const puestosDisponibles = cargarPuestos(); // ← Cargamos desde localStorage
+            let html = '';
+
+            dias.forEach(dia => {
+                const d = datos[dia] || {};
+                const trabaja = d.trabaja !== false;
+                const apertura = d.apertura || '09:00';
+                const cierre = d.cierre || '18:00';
+                const doble = !!d.doble;
+                const apertura2 = d.apertura2 || '19:00';
+                const cierre2 = d.cierre2 || '22:00';
+
+                // Horario pico
+                const picoInicio = d.picoInicio || '12:00';
+                const picoFin = d.picoFin || '14:00';
+
+                // Personal óptimo (único valor por día)
+                const personalOptimo = d.personalOptimo !== undefined ? d.personalOptimo : 5;
+
+                // Puestos requeridos
+                const puestos = d.puestos || {};
+                // Aseguramos que todos los puestos estén presentes
+                puestosDisponibles.forEach(p => {
+                    if (puestos[p] === undefined) puestos[p] = 2;
+                });
+
+                html += `
+                <div class="dia">
+                    <div class="dia-header">
+                        <span>${capitalizar(dia)}</span>
+                        <label style="display: flex; align-items: center; gap: 5px;">
+                            <input type="checkbox" id="${dia}-work" ${trabaja ? 'checked' : ''}> Abre
+                        </label>
+                    </div>
+
+                    <div class="turno">
+                        <label>Apertura: <input type="time" id="${dia}-apertura" value="${apertura}"></label>
+                        <label>Cierre: <input type="time" id="${dia}-cierre" value="${cierre}"></label>
+                    </div>
+
+                    <label style="display: flex; align-items: center; gap: 5px;">
+                        <input type="checkbox" id="${dia}-doble" ${doble ? 'checked' : ''}> Doble turno
+                    </label>
+                    <div id="${dia}-doble-turno" style="display: ${doble ? 'block' : 'none'}; background: #e8f4fc; padding: 10px; border-radius: 4px;">
+                        <div class="turno">
+                            <label>Reapertura: <input type="time" id="${dia}-apertura2" value="${apertura2}"></label>
+                            <label>Cierre final: <input type="time" id="${dia}-cierre2" value="${cierre2}"></label>
+                        </div>
+                    </div>
+
+                    <!-- Horario Pico -->
+                    <div class="horario-pico">
+                        <strong>⏰ Horario Pico</strong>
+                        <div class="turno">
+                            <label>Inicio: <input type="time" id="${dia}-pico-inicio" value="${picoInicio}"></label>
+                            <label>Fin: <input type="time" id="${dia}-pico-fin" value="${picoFin}"></label>
+                        </div>
+                    </div>
+
+                    <!-- Personal Óptimo (único) -->
+                    <div class="puestos">
+                        <strong>👥 Personal Óptimo</strong>
+                        <div class="turno">
+                            <label>Cantidad: <input type="number" min="1" id="${dia}-personal-optimo" value="${personalOptimo}" style="width: 60px;"></label>
+                        </div>
+                    </div>
+
+                    <!-- Puestos requeridos (dinámicos) -->
+                    <div class="puestos">
+                        <strong>📋 Personal Requerido por Puesto</strong>
+                        <table style="width: 100%; margin-top: 5px; border-collapse: collapse;">
+                            <tr><th>Puesto</th><th>Cantidad</th></tr>`;
+                puestosDisponibles.forEach(puesto => {
+                    const valor = puestos[puesto] || 2;
+                    html += `<tr>
+                        <td>${puesto}</td>
+                        <td><input type="number" min="0" id="${dia}-puesto-${puesto.replace(' ', '_')}" value="${valor}" style="width: 60px;"></td>
+                    </tr>`;
+                });
+                html += `</table></div></div>`;
+            });
+
+            document.getElementById('horario-container').innerHTML = html;
+
+            // Eventos para doble turno
+            dias.forEach(dia => {
+                const cb = document.getElementById(`${dia}-doble`);
+                if (cb) {
+                    cb.addEventListener('change', () => {
+                        document.getElementById(`${dia}-doble-turno`).style.display = cb.checked ? 'block' : 'none';
+                    });
+                    document.getElementById(`${dia}-doble-turno`).style.display = cb.checked ? 'block' : 'none';
+                }
+            });
+
+            cargarListaHorarios();
+        }
+
+        function guardarHorario() {
+            const nombre = document.getElementById('local-select').value;
+            if (!nombre) {
+                showToast('⚠️ Selecciona un local', true);
+                return;
+            }
+
+            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            const datos = {};
+
+            dias.forEach(dia => {
+                const trabaja = document.getElementById(`${dia}-work`)?.checked !== false;
+                if (!trabaja) {
+                    datos[dia] = { trabaja: false };
+                    return;
+                }
+
+                const apertura = document.getElementById(`${dia}-apertura`)?.value || '09:00';
+                const cierre = document.getElementById(`${dia}-cierre`)?.value || '18:00';
+                const doble = document.getElementById(`${dia}-doble`)?.checked;
+                const apertura2 = doble ? document.getElementById(`${dia}-apertura2`)?.value || '19:00' : '';
+                const cierre2 = doble ? document.getElementById(`${dia}-cierre2`)?.value || '22:00' : '';
+
+                const picoInicio = document.getElementById(`${dia}-pico-inicio`)?.value || '12:00';
+                const picoFin = document.getElementById(`${dia}-pico-fin`)?.value || '14:00';
+
+                const personalOptimo = parseInt(document.getElementById(`${dia}-personal-optimo`)?.value) || 5;
+
+                const puestos = {};
+                const puestosDisponibles = cargarPuestos();
+                puestosDisponibles.forEach(p => {
+                    const key = p.replace(' ', '_');
+                    const val = document.getElementById(`${dia}-puesto-${key}`)?.value || '0';
+                    puestos[p] = parseInt(val);
+                });
+
+                datos[dia] = {
+                    trabaja, apertura, cierre, doble, apertura2, cierre2,
+                    picoInicio, picoFin,
+                    personalOptimo,
+                    puestos
+                };
+            });
+
+            let horarios = {};
+            try {
+                horarios = JSON.parse(localStorage.getItem('horarios_locales') || '{}');
+            } catch (e) { }
+
+            horarios[nombre] = datos;
+            try {
+                localStorage.setItem('horarios_locales', JSON.stringify(horarios));
+                showToast('✅ Configuración guardada');
+                cargarListaHorarios();
+            } catch (e) {
+                showToast('❌ Error al guardar', true);
+            }
+        }
+
+        function cargarListaHorarios() {
+            let horarios = {};
+            try {
+                horarios = JSON.parse(localStorage.getItem('horarios_locales') || '{}');
+            } catch (e) { }
+
+            const tbody = document.getElementById('tbody-horarios');
+            tbody.innerHTML = '';
+
+            const locales = JSON.parse(localStorage.getItem('locales') || '[]');
+            let tiene = false;
+
+            locales.forEach(loc => {
+                if (!horarios[loc.nombre]) return;
+                tiene = true;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${loc.nombre}</strong></td>
+                    <td>Configurado</td>
+                    <td>
+                        <button class="btn-warning" onclick="editarHorario('${loc.nombre}')" style="padding:6px 10px;margin-right:5px;">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="btn-danger" onclick="eliminarHorario('${loc.nombre}')">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            if (!tiene) {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center">No hay configuraciones.</td></tr>`;
+            }
+        }
+
+        function editarHorario(nombre) {
+            document.getElementById('local-select').value = nombre;
+            cargarHorario();
+            showToast('📅 Configuración cargada para edición');
+        }
+
+        function eliminarHorario(nombre) {
+            if (!confirm('¿Eliminar la configuración de este local?')) return;
+            let horarios = {};
+            try {
+                horarios = JSON.parse(localStorage.getItem('horarios_locales') || '{}');
+            } catch (e) { return; }
+            delete horarios[nombre];
+            localStorage.setItem('horarios_locales', JSON.stringify(horarios));
+            cargarListaHorarios();
+            if (document.getElementById('local-select').value === nombre) {
+                document.getElementById('horario-container').innerHTML = '<p style="text-align: center; color: #7f8c8d;">Configuración eliminada.</p>';
+            }
+            showToast('🗑️ Configuración eliminada');
+        }
+
+        function capitalizar(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        // Inicializar
+        window.onload = function () {
+            cargarLocales();
+            cargarListaHorarios();
+            document.getElementById('local-select').addEventListener('change', cargarHorario);
+        };
+    </script>
+
+    <!-- ✅ Botón flotante - SIEMPRE VISIBLE Y IGUAL QUE LOS DEMÁS -->
+    <script>
+        // Botón flotante infalible
+        function crearBotonMenu() {
+            if (document.getElementById('btn-menu-flotante')) return;
+            const btn = document.createElement('button');
+            btn.id = 'btn-menu-flotante';
+            btn.textContent = '☰ Menú';
+            btn.title = 'Volver al menú principal';
+            btn.style.cssText = `
+                position: fixed !important;
+                top: 20px !important;
+                right: 20px !important;
+                z-index: 99999 !important;
+                padding: 12px 16px !important;
+                font-size: 14px !important;
+                font-weight: bold !important;
+                color: white !important;
+                background-color: #2980b9 !important;
+                border: none !important;
+                border-radius: 6px !important;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
+                cursor: pointer !important;
+                opacity: 1 !important;
+                display: block !important;
+                transition: all 0.2s ease !important;
+            `;
+            btn.onclick = () => window.location.href = 'app_gestion.html';
+            document.body.appendChild(btn);
+        }
+
+        // Intentar hasta que el body exista
+        let intentos = 0;
+        const maxIntentos = 100;
+        const intervalo = setInterval(() => {
+            if (document.body || intentos >= maxIntentos) {
+                clearInterval(intervalo);
+                setTimeout(crearBotonMenu, 200);
+            }
+            intentos++;
+        }, 100);
+
+        document.addEventListener('DOMContentLoaded', crearBotonMenu);
+    </script>
+</body>
+</html>l>

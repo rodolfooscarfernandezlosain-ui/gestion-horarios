@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Óptimo</title>
+    <!-- ✅ Font Awesome (sin espacios) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f4f6f9;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #9b59b6;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .filters .form-group {
+            flex: 1;
+            min-width: 200px;
+            margin: 0;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        select, button {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        select {
+            width: 100%;
+        }
+        button {
+            background: #9b59b6;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 6px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .btn-warning {
+            background: #f39c12;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #ecf0f1;
+            font-weight: 600;
+        }
+        .status-ok {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .status-falta {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .status-sobra {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        .summary {
+            background: #d4edda;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 4px solid #27ae60;
+        }
+        .summary strong {
+            color: #155724;
+        }
+        .snackbar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 14px 20px;
+            border-radius: 6px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .snackbar.show {
+            opacity: 1;
+        }
+        .error {
+            background: #e74c3c !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-balance-scale"></i> Optimización de Personal</h1>
+
+        <div class="filters">
+            <div class="form-group">
+                <label>Seleccionar Local</label>
+                <select id="local-select" onchange="optimizarPersonal()">
+                    <option value="">-- Selecciona un local --</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Día de la Semana</label>
+                <select id="dia-select" onchange="optimizarPersonal()">
+                    <option value="lunes">Lunes</option>
+                    <option value="martes">Martes</option>
+                    <option value="miercoles">Miércoles</option>
+                    <option value="jueves">Jueves</option>
+                    <option value="viernes">Viernes</option>
+                    <option value="sabado">Sábado</option>
+                    <option value="domingo">Domingo</option>
+                </select>
+            </div>
+        </div>
+
+        <button onclick="optimizarPersonal()">
+            <i class="fas fa-calculator"></i> Calcular Personal Óptimo
+        </button>
+
+        <h2><i class="fas fa-chart-bar"></i> Resultados de Optimización</h2>
+        <div id="resultados">
+            <p style="text-align: center; color: #7f8c8d; padding: 30px;">
+                Selecciona un local y un día para analizar el personal.
+            </p>
+        </div>
+    </div>
+
+    <!-- Snackbar -->
+    <div id="snackbar" class="snackbar">Acción realizada</div>
+
+    <script>
+        function showToast(msg, isError = false) {
+            const sb = document.getElementById('snackbar');
+            sb.textContent = msg;
+            sb.className = 'snackbar show';
+            if (isError) sb.classList.add('error');
+            setTimeout(() => sb.className = 'snackbar', 3000);
+        }
+
+        // Cargar locales
+        function cargarLocales() {
+            let locales = [];
+            try {
+                locales = JSON.parse(localStorage.getItem('locales') || '[]');
+            } catch (e) {
+                console.error('Error leyendo locales:', e);
+            }
+
+            const select = document.getElementById('local-select');
+            select.innerHTML = '<option value="">-- Selecciona un local --</option>';
+
+            if (locales.length === 0) {
+                const opt = document.createElement('option');
+                opt.disabled = true;
+                opt.textContent = 'No hay locales. Crea uno primero.';
+                select.appendChild(opt);
+                return;
+            }
+
+            locales.forEach(loc => {
+                const opt = document.createElement('option');
+                opt.value = loc.nombre;
+                opt.textContent = loc.nombre;
+                select.appendChild(opt);
+            });
+        }
+
+        // Optimizar personal
+        function optimizarPersonal() {
+            const localNombre = document.getElementById('local-select').value;
+            const dia = document.getElementById('dia-select').value;
+
+            if (!localNombre) {
+                document.getElementById('resultados').innerHTML = 
+                    '<p style="text-align: center; color: #e74c3c;">Selecciona un local.</p>';
+                return;
+            }
+
+            // Cargar datos
+            let horariosLocal = {};
+            try {
+                horariosLocal = JSON.parse(localStorage.getItem('horarios_locales') || '{}');
+            } catch (e) { }
+
+            let empleados = [];
+            try {
+                empleados = JSON.parse(localStorage.getItem('empleados') || '[]');
+            } catch (e) { }
+
+            const datosLocal = horariosLocal[localNombre]?.[dia];
+
+            if (!datosLocal || !datosLocal.trabaja) {
+                document.getElementById('resultados').innerHTML = 
+                    `<p style="text-align: center; color: #7f8c8d;">El local "${localNombre}" no abre los ${dia}s.</p>`;
+                return;
+            }
+
+            // Personal necesario por puesto
+            const necesario = datosLocal.puestos || { 'Cajero': 2, 'Repositor': 3 };
+            const empleadosLocal = empleados.filter(e => e.local === localNombre);
+
+            // Horarios de empleados
+            let horariosEmpleados = {};
+            try {
+                horariosEmpleados = JSON.parse(localStorage.getItem('horarios') || '{}');
+            } catch (e) { }
+
+            // Filtrar empleados que trabajan ese día
+            const asignadosPorPuesto = {};
+            Object.keys(necesario).forEach(puesto => {
+                asignadosPorPuesto[puesto] = [];
+            });
+
+            empleadosLocal.forEach(emp => {
+                const horario = horariosEmpleados[emp.dni]?.[dia];
+                if (horario?.work) {
+                    if (asignadosPorPuesto[emp.puesto]) {
+                        asignadosPorPuesto[emp.puesto].push(emp);
+                    }
+                }
+            });
+
+            // Generar tabla
+            let html = `
+            <table id="tabla-optimizacion">
+                <thead>
+                    <tr>
+                        <th>Puesto</th>
+                        <th>Necesario</th>
+                        <th>Asignado</th>
+                        <th>Estado</th>
+                        <th>Empleados Asignados</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            let totalFaltan = 0, totalSobran = 0;
+
+            Object.keys(necesario).forEach(puesto => {
+                const req = necesario[puesto];
+                const asignados = asignadosPorPuesto[puesto] || [];
+                const diff = asignados.length - req;
+                let estado, clase;
+
+                if (diff === 0) {
+                    estado = '✔️ Cubierto';
+                    clase = 'status-ok';
+                } else if (diff < 0) {
+                    estado = `❌ Faltan ${-diff}`;
+                    clase = 'status-falta';
+                    totalFaltan += -diff;
+                } else {
+                    estado = `⚠️ Sobran ${diff}`;
+                    clase = 'status-sobra';
+                    totalSobran += diff;
+                }
+
+                const nombres = asignados.length > 0 
+                    ? asignados.map(e => `
+                        <span style="display:inline-block; margin:2px 0;">
+                            ${e.nombre}
+                            <button class="btn-warning" onclick="editarEmpleado('${e.dni}')" style="padding:4px 6px; margin-left:5px;">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </span>
+                      `).join('<br>') 
+                    : '–';
+
+                html += `
+                <tr>
+                    <td><strong>${puesto}</strong></td>
+                    <td>${req}</td>
+                    <td>${asignados.length}</td>
+                    <td class="${clase}">${estado}</td>
+                    <td>${nombres}</td>
+                </tr>`;
+            });
+
+            html += `</tbody></table>`;
+
+            // Resumen
+            html += `<div class="summary">
+                <strong>Resumen:</strong> 
+                Faltan: ${totalFaltan} empleados | 
+                Sobran: ${totalSobran} empleados
+            </div>`;
+
+            document.getElementById('resultados').innerHTML = html;
+        }
+
+        // Redirigir a edición de empleado
+        function editarEmpleado(dni) {
+            localStorage.setItem('edit_empleado_dni', dni);
+            window.location.href = 'gestion_empleados.html';
+        }
+
+        // Inicializar
+        window.onload = function () {
+            cargarLocales();
+        };
+    </script>
+
+    <!-- ✅ Botón flotante - SIEMPRE VISIBLE Y IGUAL QUE LOS DEMÁS -->
+    <script>
+        // Botón flotante infalible
+        function crearBotonMenu() {
+            if (document.getElementById('btn-menu-flotante')) return;
+            const btn = document.createElement('button');
+            btn.id = 'btn-menu-flotante';
+            btn.textContent = '☰ Menú';
+            btn.title = 'Volver al menú principal';
+            btn.style.cssText = `
+                position: fixed !important;
+                top: 20px !important;
+                right: 20px !important;
+                z-index: 99999 !important;
+                padding: 12px 16px !important;
+                font-size: 14px !important;
+                font-weight: bold !important;
+                color: white !important;
+                background-color: #2980b9 !important;
+                border: none !important;
+                border-radius: 6px !important;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
+                cursor: pointer !important;
+                opacity: 1 !important;
+                display: block !important;
+                transition: all 0.2s ease !important;
+            `;
+            btn.onclick = () => window.location.href = 'app_gestion.html';
+            document.body.appendChild(btn);
+        }
+
+        // Intentar hasta que el body exista
+        let intentos = 0;
+        const maxIntentos = 100;
+        const intervalo = setInterval(() => {
+            if (document.body || intentos >= maxIntentos) {
+                clearInterval(intervalo);
+                setTimeout(crearBotonMenu, 200);
+            }
+            intentos++;
+        }, 100);
+
+        document.addEventListener('DOMContentLoaded', crearBotonMenu);
+    </script>
+</body>
+</html>

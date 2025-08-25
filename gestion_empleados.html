@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alta de Empleados</title>
+    <!-- ✅ Font Awesome (sin espacios) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #f4f6f9; 
+            padding: 20px; 
+        }
+        .container { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        h1 { 
+            color: #2c3e50; 
+            border-bottom: 2px solid #27ae60; 
+            padding-bottom: 10px; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+        .form-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 15px; 
+            margin: 20px 0; 
+        }
+        .form-group { 
+            margin-bottom: 15px; 
+        }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: 600; 
+            color: #555; 
+        }
+        input, select, textarea { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+        }
+        button { 
+            background: #27ae60; 
+            color: white; 
+            border: none; 
+            padding: 10px 15px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        button.btn-danger { 
+            background: #e74c3c; 
+        }
+        button.btn-warning { 
+            background: #f39c12; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: left; 
+        }
+        th { 
+            background: #ecf0f1; 
+        }
+        .snackbar { 
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px; 
+            background: #27ae60; 
+            color: white; 
+            padding: 12px 20px; 
+            border-radius: 6px; 
+            z-index: 1000; 
+            opacity: 0; 
+            transition: opacity 0.3s; 
+        }
+        .snackbar.show { 
+            opacity: 1; 
+        }
+        .error { 
+            background: #e74c3c !important; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-user-plus"></i> Alta de Empleados</h1>
+
+        <form id="form-empleado">
+            <input type="hidden" id="edit-index" value="">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Nombre Completo *</label>
+                    <input type="text" id="emp-nombre" required>
+                </div>
+                <div class="form-group">
+                    <label>DNI *</label>
+                    <input type="text" id="emp-dni" required>
+                </div>
+                <div class="form-group">
+                    <label>Domicilio *</label>
+                    <input type="text" id="emp-domicilio" required>
+                </div>
+                <div class="form-group">
+                    <label>Teléfono</label>
+                    <input type="tel" id="emp-telefono">
+                </div>
+                <div class="form-group">
+                    <label>Fecha de Ingreso *</label>
+                    <input type="date" id="emp-fecha-ingreso" required>
+                </div>
+                <div class="form-group">
+                    <label>Categoría *</label>
+                    <select id="emp-categoria" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Puesto *</label>
+                    <select id="emp-puesto" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Local *</label>
+                    <select id="emp-local" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Horas Mensuales Contratadas *</label>
+                    <input type="number" id="emp-horas-mensuales" min="40" max="200" required>
+                </div>
+                <div class="form-group">
+                    <label>Horario Preferido</label>
+                    <select id="emp-horario-preferido">
+                        <option value="">No especificado</option>
+                        <option value="mañana">Mañana</option>
+                        <option value="tarde">Tarde</option>
+                        <option value="noche">Noche</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Disponibilidad</label>
+                    <textarea id="emp-disponibilidad" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Puede trabajar domingos</label>
+                    <input type="checkbox" id="emp-domingos">
+                </div>
+                <div class="form-group">
+                    <label>Puede trabajar feriados</label>
+                    <input type="checkbox" id="emp-feriados">
+                </div>
+            </div>
+            <button type="submit" class="btn-success">
+                <i class="fas fa-save"></i> <span id="btn-texto">Guardar Empleado</span>
+            </button>
+            <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6; margin-left: 10px;">
+                Cancelar
+            </button>
+        </form>
+
+        <h2><i class="fas fa-users"></i> Empleados Registrados</h2>
+        <table id="tabla-empleados">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>DNI</th>
+                    <th>Puesto</th>
+                    <th>Local</th>
+                    <th>Horas</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tbody-empleados">
+                <tr><td colspan="6" style="text-align:center">Cargando...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="snackbar" class="snackbar">Acción realizada</div>
+
+    <script>
+        function showToast(msg, isError = false) {
+            const sb = document.getElementById('snackbar');
+            sb.textContent = msg;
+            sb.className = 'snackbar show';
+            if (isError) sb.classList.add('error');
+            setTimeout(() => sb.className = 'snackbar', 3000);
+        }
+
+        // ====== Cargar datos iniciales ======
+        function cargarDatos() {
+            cargarLocales();
+            cargarCategorias();
+            cargarPuestos();
+            cargarEmpleados();
+        }
+
+        function cargarLocales() {
+            const locales = JSON.parse(localStorage.getItem('locales') || '[]');
+            const select = document.getElementById('emp-local');
+            select.innerHTML = '<option value="">-- Selecciona --</option>';
+            if (locales.length === 0) {
+                select.innerHTML += '<option value="Sin Local">Sin Local</option>';
+            } else {
+                locales.forEach(l => {
+                    const opt = document.createElement('option');
+                    opt.value = l.nombre;
+                    opt.textContent = l.nombre;
+                    select.appendChild(opt);
+                });
+            }
+        }
+
+        function cargarCategorias() {
+            const categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
+            const select = document.getElementById('emp-categoria');
+            select.innerHTML = '<option value="">-- Selecciona --</option>';
+            if (categorias.length === 0) {
+                // Categorías de prueba
+                ['Básico', 'Intermedio', 'Avanzado'].forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat;
+                    opt.textContent = cat;
+                    select.appendChild(opt);
+                });
+            } else {
+                categorias.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat.nombre;
+                    opt.textContent = cat.nombre;
+                    select.appendChild(opt);
+                });
+            }
+            select.onchange = cargarPuestosPorCategoria;
+        }
+
+        function cargarPuestos() {
+            const puestos = JSON.parse(localStorage.getItem('puestos') || '[]');
+            const select = document.getElementById('emp-puesto');
+            select.innerHTML = '<option value="">-- Selecciona --</option>';
+            if (puestos.length === 0) {
+                // Puestos de prueba
+                [{ nombre: "Cajero", categoria: "Básico" }, 
+                 { nombre: "Repositor", categoria: "Básico" }].forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.nombre;
+                    opt.textContent = p.nombre;
+                    opt.dataset.categoria = p.categoria;
+                    select.appendChild(opt);
+                });
+            } else {
+                puestos.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.nombre;
+                    opt.textContent = p.nombre;
+                    opt.dataset.categoria = p.categoria;
+                    select.appendChild(opt);
+                });
+            }
+        }
+
+        function cargarPuestosPorCategoria() {
+            const categoria = this.value;
+            const puestos = JSON.parse(localStorage.getItem('puestos') || '[]');
+            const select = document.getElementById('emp-puesto');
+            select.innerHTML = '<option value="">-- Selecciona --</option>';
+            const filtrados = categoria ? puestos.filter(p => p.categoria === categoria) : puestos;
+            if (filtrados.length === 0) {
+                ['Cajero', 'Repositor'].forEach(nombre => {
+                    const opt = document.createElement('option');
+                    opt.value = nombre;
+                    opt.textContent = nombre;
+                    select.appendChild(opt);
+                });
+            } else {
+                filtrados.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.nombre;
+                    opt.textContent = p.nombre;
+                    select.appendChild(opt);
+                });
+            }
+        }
+
+        function cargarEmpleados() {
+            let empleados = [];
+            try {
+                empleados = JSON.parse(localStorage.getItem('empleados') || '[]');
+            } catch (e) {
+                console.error('Error leyendo empleados:', e);
+                document.getElementById('tbody-empleados').innerHTML = 
+                    `<tr><td colspan="6" style="color:red">Error de datos</td></tr>`;
+                return;
+            }
+
+            const tbody = document.getElementById('tbody-empleados');
+            tbody.innerHTML = '';
+
+            if (empleados.length === 0) {
+                // ✅ Datos de prueba si no hay empleados
+                empleados = [
+                    { nombre: "Juan Pérez", dni: "12345678", puesto: "Cajero", local: "Sucursal Centro", horasMensuales: "160" },
+                    { nombre: "María López", dni: "87654321", puesto: "Repositor", local: "Sucursal Norte", horasMensuales: "160" }
+                ];
+                // No guardamos, solo mostramos
+            }
+
+            empleados.forEach((e, i) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${e.nombre}</td>
+                    <td>${e.dni}</td>
+                    <td>${e.puesto}</td>
+                    <td>${e.local}</td>
+                    <td>${e.horasMensuales || '–'}</td>
+                    <td>
+                        <button class="btn-warning" onclick="editarEmpleado(${i})" style="padding:6px 10px;margin-right:5px;">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="btn-danger" onclick="eliminarEmpleado(${i})">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('form-empleado').reset();
+            document.getElementById('edit-index').value = '';
+            document.getElementById('btn-texto').textContent = 'Guardar Empleado';
+            document.querySelector('.container h1').innerHTML = '<i class="fas fa-user-plus"></i> Alta de Empleados';
+        }
+
+        function editarEmpleado(index) {
+            let empleados = [];
+            try {
+                empleados = JSON.parse(localStorage.getItem('empleados') || '[]');
+            } catch (e) {
+                showToast('❌ Error al cargar empleado', true);
+                return;
+            }
+
+            if (index >= empleados.length) {
+                showToast('❌ Empleado no encontrado', true);
+                return;
+            }
+
+            const e = empleados[index];
+            document.getElementById('emp-nombre').value = e.nombre;
+            document.getElementById('emp-dni').value = e.dni;
+            document.getElementById('emp-domicilio').value = e.domicilio;
+            document.getElementById('emp-telefono').value = e.telefono;
+            document.getElementById('emp-fecha-ingreso').value = e.fechaIngreso;
+            document.getElementById('emp-categoria').value = e.categoria;
+            cargarPuestosPorCategoria.call(document.getElementById('emp-categoria'));
+            document.getElementById('emp-puesto').value = e.puesto;
+            document.getElementById('emp-local').value = e.local;
+            document.getElementById('emp-horas-mensuales').value = e.horasMensuales;
+            document.getElementById('emp-horario-preferido').value = e.horarioPreferido;
+            document.getElementById('emp-disponibilidad').value = e.disponibilidad;
+            document.getElementById('emp-domingos').checked = e.puedeDomingos || false;
+            document.getElementById('emp-feriados').checked = e.puedeFeriados || false;
+            document.getElementById('edit-index').value = index;
+            document.getElementById('btn-texto').textContent = 'Actualizar Empleado';
+            document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Empleado';
+        }
+
+        function eliminarEmpleado(index) {
+            if (!confirm('¿Eliminar este empleado?')) return;
+
+            let empleados = [];
+            try {
+                empleados = JSON.parse(localStorage.getItem('empleados') || '[]');
+            } catch (e) {
+                showToast('❌ Error al eliminar', true);
+                return;
+            }
+
+            const nombre = empleados[index].nombre;
+            empleados.splice(index, 1);
+
+            try {
+                localStorage.setItem('empleados', JSON.stringify(empleados));
+                showToast(`🗑️ ${nombre} eliminado`);
+                cargarEmpleados();
+            } catch (e) {
+                showToast('❌ Error al guardar', true);
+            }
+        }
+
+        function guardarEmpleado(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('emp-nombre').value.trim();
+            const dni = document.getElementById('emp-dni').value.trim();
+            if (!nombre || !dni) {
+                showToast('⚠️ Completa nombre y DNI', true);
+                return;
+            }
+
+            let empleados = [];
+            try {
+                empleados = JSON.parse(localStorage.getItem('empleados') || '[]');
+            } catch (e) {
+                showToast('❌ Error al guardar', true);
+                return;
+            }
+
+            const index = document.getElementById('edit-index').value;
+            const nuevo = {
+                nombre, dni,
+                domicilio: document.getElementById('emp-domicilio').value.trim(),
+                telefono: document.getElementById('emp-telefono').value.trim() || '–',
+                fechaIngreso: document.getElementById('emp-fecha-ingreso').value,
+                categoria: document.getElementById('emp-categoria').value,
+                puesto: document.getElementById('emp-puesto').value,
+                local: document.getElementById('emp-local').value,
+                horasMensuales: document.getElementById('emp-horas-mensuales').value,
+                horarioPreferido: document.getElementById('emp-horario-preferido').value,
+                disponibilidad: document.getElementById('emp-disponibilidad').value.trim() || '–',
+                puedeDomingos: document.getElementById('emp-domingos').checked,
+                puedeFeriados: document.getElementById('emp-feriados').checked
+            };
+
+            // Validar DNI duplicado (excepto si es edición)
+            const existe = empleados.some((emp, i) => emp.dni === dni && i != index);
+            if (existe) {
+                showToast('❌ Ya existe un empleado con ese DNI', true);
+                return;
+            }
+
+            if (index !== '' && index < empleados.length) {
+                empleados[index] = nuevo;
+                showToast('✅ Empleado actualizado');
+            } else {
+                empleados.push(nuevo);
+                showToast('✅ Empleado agregado');
+            }
+
+            try {
+                localStorage.setItem('empleados', JSON.stringify(empleados));
+                limpiarFormulario();
+                cargarEmpleados();
+            } catch (e) {
+                showToast('❌ Error al guardar', true);
+            }
+        }
+
+        window.onload = function () {
+            cargarDatos();
+            document.getElementById('emp-fecha-ingreso').valueAsDate = new Date();
+            document.getElementById('form-empleado').addEventListener('submit', guardarEmpleado);
+        };
+    </script>
+
+    <!-- ✅ Botón flotante - SIEMPRE VISIBLE -->
+    <script>
+        setTimeout(() => {
+            const btn = document.createElement('button');
+            btn.textContent = '☰ Menú';
+            btn.title = 'Volver al menú principal';
+            btn.style = `
+                position: fixed !important; top: 20px !important; right: 20px !important; z-index: 99999 !important;
+                padding: 12px 16px !important; font-size: 14px !important; font-weight: bold !important;
+                color: white !important; background-color: #2980b9 !important; border: none !important;
+                border-radius: 6px !important; box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important; cursor: pointer !important;
+            `;
+            btn.onclick = () => window.location.href = 'app_gestion.html';
+            document.body.appendChild(btn);
+        }, 500);
+    </script>
+</body>
+</html>

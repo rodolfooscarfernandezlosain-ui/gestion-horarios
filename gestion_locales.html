@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Locales</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+        .form-group { margin: 15px 0; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; box-sizing: border-box; }
+        button { background: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+        button.btn-danger { background: #e74c3c; }
+        button.btn-warning { background: #f39c12; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #ecf0f1; }
+        .snackbar { position: fixed; bottom: 20px; right: 20px; background: #27ae60; color: white; padding: 12px 20px; border-radius: 6px; z-index: 1000; opacity: 0; transition: opacity 0.3s; }
+        .snackbar.show { opacity: 1; }
+        .error { background: #e74c3c !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-store"></i> Gestión de Locales</h1>
+
+        <form id="form-local">
+            <input type="hidden" id="edit-index" value="">
+            <div class="form-group">
+                <label>Nombre del Local *</label>
+                <input type="text" id="local-nombre" required>
+            </div>
+            <div class="form-group">
+                <label>Dirección *</label>
+                <input type="text" id="local-direccion" required>
+            </div>
+            <button type="submit" class="btn-success">
+                <i class="fas fa-save"></i> <span id="btn-texto">Guardar Local</span>
+            </button>
+            <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6; margin-left: 10px;">
+                Cancelar
+            </button>
+        </form>
+
+        <table id="tabla-locales">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Dirección</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="snackbar" class="snackbar">Acción realizada</div>
+
+    <script>
+        function showToast(msg, isError = false) {
+            const sb = document.getElementById('snackbar');
+            sb.textContent = msg;
+            sb.className = 'snackbar show';
+            if (isError) sb.classList.add('error');
+            setTimeout(() => sb.className = 'snackbar', 3000);
+        }
+
+        function cargarLocales() {
+            const locales = JSON.parse(localStorage.getItem('locales') || '[]');
+            const tbody = document.querySelector('#tabla-locales tbody');
+            tbody.innerHTML = '';
+
+            if (locales.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center">No hay locales</td></tr>`;
+                return;
+            }
+
+            locales.forEach((local, i) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${local.nombre}</strong></td>
+                    <td>${local.direccion}</td>
+                    <td>
+                        <button class="btn-warning" onclick="editarLocal(${i})" style="padding:6px 10px; margin-right:5px;">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="btn-danger" onclick="eliminarLocal(${i})">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('form-local').reset();
+            document.getElementById('edit-index').value = '';
+            document.getElementById('btn-texto').textContent = 'Guardar Local';
+            document.querySelector('.container h1').innerHTML = '<i class="fas fa-store"></i> Gestión de Locales';
+        }
+
+        function editarLocal(index) {
+            const locales = JSON.parse(localStorage.getItem('locales') || '[]');
+            const local = locales[index];
+            document.getElementById('local-nombre').value = local.nombre;
+            document.getElementById('local-direccion').value = local.direccion;
+            document.getElementById('edit-index').value = index;
+            document.getElementById('btn-texto').textContent = 'Actualizar Local';
+            document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Local';
+        }
+
+        function guardarLocal(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('local-nombre').value.trim();
+            const direccion = document.getElementById('local-direccion').value.trim();
+            if (!nombre || !direccion) {
+                showToast('⚠️ Completa todos los campos', true);
+                return;
+            }
+
+            const locales = JSON.parse(localStorage.getItem('locales') || '[]');
+            const index = document.getElementById('edit-index').value;
+
+            if (index !== '') {
+                // Editar
+                locales[index] = { nombre, direccion };
+                showToast('✅ Local actualizado');
+            } else {
+                // Nuevo
+                if (locales.some(l => l.nombre === nombre)) {
+                    showToast('❌ Ya existe ese nombre', true);
+                    return;
+                }
+                locales.push({ nombre, direccion });
+                showToast('✅ Local agregado');
+            }
+
+            localStorage.setItem('locales', JSON.stringify(locales));
+            limpiarFormulario();
+            cargarLocales();
+        }
+
+        window.onload = function () {
+            cargarLocales();
+            document.getElementById('form-local').addEventListener('submit', guardarLocal);
+        };
+    </script>
+
+    <!-- Botón flotante -->
+    <script>
+        setTimeout(() => {
+            const btn = document.createElement('button');
+            btn.textContent = '☰ Menú';
+            btn.title = 'Volver al menú principal';
+            btn.style = `
+                position: fixed !important; top: 20px !important; right: 20px !important; z-index: 99999 !important;
+                padding: 12px 16px !important; font-size: 14px !important; font-weight: bold !important;
+                color: white !important; background-color: #2980b9 !important; border: none !important;
+                border-radius: 6px !important; box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important; cursor: pointer !important;
+            `;
+            btn.onclick = () => window.location.href = 'app_gestion.html';
+            document.body.appendChild(btn);
+        }, 500);
+    </script>
+</body>
+</html>

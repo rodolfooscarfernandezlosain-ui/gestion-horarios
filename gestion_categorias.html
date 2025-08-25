@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Categorías</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .form-group { margin: 15px 0; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { background: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+        button.btn-danger { background: #e74c3c; }
+        button.btn-warning { background: #f39c12; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #ecf0f1; }
+        .snackbar { position: fixed; bottom: 20px; right: 20px; background: #27ae60; color: white; padding: 12px 20px; border-radius: 6px; z-index: 1000; opacity: 0; transition: opacity 0.3s; }
+        .snackbar.show { opacity: 1; }
+        .error { background: #e74c3c !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-layer-group"></i> Categorías</h1>
+
+        <form id="form-categoria">
+            <input type="hidden" id="edit-index" value="">
+            <div class="form-group">
+                <label>Nombre de la Categoría *</label>
+                <input type="text" id="cat-nombre" placeholder="Ej: Básico, Intermedio" required>
+            </div>
+            <button type="submit" class="btn-success">
+                <i class="fas fa-save"></i> <span id="btn-texto">Guardar Categoría</span>
+            </button>
+            <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6; margin-left: 10px;">
+                Cancelar
+            </button>
+        </form>
+
+        <table id="tabla-categorias">
+            <thead>
+                <tr>
+                    <th>Categoría</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="snackbar" class="snackbar">Acción realizada</div>
+
+    <script>
+        function showToast(msg, isError = false) {
+            const sb = document.getElementById('snackbar');
+            sb.textContent = msg;
+            sb.className = 'snackbar show';
+            if (isError) sb.classList.add('error');
+            setTimeout(() => sb.className = 'snackbar', 3000);
+        }
+
+        function cargarCategorias() {
+            const categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
+            const tbody = document.querySelector('#tabla-categorias tbody');
+            tbody.innerHTML = '';
+
+            if (categorias.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="2" style="text-align:center">No hay categorías</td></tr>`;
+                return;
+            }
+
+            categorias.forEach((cat, i) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${cat.nombre}</strong></td>
+                    <td>
+                        <button class="btn-warning" onclick="editarCategoria(${i})" style="padding:6px 10px; margin-right:5px;">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="btn-danger" onclick="eliminarCategoria(${i})">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('form-categoria').reset();
+            document.getElementById('edit-index').value = '';
+            document.getElementById('btn-texto').textContent = 'Guardar Categoría';
+            document.querySelector('.container h1').innerHTML = '<i class="fas fa-layer-group"></i> Categorías';
+        }
+
+        function editarCategoria(index) {
+            const categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
+            const cat = categorias[index];
+            document.getElementById('cat-nombre').value = cat.nombre;
+            document.getElementById('edit-index').value = index;
+            document.getElementById('btn-texto').textContent = 'Actualizar Categoría';
+            document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Categoría';
+        }
+
+        function guardarCategoria(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('cat-nombre').value.trim();
+            if (!nombre) {
+                showToast('⚠️ Ingresa un nombre', true);
+                return;
+            }
+
+            const categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
+            const index = document.getElementById('edit-index').value;
+
+            if (index !== '') {
+                // Editar
+                categorias[index] = { nombre };
+                showToast('✅ Categoría actualizada');
+            } else {
+                // Nuevo
+                if (categorias.some(c => c.nombre === nombre)) {
+                    showToast('❌ Ya existe esa categoría', true);
+                    return;
+                }
+                categorias.push({ nombre });
+                showToast('✅ Categoría agregada');
+            }
+
+            localStorage.setItem('categorias', JSON.stringify(categorias));
+            limpiarFormulario();
+            cargarCategorias();
+            if (window.opener) window.opener.cargarSelectCategorias();
+        }
+
+        window.onload = function () {
+            cargarCategorias();
+            document.getElementById('form-categoria').addEventListener('submit', guardarCategoria);
+        };
+    </script>
+
+    <!-- Botón flotante -->
+    <script>
+        setTimeout(() => {
+            const btn = document.createElement('button');
+            btn.textContent = '☰ Menú';
+            btn.title = 'Volver al menú principal';
+            btn.style = `
+                position: fixed !important; top: 20px !important; right: 20px !important; z-index: 99999 !important;
+                padding: 12px 16px !important; font-size: 14px !important; font-weight: bold !important;
+                color: white !important; background-color: #2980b9 !important; border: none !important;
+                border-radius: 6px !important; box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important; cursor: pointer !important;
+            `;
+            btn.onclick = () => window.location.href = 'app_gestion.html';
+            document.body.appendChild(btn);
+        }, 500);
+    </script>
+</body>
+</html>

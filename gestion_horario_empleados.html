@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horarios de Empleados</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #f4f6f9; 
+            padding: 20px; 
+        }
+        .container { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        h1 { 
+            color: #2c3e50; 
+            border-bottom: 2px solid #3498db; 
+            padding-bottom: 10px; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+        .form-group { 
+            margin-bottom: 15px; 
+        }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: 600; 
+            color: #555; 
+        }
+        select, button { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+            font-size: 1rem; 
+        }
+        button { 
+            background: #3498db; 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            margin-top: 10px; 
+        }
+        button.btn-warning { 
+            background: #f39c12; 
+        }
+        button.btn-danger { 
+            background: #e74c3c; 
+        }
+        .dia { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 6px; 
+            border: 1px solid #ecf0f1; 
+        }
+        .turno { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 10px; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: left; 
+        }
+        th { 
+            background: #ecf0f1; 
+        }
+        .snackbar { 
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px; 
+            background: #27ae60; 
+            color: white; 
+            padding: 12px 20px; 
+            border-radius: 6px; 
+            z-index: 1000; 
+            opacity: 0; 
+            transition: opacity 0.3s; 
+        }
+        .snackbar.show { 
+            opacity: 1; 
+        }
+        .error { 
+            background: #e74c3c !important; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-clock"></i> Horarios de Empleados</h1>
+
+        <div class="form-group">
+            <label>Empleado *</label>
+            <select id="emp-select" required>
+                <option value="">-- Cargando --</option>
+            </select>
+        </div>
+
+        <div id="horario-container">
+            <p style="text-align: center; color: #7f8c8d;">Selecciona un empleado.</p>
+        </div>
+
+        <button onclick="guardarHorario()" class="btn-success">
+            <i class="fas fa-save"></i> Guardar Horario
+        </button>
+
+        <h2><i class="fas fa-list"></i> Horarios Asignados</h2>
+        <table id="tabla-horarios">
+            <thead>
+                <tr>
+                    <th>Empleado</th>
+                    <th>Puesto</th>
+                    <th>Local</th>
+                    <th>Días Trabaja</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tbody-horarios">
+                <tr><td colspan="5" style="text-align:center">Cargando...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="snackbar" class="snackbar">Acción realizada</div>
+
+    <script>
+        function showToast(msg, isError = false) {
+            const sb = document.getElementById('snackbar');
+            sb.textContent = msg;
+            sb.className = 'snackbar show';
+            if (isError) sb.classList.add('error');
+            setTimeout(() => sb.className = 'snackbar', 3000);
+        }
+
+        function cargarEmpleados() {
+            const empleados = JSON.parse(localStorage.getItem('empleados') || '[]');
+            const select = document.getElementById('emp-select');
+            select.innerHTML = '<option value="">-- Selecciona un empleado --</option>';
+            if (empleados.length === 0) {
+                select.innerHTML += '<option value="">No hay empleados</option>';
+                document.getElementById('horario-container').innerHTML = 
+                    '<p style="text-align: center; color: #e74c3c;">No hay empleados cargados.</p>';
+                return;
+            }
+            empleados.forEach(emp => {
+                const opt = document.createElement('option');
+                opt.value = emp.dni;
+                opt.textContent = `${emp.nombre} (${emp.puesto})`;
+                select.appendChild(opt);
+            });
+        }
+
+        function cargarHorario() {
+            const dni = document.getElementById('emp-select').value;
+            if (!dni) {
+                document.getElementById('horario-container').innerHTML = 
+                    '<p style="text-align: center; color: #7f8c8d;">Selecciona un empleado.</p>';
+                return;
+            }
+
+            const empleados = JSON.parse(localStorage.getItem('empleados') || '[]');
+            const emp = empleados.find(e => e.dni === dni);
+            if (!emp) {
+                showToast('❌ Empleado no encontrado', true);
+                return;
+            }
+
+            let horarios = {};
+            try {
+                horarios = JSON.parse(localStorage.getItem('horarios_empleados') || '{}');
+            } catch (e) { }
+
+            const datos = horarios[dni] || {};
+            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            let html = '';
+
+            dias.forEach(dia => {
+                const d = datos[dia] || {};
+                const work = d.work !== false;
+                const start = d.start || '09:00';
+                const end = d.end || '17:00';
+
+                html += `
+                <div class="dia">
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px;">
+                        <span>${capitalizar(dia)}</span>
+                        <label style="display: flex; align-items: center; gap: 5px;">
+                            <input type="checkbox" id="${dia}-work" ${work ? 'checked' : ''}> Trabaja
+                        </label>
+                    </div>
+                    <div class="turno">
+                        <label>Entrada: <input type="time" id="${dia}-start" value="${start}"></label>
+                        <label>Salida: <input type="time" id="${dia}-end" value="${end}"></label>
+                    </div>
+                </div>`;
+            });
+
+            document.getElementById('horario-container').innerHTML = html;
+            cargarListaHorarios();
+        }
+
+        function guardarHorario() {
+            const dni = document.getElementById('emp-select').value;
+            if (!dni) {
+                showToast('⚠️ Selecciona un empleado', true);
+                return;
+            }
+
+            const empleados = JSON.parse(localStorage.getItem('empleados') || '[]');
+            const emp = empleados.find(e => e.dni === dni);
+            if (!emp) {
+                showToast('❌ Empleado no encontrado', true);
+                return;
+            }
+
+            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            const nuevo = {};
+
+            dias.forEach(dia => {
+                const work = document.getElementById(`${dia}-work`)?.checked !== false;
+                if (work) {
+                    const start = document.getElementById(`${dia}-start`)?.value || '09:00';
+                    const end = document.getElementById(`${dia}-end`)?.value || '17:00';
+                    nuevo[dia] = { work, start, end };
+                } else {
+                    nuevo[dia] = { work: false };
+                }
+            });
+
+            let horarios = {};
+            try {
+                horarios = JSON.parse(localStorage.getItem('horarios_empleados') || '{}');
+            } catch (e) { }
+
+            horarios[dni] = nuevo;
+            try {
+                localStorage.setItem('horarios_empleados', JSON.stringify(horarios));
+                showToast('✅ Horario guardado');
+                cargarListaHorarios();
+            } catch (e) {
+                showToast('❌ Error al guardar', true);
+            }
+        }
+
+        function cargarListaHorarios() {
+            let horarios = {};
+            try {
+                horarios = JSON.parse(localStorage.getItem('horarios_empleados') || '{}');
+            } catch (e) { }
+
+            const empleados = JSON.parse(localStorage.getItem('empleados') || '[]');
+            const tbody = document.getElementById('tbody-horarios');
+            tbody.innerHTML = '';
+
+            let tiene = false;
+            empleados.forEach(emp => {
+                if (!horarios[emp.dni]) return;
+                tiene = true;
+                const tr = document.createElement('tr');
+                const diasTrabaja = Object.keys(horarios[emp.dni])
+                    .filter(dia => horarios[emp.dni][dia].work)
+                    .map(capitalizar).join(', ');
+                tr.innerHTML = `
+                    <td><strong>${emp.nombre}</strong></td>
+                    <td>${emp.puesto}</td>
+                    <td>${emp.local}</td>
+                    <td>${diasTrabaja || '–'}</td>
+                    <td>
+                        <button class="btn-warning" onclick="editarHorario('${emp.dni}')" style="padding:6px 10px;margin-right:5px;">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="btn-danger" onclick="eliminarHorario('${emp.dni}')">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            if (!tiene) {
+                // ✅ Datos de prueba si no hay horarios
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>Juan Pérez</strong></td>
+                    <td>Cajero</td>
+                    <td>Sucursal Centro</td>
+                    <td>Lunes, Miércoles, Viernes</td>
+                    <td>
+                        <button class="btn-warning" onclick="alert('Editar Juan Pérez')" style="padding:6px 10px;margin-right:5px;">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="btn-danger" onclick="alert('Eliminar Juan Pérez')">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+
+        function editarHorario(dni) {
+            document.getElementById('emp-select').value = dni;
+            cargarHorario();
+            showToast('📅 Horario cargado para edición');
+        }
+
+        function eliminarHorario(dni) {
+            if (!confirm('¿Eliminar el horario de este empleado?')) return;
+            let horarios = {};
+            try {
+                horarios = JSON.parse(localStorage.getItem('horarios_empleados') || '{}');
+            } catch (e) { return; }
+            delete horarios[dni];
+            localStorage.setItem('horarios_empleados', JSON.stringify(horarios));
+            cargarListaHorarios();
+            if (document.getElementById('emp-select').value === dni) {
+                document.getElementById('horario-container').innerHTML = '<p style="text-align: center; color: #7f8c8d;">Horario eliminado.</p>';
+            }
+            showToast('🗑️ Horario eliminado');
+        }
+
+        function capitalizar(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        // Inicializar
+        window.onload = function () {
+            cargarEmpleados();
+            cargarListaHorarios();
+            document.getElementById('emp-select').addEventListener('change', cargarHorario);
+        };
+    </script>
+
+    <!-- ✅ BOTÓN FLOTANTE - SIEMPRE VISIBLE Y IGUAL QUE LOS DEMÁS -->
+    <script>
+        // Botón flotante infalible
+        function crearBotonMenu() {
+            if (document.getElementById('btn-menu-flotante')) return;
+            const btn = document.createElement('button');
+            btn.id = 'btn-menu-flotante';
+            btn.textContent = '☰ Menú';
+            btn.title = 'Volver al menú principal';
+            btn.style.cssText = `
+                position: fixed !important;
+                top: 20px !important;
+                right: 20px !important;
+                z-index: 99999 !important;
+                padding: 12px 16px !important;
+                font-size: 14px !important;
+                font-weight: bold !important;
+                color: white !important;
+                background-color: #2980b9 !important;
+                border: none !important;
+                border-radius: 6px !important;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
+                cursor: pointer !important;
+                opacity: 1 !important;
+                display: block !important;
+                transition: all 0.2s ease !important;
+            `;
+            btn.onclick = () => window.location.href = 'app_gestion.html';
+            document.body.appendChild(btn);
+        }
+
+        // Intentar hasta que el body exista
+        let intentos = 0;
+        const maxIntentos = 100;
+        const intervalo = setInterval(() => {
+            if (document.body || intentos >= maxIntentos) {
+                clearInterval(intervalo);
+                setTimeout(crearBotonMenu, 200);
+            }
+            intentos++;
+        }, 100);
+
+        document.addEventListener('DOMContentLoaded', crearBotonMenu);
+    </script>
+</body>
+</html>
