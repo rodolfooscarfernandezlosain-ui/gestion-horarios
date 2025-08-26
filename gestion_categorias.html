@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Categorías y Puestos</title>
-    <!-- ✅ Font Awesome (sin espacios extra) -->
+    <!-- ✅ Font Awesome (sin espacios) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
@@ -190,7 +190,7 @@
             let categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
             const index = document.getElementById('edit-index').value;
 
-            // Verificar duplicados
+            // Evitar duplicados
             if (index === '') {
                 if (categorias.some(c => c.nombre === nombre)) {
                     showToast('❌ Ya existe esa categoría', true);
@@ -202,39 +202,43 @@
                 }
             }
 
-            const categoria = { nombre, puesto };
+            const data = { nombre, puesto };
 
             if (index !== '') {
-                categorias[index] = categoria;
+                categorias[index] = data;
                 showToast('✅ Categoría y puesto actualizados');
             } else {
-                categorias.push(categoria);
+                categorias.push(data);
                 showToast('✅ Categoría y puesto agregados');
             }
 
-            localStorage.setItem('categorias', JSON.stringify(categorias));
-            // También guardamos los puestos como lista independiente (para otros módulos)
-            const puestos = categorias.map(c => ({ nombre: c.puesto }));
-            localStorage.setItem('puestos', JSON.stringify(puestos));
-
-            limpiarFormulario();
-            cargarCategorias();
+            // Guardar en localStorage
+            try {
+                localStorage.setItem('categorias', JSON.stringify(categorias));
+                // Guardar solo los puestos en un array independiente
+                const puestos = categorias.map(c => ({ nombre: c.puesto }));
+                localStorage.setItem('puestos', JSON.stringify(puestos));
+                limpiarFormulario();
+                cargarCategorias();
+            } catch (e) {
+                showToast('❌ Error al guardar', true);
+            }
         }
 
         function eliminarCategoria(index) {
             if (!confirm('¿Eliminar esta categoría y su puesto asociado?')) return;
 
-            const categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
-            const nombre = categorias[index].nombre;
-            const puesto = categorias[index].puesto;
+            let categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
+            const cat = categorias[index];
+            const nombre = cat.nombre;
+            const puesto = cat.puesto;
 
-            // Eliminar del array
+            // Eliminar
             categorias.splice(index, 1);
 
-            // Actualizar localStorage
             try {
                 localStorage.setItem('categorias', JSON.stringify(categorias));
-                // Actualizar también los puestos
+                // Actualizar puestos
                 const puestos = categorias.map(c => ({ nombre: c.puesto }));
                 localStorage.setItem('puestos', JSON.stringify(puestos));
                 showToast(`🗑️ Categoría "${nombre}" y puesto "${puesto}" eliminados`);
@@ -244,13 +248,14 @@
             }
         }
 
+        // Inicializar
         window.onload = function () {
             cargarCategorias();
             document.getElementById('form-categoria').addEventListener('submit', guardarCategoria);
         };
     </script>
 
-    <!-- ✅ Botón flotante - CORREGIDO (sin espacios) -->
+    <!-- ✅ Botón flotante - CORREGIDO -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
