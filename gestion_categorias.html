@@ -3,38 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Categorías</title>
+    <title>Gestión de Categorías y Puestos</title>
+    <!-- ✅ Font Awesome (sin espacios extra) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-        .form-group { margin: 15px 0; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
-        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        button { background: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
-        button.btn-danger { background: #e74c3c; }
-        button.btn-warning { background: #f39c12; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background: #ecf0f1; }
-        .snackbar { position: fixed; bottom: 20px; right: 20px; background: #27ae60; color: white; padding: 12px 20px; border-radius: 6px; z-index: 1000; opacity: 0; transition: opacity 0.3s; }
-        .snackbar.show { opacity: 1; }
-        .error { background: #e74c3c !important; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #f4f6f9; 
+            padding: 20px; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        h1 { 
+            color: #2c3e50; 
+            border-bottom: 2px solid #3498db; 
+            padding-bottom: 10px; 
+        }
+        .form-group { 
+            margin: 15px 0; 
+        }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: 600; 
+        }
+        input { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+        }
+        button { 
+            background: #3498db; 
+            color: white; 
+            border: none; 
+            padding: 10px 15px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        button.btn-danger { 
+            background: #e74c3c; 
+        }
+        button.btn-warning { 
+            background: #f39c12; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: left; 
+        }
+        th { 
+            background: #ecf0f1; 
+        }
+        .snackbar { 
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px; 
+            background: #27ae60; 
+            color: white; 
+            padding: 12px 20px; 
+            border-radius: 6px; 
+            z-index: 1000; 
+            opacity: 0; 
+            transition: opacity 0.3s; 
+        }
+        .snackbar.show { 
+            opacity: 1; 
+        }
+        .error { 
+            background: #e74c3c !important; 
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1><i class="fas fa-layer-group"></i> Categorías</h1>
+        <h1><i class="fas fa-tags"></i> Categorías y Puestos</h1>
 
         <form id="form-categoria">
             <input type="hidden" id="edit-index" value="">
             <div class="form-group">
                 <label>Nombre de la Categoría *</label>
-                <input type="text" id="cat-nombre" placeholder="Ej: Básico, Intermedio" required>
+                <input type="text" id="cat-nombre" placeholder="Ej: Administrativo, Operativo" required>
+            </div>
+            <div class="form-group">
+                <label>Nombre del Puesto Asociado *</label>
+                <input type="text" id="puesto-nombre" placeholder="Ej: Supervisor, Cajero" required>
             </div>
             <button type="submit" class="btn-success">
-                <i class="fas fa-save"></i> <span id="btn-texto">Guardar Categoría</span>
+                <i class="fas fa-save"></i> <span id="btn-texto">Guardar Categoría y Puesto</span>
             </button>
             <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6; margin-left: 10px;">
                 Cancelar
@@ -45,6 +113,7 @@
             <thead>
                 <tr>
                     <th>Categoría</th>
+                    <th>Puesto Asociado</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -69,7 +138,7 @@
             tbody.innerHTML = '';
 
             if (categorias.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="2" style="text-align:center">No hay categorías</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center">No hay categorías</td></tr>`;
                 return;
             }
 
@@ -77,6 +146,7 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><strong>${cat.nombre}</strong></td>
+                    <td>${cat.puesto}</td>
                     <td>
                         <button class="btn-warning" onclick="editarCategoria(${i})" style="padding:6px 10px; margin-right:5px;">
                             <i class="fas fa-edit"></i> Editar
@@ -93,48 +163,85 @@
         function limpiarFormulario() {
             document.getElementById('form-categoria').reset();
             document.getElementById('edit-index').value = '';
-            document.getElementById('btn-texto').textContent = 'Guardar Categoría';
-            document.querySelector('.container h1').innerHTML = '<i class="fas fa-layer-group"></i> Categorías';
+            document.getElementById('btn-texto').textContent = 'Guardar Categoría y Puesto';
+            document.querySelector('.container h1').innerHTML = '<i class="fas fa-tags"></i> Categorías y Puestos';
         }
 
         function editarCategoria(index) {
             const categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
             const cat = categorias[index];
             document.getElementById('cat-nombre').value = cat.nombre;
+            document.getElementById('puesto-nombre').value = cat.puesto;
             document.getElementById('edit-index').value = index;
-            document.getElementById('btn-texto').textContent = 'Actualizar Categoría';
-            document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Categoría';
+            document.getElementById('btn-texto').textContent = 'Actualizar Categoría y Puesto';
+            document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Categoría y Puesto';
         }
 
         function guardarCategoria(e) {
             e.preventDefault();
             const nombre = document.getElementById('cat-nombre').value.trim();
-            if (!nombre) {
-                showToast('⚠️ Ingresa un nombre', true);
+            const puesto = document.getElementById('puesto-nombre').value.trim();
+
+            if (!nombre || !puesto) {
+                showToast('⚠️ Completa ambos campos', true);
                 return;
             }
 
-            const categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
+            let categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
             const index = document.getElementById('edit-index').value;
 
-            if (index !== '') {
-                // Editar
-                categorias[index] = { nombre };
-                showToast('✅ Categoría actualizada');
-            } else {
-                // Nuevo
+            // Verificar duplicados
+            if (index === '') {
                 if (categorias.some(c => c.nombre === nombre)) {
                     showToast('❌ Ya existe esa categoría', true);
                     return;
                 }
-                categorias.push({ nombre });
-                showToast('✅ Categoría agregada');
+                if (categorias.some(c => c.puesto === puesto)) {
+                    showToast('❌ Ya existe ese puesto', true);
+                    return;
+                }
+            }
+
+            const categoria = { nombre, puesto };
+
+            if (index !== '') {
+                categorias[index] = categoria;
+                showToast('✅ Categoría y puesto actualizados');
+            } else {
+                categorias.push(categoria);
+                showToast('✅ Categoría y puesto agregados');
             }
 
             localStorage.setItem('categorias', JSON.stringify(categorias));
+            // También guardamos los puestos como lista independiente (para otros módulos)
+            const puestos = categorias.map(c => ({ nombre: c.puesto }));
+            localStorage.setItem('puestos', JSON.stringify(puestos));
+
             limpiarFormulario();
             cargarCategorias();
-            if (window.opener) window.opener.cargarSelectCategorias();
+        }
+
+        function eliminarCategoria(index) {
+            if (!confirm('¿Eliminar esta categoría y su puesto asociado?')) return;
+
+            const categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
+            const nombre = categorias[index].nombre;
+            const puesto = categorias[index].puesto;
+
+            // Eliminar del array
+            categorias.splice(index, 1);
+
+            // Actualizar localStorage
+            try {
+                localStorage.setItem('categorias', JSON.stringify(categorias));
+                // Actualizar también los puestos
+                const puestos = categorias.map(c => ({ nombre: c.puesto }));
+                localStorage.setItem('puestos', JSON.stringify(puestos));
+                showToast(`🗑️ Categoría "${nombre}" y puesto "${puesto}" eliminados`);
+                cargarCategorias();
+            } catch (e) {
+                showToast('❌ Error al eliminar', true);
+            }
         }
 
         window.onload = function () {
@@ -143,22 +250,37 @@
         };
     </script>
 
-    <!-- Botón flotante -->
+    <!-- ✅ Botón flotante - CORREGIDO (sin espacios) -->
     <script>
-        setTimeout(() => {
+        document.addEventListener('DOMContentLoaded', function () {
+            if (document.getElementById('btn-menu-flotante')) return;
             const btn = document.createElement('button');
+            btn.id = 'btn-menu-flotante';
             btn.textContent = '☰ Menú';
             btn.title = 'Volver al menú principal';
-            btn.style = `
-                position: fixed !important; top: 20px !important; right: 20px !important; z-index: 99999 !important;
-                padding: 12px 16px !important; font-size: 14px !important; font-weight: bold !important;
-                color: white !important; background-color: #2980b9 !important; border: none !important;
-                border-radius: 6px !important; box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important; cursor: pointer !important;
+            btn.style.cssText = `
+                position: fixed !important;
+                top: 20px !important;
+                right: 20px !important;
+                z-index: 99999 !important;
+                padding: 12px 16px !important;
+                font-size: 14px !important;
+                font-weight: bold !important;
+                color: white !important;
+                background-color: #2980b9 !important;
+                border: none !important;
+                border-radius: 6px !important;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
+                cursor: pointer !important;
+                opacity: 1 !important;
+                display: block !important;
+                transition: all 0.2s ease !important;
             `;
-            btn.onclick = () => window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
+            btn.onclick = () => {
+                window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
+            };
             document.body.appendChild(btn);
-        }, 500);
+        });
     </script>
 </body>
-
 </html>
