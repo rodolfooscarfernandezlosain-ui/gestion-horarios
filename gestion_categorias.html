@@ -212,10 +212,10 @@
                 showToast('✅ Categoría y puesto agregados');
             }
 
-            // Guardar en localStorage
+            // ✅ Guardar en localStorage
             try {
                 localStorage.setItem('categorias', JSON.stringify(categorias));
-                // Guardar solo los puestos en un array independiente
+                // ✅ Guardar puestos como lista independiente
                 const puestos = categorias.map(c => ({ nombre: c.puesto }));
                 localStorage.setItem('puestos', JSON.stringify(puestos));
                 limpiarFormulario();
@@ -228,21 +228,23 @@
         function eliminarCategoria(index) {
             if (!confirm('¿Eliminar esta categoría y su puesto asociado?')) return;
 
+            // ✅ Usar let para poder modificar
             let categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
             const cat = categorias[index];
             const nombre = cat.nombre;
             const puesto = cat.puesto;
 
-            // Eliminar
+            // ✅ Eliminar por índice
             categorias.splice(index, 1);
 
             try {
+                // ✅ Guardar cambios
                 localStorage.setItem('categorias', JSON.stringify(categorias));
-                // Actualizar puestos
+                // ✅ Actualizar puestos
                 const puestos = categorias.map(c => ({ nombre: c.puesto }));
                 localStorage.setItem('puestos', JSON.stringify(puestos));
                 showToast(`🗑️ Categoría "${nombre}" y puesto "${puesto}" eliminados`);
-                cargarCategorias();
+                cargarCategorias(); // ✅ Recargar tabla
             } catch (e) {
                 showToast('❌ Error al eliminar', true);
             }
@@ -289,3 +291,4 @@
     </script>
 </body>
 </html>
+
