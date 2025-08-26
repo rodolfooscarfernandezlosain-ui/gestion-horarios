@@ -119,8 +119,9 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URL de tu Google Apps Script (sin espacios)
-        https://script.google.com/macros/s/AKfycbwz2jwNmk-NTN0Q-wWrEXd5YOfznqmxMzO7O6aMlM13YVbPI6FgOWZz2RcXSBwXOEc6xg/exec
+        // ✅ URL de tu Google Apps Script (sin espacios) - CORREGIDO
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwz2jwNmk-NTN0Q-wWrEXd5YOfznqmxMzO7O6aMlM13YVbPI6FgOWZz2RcXSBwXOEc6xg/exec';
+
         function showToast(msg, isError = false) {
             const sb = document.getElementById('snackbar');
             sb.textContent = msg;
@@ -302,4 +303,3 @@
     </script>
 </body>
 </html>
-
