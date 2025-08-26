@@ -3,7 +3,7 @@ async function guardarCategoria(e) {
   const nombre = document.getElementById('cat-nombre').value.trim();
   const index = document.getElementById('edit-index').value;
 
-  const url = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+  const url = 'https://script.google.com/macros/s/AKfycbwz2jwNmk-NTN0Q-wWrEXd5YOfznqmxMzO7O6aMlM13YVbPI6FgOWZz2RcXSBwXOEc6xg/exec';
 
   const payload = {
     sheet: 'categorias',
@@ -29,4 +29,5 @@ async function guardarCategoria(e) {
     showToast('❌ Error al guardar', true);
   }
 }
+
 
