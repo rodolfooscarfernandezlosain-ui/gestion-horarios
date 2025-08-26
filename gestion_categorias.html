@@ -6,7 +6,7 @@ async function guardarCategoria(e) {
   const index = document.getElementById('edit-index').value;
 
   // URL de tu Google Apps Script (sin espacios al final)
-  const url = https://script.google.com/macros/s/AKfycbwz2jwNmk-NTN0Q-wWrEXd5YOfznqmxMzO7O6aMlM13YVbPI6FgOWZz2RcXSBwXOEc6xg/exec
+  const API_URL = 'https://script.google.com/macros/s/AKfycbzxK8Xvy7rFeTlkLy06ktxGIhkeQCEyRf-YVvIoBS2LWhZ9f7Lf5yxIGd-s9H241zrteQ/exec';
 
   // Validar que el campo no esté vacío
   if (!nombre) {
@@ -59,4 +59,5 @@ async function guardarCategoria(e) {
     showToast('❌ Error al guardar: ' + err.message, true);
   }
 }
+
 
