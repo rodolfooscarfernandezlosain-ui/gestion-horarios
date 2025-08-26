@@ -1,307 +1,61 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Categorías</title>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            background: #f4f6f9; 
-            padding: 20px; 
-        }
-        .container { 
-            max-width: 800px; 
-            margin: 0 auto; 
-            background: white; 
-            padding: 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-        }
-        h1 { 
-            color: #2c3e50; 
-            border-bottom: 2px solid #3498db; 
-            padding-bottom: 10px; 
-        }
-        .form-group { 
-            margin: 15px 0; 
-        }
-        .form-group label { 
-            display: block; 
-            margin-bottom: 5px; 
-            font-weight: 600; 
-        }
-        input { 
-            width: 100%; 
-            padding: 10px; 
-            border: 1px solid #ddd; 
-            border-radius: 4px; 
-            box-sizing: border-box; 
-        }
-        button { 
-            background: #3498db; 
-            color: white; 
-            border: none; 
-            padding: 10px 15px; 
-            border-radius: 4px; 
-            cursor: pointer; 
-        }
-        button.btn-danger { 
-            background: #e74c3c; 
-        }
-        button.btn-warning { 
-            background: #f39c12; 
-        }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 20px; 
-        }
-        th, td { 
-            border: 1px solid #ddd; 
-            padding: 12px; 
-            text-align: left; 
-        }
-        th { 
-            background: #ecf0f1; 
-        }
-        .snackbar { 
-            position: fixed; 
-            bottom: 20px; 
-            right: 20px; 
-            background: #27ae60; 
-            color: white; 
-            padding: 12px 20px; 
-            border-radius: 6px; 
-            z-index: 1000; 
-            opacity: 0; 
-            transition: opacity 0.3s; 
-        }
-        .snackbar.show { 
-            opacity: 1; 
-        }
-        .error { 
-            background: #e74c3c !important; 
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1><i class="fas fa-tags"></i> Categorías</h1>
+async function guardarCategoria(e) {
+  e.preventDefault(); // Evita que el formulario recargue la página
 
-        <form id="form-categoria">
-            <input type="hidden" id="edit-index" value="">
-            <div class="form-group">
-                <label>Nombre de la Categoría *</label>
-                <input type="text" id="cat-nombre" placeholder="Ej: Operativo, Técnico" required>
-            </div>
-            <button type="submit" class="btn-success">
-                <i class="fas fa-save"></i> <span id="btn-texto">Guardar Categoría</span>
-            </button>
-            <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6; margin-left: 10px;">
-                Cancelar
-            </button>
-        </form>
+  // Obtener datos del formulario
+  const nombre = document.getElementById('cat-nombre').value.trim();
+  const index = document.getElementById('edit-index').value;
 
-        <table id="tabla-categorias">
-            <thead>
-                <tr>
-                    <th>Categoría</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
+  // URL de tu Google Apps Script (sin espacios al final)
+  const url = 'https://script.google.com/macros/s/AKfycbwz2jwNmk-NTN0Q-wWrEXd5YOfznqmxMzO7O6aMlM13YVbPI6FgOWZz2RcXSBwXOEc6xg/exec';
 
-    <div id="snackbar" class="snackbar">Acción realizada</div>
+  // Validar que el campo no esté vacío
+  if (!nombre) {
+    showToast('⚠️ Por favor, ingresa un nombre de categoría', true);
+    return;
+  }
 
-    <script>
-        // ✅ URL de tu Google Apps Script (sin espacios)
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwz2jwNmk-NTN0Q-wWrEXd5YOfznqmxMzO7O6aMlM13YVbPI6FgOWZz2RcXSBwXOEc6xg/exec';
+  // Preparar los datos para enviar
+  const payload = {
+    sheet: 'categorias',  // Nombre de la pestaña en Google Sheets
+     { nombre }           // Datos a guardar
+  };
 
-        function showToast(msg, isError = false) {
-            const sb = document.getElementById('snackbar');
-            sb.textContent = msg;
-            sb.className = 'snackbar show';
-            if (isError) sb.classList.add('error');
-            setTimeout(() => sb.className = 'snackbar', 3000);
-        }
+  // Si hay un índice, es una edición
+  if (index !== '') {
+    payload.action = 'update';
+    payload.index = parseInt(index); // Aseguramos que sea número
+  } else {
+    payload.action = 'add';
+  }
 
-        async function cargarCategorias() {
-            try {
-                const res = await fetch(`${API_URL}?sheet=categorias`);
-                const categorias = await res.json();
+  try {
+    // Enviar datos a Google Apps Script
+    const res = await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
 
-                // Manejar errores de la API
-                if (categorias.error) {
-                    throw new Error(categorias.error);
-                }
+    // Si la respuesta no es exitosa, mostramos el error
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Error ${res.status}: ${errorText}`);
+    }
 
-                const tbody = document.querySelector('#tabla-categorias tbody');
-                tbody.innerHTML = '';
+    // Mostrar mensaje de éxito
+    showToast('✅ Categoría guardada en Google Sheets');
 
-                if (!categorias || categorias.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="2" style="text-align:center">No hay categorías</td></tr>`;
-                    return;
-                }
+    // Limpiar formulario
+    limpiarFormulario();
 
-                categorias.forEach((cat, i) => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><strong>${cat.nombre}</strong></td>
-                        <td>
-                            <button class="btn-warning" onclick="editarCategoria(${i}, '${cat.nombre}')" style="padding:6px 10px; margin-right:5px;">
-                                <i class="fas fa-edit"></i> Editar
-                            </button>
-                            <button class="btn-danger" onclick="eliminarCategoria(${i}, '${cat.nombre}')">
-                                <i class="fas fa-trash"></i> Eliminar
-                            </button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            } catch (e) {
-                console.error('Error cargando categorías:', e);
-                document.querySelector('#tabla-categorias tbody').innerHTML = 
-                    `<tr><td colspan="2" style="text-align:center; color: red;">Error al cargar: ${e.message}</td></tr>`;
-            }
-        }
+    // Recargar la lista desde Google Sheets
+    await cargarCategorias();
 
-        function limpiarFormulario() {
-            document.getElementById('form-categoria').reset();
-            document.getElementById('edit-index').value = '';
-            document.getElementById('btn-texto').textContent = 'Guardar Categoría';
-            document.querySelector('.container h1').innerHTML = '<i class="fas fa-tags"></i> Categorías';
-        }
-
-        function editarCategoria(index, nombre) {
-            document.getElementById('cat-nombre').value = nombre;
-            document.getElementById('edit-index').value = index;
-            document.getElementById('btn-texto').textContent = 'Actualizar Categoría';
-            document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Categoría';
-        }
-
-        async function guardarCategoria(e) {
-            e.preventDefault();
-            const nombre = document.getElementById('cat-nombre').value.trim();
-            const index = document.getElementById('edit-index').value;
-
-            if (!nombre) {
-                showToast('⚠️ Ingresa un nombre', true);
-                return;
-            }
-
-            const payload = {
-                sheet: 'categorias',
-                data: { nombre }
-            };
-
-            if (index !== '') {
-                payload.action = 'update';
-                payload.index = index;
-            } else {
-                payload.action = 'add';
-            }
-
-            try {
-                const res = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(payload),
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                if (!res.ok) {
-                    const error = await res.json();
-                    throw new Error(error.error || `HTTP ${res.status}`);
-                }
-
-                showToast('✅ Guardado en Google Sheets');
-                limpiarFormulario();
-                await cargarCategorias();
-            } catch (err) {
-                console.error('Error al guardar:', err);
-                showToast('❌ Error: ' + err.message, true);
-            }
-        }
-
-        async function eliminarCategoria(index, nombre) {
-            if (!confirm(`¿Eliminar la categoría "${nombre}"?`)) return;
-
-            try {
-                // Primero, obtener todos los datos para encontrar el índice real
-                const res = await fetch(`${API_URL}?sheet=categorias`);
-                const categorias = await res.json();
-                if (categorias.error) throw new Error(categorias.error);
-
-                const fila = categorias.findIndex(c => c.nombre === nombre);
-                if (fila === -1) {
-                    showToast('❌ No encontrada', true);
-                    return;
-                }
-
-                const payload = {
-                    sheet: 'categorias',
-                    action: 'delete',
-                    index: fila
-                };
-
-                const deleteRes = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(payload),
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                if (!deleteRes.ok) throw new Error('Error al eliminar');
-
-                showToast('🗑️ Categoría eliminada');
-                await cargarCategorias();
-            } catch (err) {
-                console.error('Error al eliminar:', err);
-                showToast('❌ Error: ' + err.message, true);
-            }
-        }
-
-        // Inicializar
-        window.onload = async function () {
-            await cargarCategorias();
-            document.getElementById('form-categoria').addEventListener('submit', guardarCategoria);
-        };
-    </script>
-
-    <!-- ✅ Botón flotante - Volver al menú -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            if (document.getElementById('btn-menu-flotante')) return;
-            const btn = document.createElement('button');
-            btn.id = 'btn-menu-flotante';
-            btn.textContent = '☰ Menú';
-            btn.title = 'Volver al menú principal';
-            btn.style.cssText = `
-                position: fixed !important;
-                top: 20px !important;
-                right: 20px !important;
-                z-index: 99999 !important;
-                padding: 12px 16px !important;
-                font-size: 14px !important;
-                font-weight: bold !important;
-                color: white !important;
-                background-color: #2980b9 !important;
-                border: none !important;
-                border-radius: 6px !important;
-                box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
-                cursor: pointer !important;
-                opacity: 1 !important;
-                display: block !important;
-                transition: all 0.2s ease !important;
-            `;
-            btn.onclick = () => {
-                window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
-            };
-            document.body.appendChild(btn);
-        });
-    </script>
-</body>
-</html>
+  } catch (err) {
+    // Mostrar error en la interfaz
+    console.error('Error al guardar la categoría:', err);
+    showToast('❌ Error al guardar: ' + err.message, true);
+  }
+}
