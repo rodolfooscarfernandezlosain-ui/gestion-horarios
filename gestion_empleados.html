@@ -4,24 +4,87 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Empleados</title>
-    <!-- ✅ Font Awesome sin espacios -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-        .form-group { margin: 15px 0; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        button { background: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
-        button.btn-danger { background: #e74c3c; }
-        button.btn-warning { background: #f39c12; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background: #ecf0f1; }
-        .snackbar { position: fixed; bottom: 20px; right: 20px; background: #27ae60; color: white; padding: 12px 20px; border-radius: 6px; z-index: 1000; opacity: 0; transition: opacity 0.3s; }
-        .snackbar.show { opacity: 1; }
-        .error { background: #e74c3c !important; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #f4f6f9; 
+            padding: 20px; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        h1 { 
+            color: #2c3e50; 
+            border-bottom: 2px solid #3498db; 
+            padding-bottom: 10px; 
+        }
+        .form-group { 
+            margin: 15px 0; 
+        }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: 600; 
+        }
+        input, select, textarea { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+        }
+        button { 
+            background: #3498db; 
+            color: white; 
+            border: none; 
+            padding: 10px 15px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        button.btn-danger { 
+            background: #e74c3c; 
+        }
+        button.btn-warning { 
+            background: #f39c12; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: left; 
+        }
+        th { 
+            background: #ecf0f1; 
+        }
+        .snackbar { 
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px; 
+            background: #27ae60; 
+            color: white; 
+            padding: 12px 20px; 
+            border-radius: 6px; 
+            z-index: 1000; 
+            opacity: 0; 
+            transition: opacity 0.3s; 
+        }
+        .snackbar.show { 
+            opacity: 1; 
+        }
+        .error { 
+            background: #e74c3c !important; 
+        }
     </style>
 </head>
 <body>
@@ -30,32 +93,76 @@
 
         <form id="form-empleado">
             <input type="hidden" id="edit-key" value="">
+
             <div class="form-group">
                 <label>DNI *</label>
                 <input type="text" id="empleado-dni" placeholder="Ej: 12345678" required>
             </div>
+
             <div class="form-group">
                 <label>Nombre y Apellido *</label>
                 <input type="text" id="empleado-nombre" placeholder="Ej: Juan Pérez" required>
             </div>
+
+            <div class="form-group">
+                <label>Fecha de Nacimiento</label>
+                <input type="date" id="empleado-fecha-nac">
+            </div>
+
+            <div class="form-group">
+                <label>Teléfono</label>
+                <input type="text" id="empleado-telefono" placeholder="Ej: 1122334455">
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="empleado-email" placeholder="Ej: juan@empresa.com">
+            </div>
+
+            <div class="form-group">
+                <label>Domicilio</label>
+                <input type="text" id="empleado-domicilio" placeholder="Ej: Av. Siempre Viva 123">
+            </div>
+
             <div class="form-group">
                 <label>Categoría *</label>
                 <select id="empleado-categoria" required>
                     <option value="">Selecciona una categoría</option>
                 </select>
             </div>
+
             <div class="form-group">
                 <label>Puesto *</label>
                 <input type="text" id="empleado-puesto" placeholder="Ej: Cajero" required readonly>
             </div>
+
             <div class="form-group">
                 <label>Local *</label>
                 <input type="text" id="empleado-local" placeholder="Ej: Sucursal Centro" required>
             </div>
+
+            <div class="form-group">
+                <label>Fecha de Ingreso *</label>
+                <input type="date" id="empleado-fecha-ingreso" required>
+            </div>
+
+            <div class="form-group">
+                <label>Estado *</label>
+                <select id="empleado-estado" required>
+                    <option value="Activo">Activo</option>
+                    <option value="Inactivo">Inactivo</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Observaciones</label>
+                <textarea id="empleado-observaciones" rows="3"></textarea>
+            </div>
+
             <button type="submit" class="btn-success">
                 <i class="fas fa-save"></i> <span id="btn-texto">Guardar Empleado</span>
             </button>
-            <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6; margin-left: 10px;">
+            <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6; margin-left:10px;">
                 Cancelar
             </button>
         </form>
@@ -68,6 +175,7 @@
                     <th>Categoría</th>
                     <th>Puesto</th>
                     <th>Local</th>
+                    <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -123,7 +231,7 @@
                 tbody.innerHTML = '';
 
                 if (empleados.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center">No hay empleados</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center">No hay empleados</td></tr>`;
                     return;
                 }
 
@@ -135,8 +243,9 @@
                         <td>${emp.categoria}</td>
                         <td>${emp.puesto}</td>
                         <td>${emp.local}</td>
+                        <td>${emp.estado}</td>
                         <td>
-                            <button class="btn-warning" onclick="editarEmpleado('${emp.key}', '${emp.dni}', '${emp.nombre}', '${emp.categoria}', '${emp.puesto}', '${emp.local}')" style="padding:6px 10px; margin-right:5px;">
+                            <button class="btn-warning" onclick="editarEmpleado('${emp.key}', '${emp.dni}', '${emp.nombre}', '${emp.categoria}', '${emp.puesto}', '${emp.local}', '${emp.estado}', '${emp.telefono || ''}', '${emp.email || ''}', '${emp.domicilio || ''}', '${emp.fechaNac || ''}', '${emp.fechaIngreso || ''}', '${emp.observaciones || ''}')" style="padding:6px 10px; margin-right:5px;">
                                 <i class="fas fa-edit"></i> Editar
                             </button>
                             <button class="btn-danger" onclick="eliminarEmpleado('${emp.key}', '${emp.nombre}')">
@@ -149,7 +258,7 @@
             } catch (e) {
                 console.error('Error cargando empleados:', e);
                 document.querySelector('#tabla-empleados tbody').innerHTML = 
-                    `<tr><td colspan="6" style="text-align:center; color: red;">Error al cargar</td></tr>`;
+                    `<tr><td colspan="7" style="text-align:center; color: red;">Error al cargar</td></tr>`;
             }
         }
 
@@ -161,12 +270,19 @@
             document.getElementById('empleado-puesto').value = '';
         }
 
-        function editarEmpleado(key, dni, nombre, categoria, puesto, local) {
+        function editarEmpleado(key, dni, nombre, categoria, puesto, local, estado, telefono, email, domicilio, fechaNac, fechaIngreso, observaciones) {
             document.getElementById('empleado-dni').value = dni;
             document.getElementById('empleado-nombre').value = nombre;
             document.getElementById('empleado-categoria').value = categoria;
             document.getElementById('empleado-puesto').value = puesto;
             document.getElementById('empleado-local').value = local;
+            document.getElementById('empleado-estado').value = estado;
+            document.getElementById('empleado-telefono').value = telefono;
+            document.getElementById('empleado-email').value = email;
+            document.getElementById('empleado-domicilio').value = domicilio;
+            document.getElementById('empleado-fecha-nac').value = fechaNac;
+            document.getElementById('empleado-fecha-ingreso').value = fechaIngreso;
+            document.getElementById('empleado-observaciones').value = observaciones;
             document.getElementById('edit-key').value = key;
             document.getElementById('btn-texto').textContent = 'Actualizar Empleado';
             document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Empleado';
@@ -179,14 +295,28 @@
             const categoria = document.getElementById('empleado-categoria').value;
             const puesto = document.getElementById('empleado-puesto').value.trim();
             const local = document.getElementById('empleado-local').value.trim();
+            const estado = document.getElementById('empleado-estado').value;
             const key = document.getElementById('edit-key').value;
 
-            if (!dni || !nombre || !categoria || !puesto || !local) {
-                showToast('⚠️ Completa todos los campos', true);
+            if (!dni || !nombre || !categoria || !puesto || !local || !estado) {
+                showToast('⚠️ Completa los campos obligatorios', true);
                 return;
             }
 
-            const empleado = { dni, nombre, categoria, puesto, local };
+            const empleado = {
+                dni,
+                nombre,
+                categoria,
+                puesto,
+                local,
+                estado,
+                telefono: document.getElementById('empleado-telefono').value.trim(),
+                email: document.getElementById('empleado-email').value.trim(),
+                domicilio: document.getElementById('empleado-domicilio').value.trim(),
+                fechaNac: document.getElementById('empleado-fecha-nac').value,
+                fechaIngreso: document.getElementById('empleado-fecha-ingreso').value,
+                observaciones: document.getElementById('empleado-observaciones').value.trim()
+            };
 
             try {
                 let url = DB_EMPLEADOS;
@@ -198,7 +328,11 @@
                     method = 'PUT';
                 }
 
-                const res = await fetch(url, { method, body, headers: { 'Content-Type': 'application/json' } });
+                const res = await fetch(url, { 
+                    method, 
+                    body, 
+                    headers: { 'Content-Type': 'application/json' } 
+                });
 
                 if (!res.ok) throw new Error('Error al guardar');
 
@@ -244,7 +378,7 @@
         };
     </script>
 
-    <!-- ✅ Botón flotante sin espacios -->
+    <!-- ✅ Botón flotante -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
@@ -278,4 +412,3 @@
     </script>
 </body>
 </html>
-
