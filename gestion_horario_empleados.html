@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Horarios de Empleados</title>
+    <title>Horarios por Empleado</title>
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
@@ -12,7 +13,7 @@
             padding: 20px; 
         }
         .container { 
-            max-width: 1000px; 
+            max-width: 900px; 
             margin: 0 auto; 
             background: white; 
             padding: 20px; 
@@ -23,51 +24,56 @@
             color: #2c3e50; 
             border-bottom: 2px solid #3498db; 
             padding-bottom: 10px; 
-            display: flex; 
-            align-items: center; 
-            gap: 10px; 
         }
         .form-group { 
-            margin-bottom: 15px; 
+            margin: 15px 0; 
         }
         .form-group label { 
             display: block; 
             margin-bottom: 5px; 
             font-weight: 600; 
-            color: #555; 
         }
-        select, button { 
+        input, select { 
             width: 100%; 
-            padding: 10px; 
+            padding: 8px; 
             border: 1px solid #ddd; 
             border-radius: 4px; 
             box-sizing: border-box; 
-            font-size: 1rem; 
+        }
+        .day-group {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            border: 1px solid #eee;
+        }
+        .time-row {
+            display: flex;
+            gap: 10px;
+            margin: 5px 0;
+            align-items: center;
+        }
+        .time-row input, .time-row select {
+            flex: 1;
+        }
+        .doble-turno {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e8f4fc;
+            border-radius: 6px;
+            border: 1px dashed #3498db;
+            display: none;
         }
         button { 
             background: #3498db; 
             color: white; 
             border: none; 
+            padding: 10px 15px; 
+            border-radius: 4px; 
             cursor: pointer; 
-            margin-top: 10px; 
-        }
-        button.btn-warning { 
-            background: #f39c12; 
         }
         button.btn-danger { 
             background: #e74c3c; 
-        }
-        .dia { 
-            background: #f8f9fa; 
-            padding: 15px; 
-            margin: 10px 0; 
-            border-radius: 6px; 
-            border: 1px solid #ecf0f1; 
-        }
-        .turno { 
-            display: flex; 
-            gap: 10px; 
-            margin-bottom: 10px; 
         }
         table { 
             width: 100%; 
@@ -97,50 +103,54 @@
         .snackbar.show { 
             opacity: 1; 
         }
-        .error { 
-            background: #e74c3c !important; 
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1><i class="fas fa-clock"></i> Horarios de Empleados</h1>
+        <h1><i class="fas fa-calendar-alt"></i> Asignar Horario a Empleado</h1>
 
-        <div class="form-group">
-            <label>Empleado *</label>
-            <select id="emp-select" required>
-                <option value="">-- Cargando --</option>
-            </select>
-        </div>
+        <form id="form-horario-empleado">
+            <input type="hidden" id="edit-key" value="">
 
-        <div id="horario-container">
-            <p style="text-align: center; color: #7f8c8d;">Selecciona un empleado.</p>
-        </div>
+            <div class="form-group">
+                <label>Empleado *</label>
+                <select id="empleado-select" required>
+                    <option value="">Cargando empleados...</option>
+                </select>
+            </div>
 
-        <button onclick="guardarHorario()" class="btn-success">
-            <i class="fas fa-save"></i> Guardar Horario
-        </button>
+            <div id="dias-container">
+                <!-- Generado por JS -->
+            </div>
 
-        <h2><i class="fas fa-list"></i> Horarios Asignados</h2>
+            <button type="submit" class="btn-success">
+                <i class="fas fa-save"></i> <span id="btn-texto">Guardar Horario</span>
+            </button>
+            <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6; margin-left:10px;">
+                Cancelar
+            </button>
+        </form>
+
         <table id="tabla-horarios">
             <thead>
                 <tr>
                     <th>Empleado</th>
-                    <th>Puesto</th>
                     <th>Local</th>
-                    <th>Días Trabaja</th>
+                    <th>Horario Semanal</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
-            <tbody id="tbody-horarios">
-                <tr><td colspan="5" style="text-align:center">Cargando...</td></tr>
-            </tbody>
+            <tbody></tbody>
         </table>
     </div>
 
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
+        // ✅ URLs de Firebase
+        const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
+        const DB_HORARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados.json';
+
         function showToast(msg, isError = false) {
             const sb = document.getElementById('snackbar');
             sb.textContent = msg;
@@ -149,209 +159,262 @@
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
-        function cargarEmpleados() {
-            const empleados = JSON.parse(localStorage.getItem('empleados') || '[]');
-            const select = document.getElementById('emp-select');
-            select.innerHTML = '<option value="">-- Selecciona un empleado --</option>';
-            if (empleados.length === 0) {
-                select.innerHTML += '<option value="">No hay empleados</option>';
-                document.getElementById('horario-container').innerHTML = 
-                    '<p style="text-align: center; color: #e74c3c;">No hay empleados cargados.</p>';
-                return;
-            }
-            empleados.forEach(emp => {
-                const opt = document.createElement('option');
-                opt.value = emp.dni;
-                opt.textContent = `${emp.nombre} (${emp.puesto})`;
-                select.appendChild(opt);
-            });
-        }
-
-        function cargarHorario() {
-            const dni = document.getElementById('emp-select').value;
-            if (!dni) {
-                document.getElementById('horario-container').innerHTML = 
-                    '<p style="text-align: center; color: #7f8c8d;">Selecciona un empleado.</p>';
-                return;
-            }
-
-            const empleados = JSON.parse(localStorage.getItem('empleados') || '[]');
-            const emp = empleados.find(e => e.dni === dni);
-            if (!emp) {
-                showToast('❌ Empleado no encontrado', true);
-                return;
-            }
-
-            let horarios = {};
+        // Cargar empleados
+        async function cargarEmpleados() {
             try {
-                horarios = JSON.parse(localStorage.getItem('horarios_empleados') || '{}');
-            } catch (e) { }
-
-            const datos = horarios[dni] || {};
-            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-            let html = '';
-
-            dias.forEach(dia => {
-                const d = datos[dia] || {};
-                const work = d.work !== false;
-                const start = d.start || '09:00';
-                const end = d.end || '17:00';
-
-                html += `
-                <div class="dia">
-                    <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px;">
-                        <span>${capitalizar(dia)}</span>
-                        <label style="display: flex; align-items: center; gap: 5px;">
-                            <input type="checkbox" id="${dia}-work" ${work ? 'checked' : ''}> Trabaja
-                        </label>
-                    </div>
-                    <div class="turno">
-                        <label>Entrada: <input type="time" id="${dia}-start" value="${start}"></label>
-                        <label>Salida: <input type="time" id="${dia}-end" value="${end}"></label>
-                    </div>
-                </div>`;
-            });
-
-            document.getElementById('horario-container').innerHTML = html;
-            cargarListaHorarios();
+                const res = await fetch(DB_EMPLEADOS);
+                const data = await res.json();
+                const empleados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+                const select = document.getElementById('empleado-select');
+                select.innerHTML = '<option value="">Selecciona un empleado</option>';
+                empleados.forEach(emp => {
+                    const option = document.createElement('option');
+                    option.value = emp.key;
+                    option.textContent = `${emp.nombre} (${emp.local})`;
+                    option.dataset.local = emp.local;
+                    select.appendChild(option);
+                });
+            } catch (e) {
+                console.error('Error cargando empleados:', e);
+                showToast('❌ Error al cargar empleados', true);
+            }
         }
 
-        function guardarHorario() {
-            const dni = document.getElementById('emp-select').value;
-            if (!dni) {
-                showToast('⚠️ Selecciona un empleado', true);
-                return;
-            }
-
-            const empleados = JSON.parse(localStorage.getItem('empleados') || '[]');
-            const emp = empleados.find(e => e.dni === dni);
-            if (!emp) {
-                showToast('❌ Empleado no encontrado', true);
-                return;
-            }
-
+        // Generar días
+        function generarDias() {
+            const container = document.getElementById('dias-container');
             const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-            const nuevo = {};
+            container.innerHTML = '';
 
             dias.forEach(dia => {
-                const work = document.getElementById(`${dia}-work`)?.checked !== false;
-                if (work) {
-                    const start = document.getElementById(`${dia}-start`)?.value || '09:00';
-                    const end = document.getElementById(`${dia}-end`)?.value || '17:00';
-                    nuevo[dia] = { work, start, end };
+                const div = document.createElement('div');
+                div.className = 'day-group';
+                div.innerHTML = `
+                    <h3>${dia.charAt(0).toUpperCase() + dia.slice(1)}</h3>
+                    <label><input type="checkbox" class="chk-libre"> Día Libre</label>
+                    <div class="time-row main-shift">
+                        <input type="time" class="entrada" placeholder="Entrada">
+                        <input type="time" class="salida" placeholder="Salida">
+                        <input type="time" class="descanso" placeholder="Descanso (opcional)">
+                        <label><input type="checkbox" class="chk-doble"> Turno Doble</label>
+                    </div>
+                    <div class="doble-turno">
+                        <div class="time-row">
+                            <input type="time" class="entrada2" placeholder="2da entrada">
+                            <input type="time" class="salida2" placeholder="2da salida">
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+            // Eventos
+            document.querySelectorAll('.chk-libre').forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    const group = this.closest('.day-group');
+                    const main = group.querySelector('.main-shift');
+                    const doble = group.querySelector('.doble-turno');
+                    main.style.display = this.checked ? 'none' : 'flex';
+                    doble.style.display = this.checked ? 'none' : 'block';
+                });
+            });
+
+            document.querySelectorAll('.chk-doble').forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    const group = this.closest('.day-group');
+                    group.querySelector('.doble-turno').style.display = this.checked ? 'block' : 'none';
+                });
+            });
+        }
+
+        // Cargar horarios guardados
+        async function cargarHorarios() {
+            try {
+                const res = await fetch(DB_HORARIOS);
+                const data = await res.json();
+                const horarios = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+
+                const tbody = document.querySelector('#tabla-horarios tbody');
+                tbody.innerHTML = '';
+
+                if (horarios.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center">No hay horarios asignados</td></tr>`;
+                    return;
+                }
+
+                horarios.forEach(horario => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${horario.empleadoNombre}</strong></td>
+                        <td>${horario.local}</td>
+                        <td>${resumenHorario(horario)}</td>
+                        <td style="text-align:center;">
+                            <button class="btn-warning" onclick="editarHorario('${horario.key}')">Editar</button>
+                            <button class="btn-danger" onclick="eliminarHorario('${horario.key}', '${horario.empleadoNombre}')">Eliminar</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error('Error cargando horarios:', e);
+                showToast('❌ Error al cargar', true);
+            }
+        }
+
+        function resumenHorario(horario) {
+            const diasConHorario = Object.keys(horario.dias || {}).filter(dia => !horario.dias[dia].libre);
+            return diasConHorario.length > 0 ? `${diasConHorario.length}/7 días` : 'Todos libres';
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('form-horario-empleado').reset();
+            document.getElementById('edit-key').value = '';
+            document.getElementById('btn-texto').textContent = 'Guardar Horario';
+            document.querySelector('.container h1').innerHTML = '<i class="fas fa-calendar-alt"></i> Asignar Horario a Empleado';
+            generarDias();
+        }
+
+        async function editarHorario(key) {
+            try {
+                const res = await fetch(`${DB_HORARIOS.replace('.json', `/${key}.json`)}`);
+                const horario = await res.json();
+                limpiarFormulario();
+
+                document.getElementById('empleado-select').value = horario.empleadoKey;
+                const select = document.getElementById('empleado-select');
+                select.disabled = true;
+
+                const dias = horario.dias;
+                Object.keys(dias).forEach(dia => {
+                    const group = document.querySelector(`.day-group h3:contains('${dia.charAt(0).toUpperCase()}')`).closest('.day-group');
+                    const diaData = dias[dia];
+                    if (diaData.libre) {
+                        group.querySelector('.chk-libre').checked = true;
+                        group.querySelector('.main-shift').style.display = 'none';
+                        group.querySelector('.doble-turno').style.display = 'none';
+                    } else {
+                        group.querySelector('.entrada').value = diaData.entrada || '';
+                        group.querySelector('.salida').value = diaData.salida || '';
+                        group.querySelector('.descanso').value = diaData.descanso || '';
+                        if (diaData.doble) {
+                            group.querySelector('.chk-doble').checked = true;
+                            group.querySelector('.doble-turno').style.display = 'block';
+                            group.querySelector('.entrada2').value = diaData.entrada2 || '';
+                            group.querySelector('.salida2').value = diaData.salida2 || '';
+                        }
+                    }
+                });
+
+                document.getElementById('edit-key').value = key;
+                document.getElementById('btn-texto').textContent = 'Actualizar Horario';
+                document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Horario';
+            } catch (e) {
+                console.error('Error al editar:', e);
+                showToast('❌ Error al cargar horario', true);
+            }
+        }
+
+        async function guardarHorario(e) {
+            e.preventDefault();
+            const empleadoKey = document.getElementById('empleado-select').value;
+            const empleadoNombre = document.getElementById('empleado-select').options[document.getElementById('empleado-select').selectedIndex].text.split(' (')[0];
+            const local = document.getElementById('empleado-select').options[document.getElementById('empleado-select').selectedIndex].dataset.local;
+            const key = document.getElementById('edit-key').value;
+
+            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            const horario = {
+                empleadoKey,
+                empleadoNombre,
+                local,
+                dias: {}
+            };
+
+            let valido = true;
+            dias.forEach(dia => {
+                const group = document.querySelectorAll('.day-group')[dias.indexOf(dia)];
+                if (group.querySelector('.chk-libre').checked) {
+                    horario.dias[dia] = { libre: true };
                 } else {
-                    nuevo[dia] = { work: false };
+                    const entrada = group.querySelector('.entrada').value;
+                    const salida = group.querySelector('.salida').value;
+                    if (!entrada || !salida) valido = false;
+                    horario.dias[dia] = {
+                        entrada,
+                        salida,
+                        descanso: group.querySelector('.descanso').value,
+                        doble: group.querySelector('.chk-doble').checked
+                    };
+                    if (horario.dias[dia].doble) {
+                        horario.dias[dia].entrada2 = group.querySelector('.entrada2').value;
+                        horario.dias[dia].salida2 = group.querySelector('.salida2').value;
+                    }
                 }
             });
 
-            let horarios = {};
-            try {
-                horarios = JSON.parse(localStorage.getItem('horarios_empleados') || '{}');
-            } catch (e) { }
+            if (!valido) {
+                showToast('⚠️ Completa todos los campos', true);
+                return;
+            }
 
-            horarios[dni] = nuevo;
             try {
-                localStorage.setItem('horarios_empleados', JSON.stringify(horarios));
-                showToast('✅ Horario guardado');
-                cargarListaHorarios();
-            } catch (e) {
+                let url = DB_HORARIOS;
+                let method = 'POST';
+                let body = JSON.stringify(horario);
+
+                if (key) {
+                    url = `${DB_HORARIOS.replace('.json', `/${key}.json`)}`;
+                    method = 'PUT';
+                }
+
+                const res = await fetch(url, { 
+                    method, 
+                    body, 
+                    headers: { 'Content-Type': 'application/json' } 
+                });
+
+                if (!res.ok) throw new Error('Error al guardar');
+
+                showToast('✅ Horario asignado');
+                limpiarFormulario();
+                document.getElementById('empleado-select').disabled = false;
+                await cargarHorarios();
+            } catch (err) {
+                console.error('Error:', err);
                 showToast('❌ Error al guardar', true);
             }
         }
 
-        function cargarListaHorarios() {
-            let horarios = {};
+        async function eliminarHorario(key, nombre) {
+            if (!confirm(`¿Eliminar el horario de "${nombre}"?`)) return;
+
             try {
-                horarios = JSON.parse(localStorage.getItem('horarios_empleados') || '{}');
-            } catch (e) { }
+                const res = await fetch(`${DB_HORARIOS.replace('.json', `/${key}.json`)}`, {
+                    method: 'DELETE'
+                });
 
-            const empleados = JSON.parse(localStorage.getItem('empleados') || '[]');
-            const tbody = document.getElementById('tbody-horarios');
-            tbody.innerHTML = '';
+                if (!res.ok) throw new Error('Error al eliminar');
 
-            let tiene = false;
-            empleados.forEach(emp => {
-                if (!horarios[emp.dni]) return;
-                tiene = true;
-                const tr = document.createElement('tr');
-                const diasTrabaja = Object.keys(horarios[emp.dni])
-                    .filter(dia => horarios[emp.dni][dia].work)
-                    .map(capitalizar).join(', ');
-                tr.innerHTML = `
-                    <td><strong>${emp.nombre}</strong></td>
-                    <td>${emp.puesto}</td>
-                    <td>${emp.local}</td>
-                    <td>${diasTrabaja || '–'}</td>
-                    <td>
-                        <button class="btn-warning" onclick="editarHorario('${emp.dni}')" style="padding:6px 10px;margin-right:5px;">
-                            <i class="fas fa-edit"></i> Editar
-                        </button>
-                        <button class="btn-danger" onclick="eliminarHorario('${emp.dni}')">
-                            <i class="fas fa-trash"></i> Eliminar
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            if (!tiene) {
-                // ✅ Datos de prueba si no hay horarios
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><strong>Juan Pérez</strong></td>
-                    <td>Cajero</td>
-                    <td>Sucursal Centro</td>
-                    <td>Lunes, Miércoles, Viernes</td>
-                    <td>
-                        <button class="btn-warning" onclick="alert('Editar Juan Pérez')" style="padding:6px 10px;margin-right:5px;">
-                            <i class="fas fa-edit"></i> Editar
-                        </button>
-                        <button class="btn-danger" onclick="alert('Eliminar Juan Pérez')">
-                            <i class="fas fa-trash"></i> Eliminar
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
+                showToast('🗑️ Horario eliminado');
+                await cargarHorarios();
+            } catch (err) {
+                console.error('Error:', err);
+                showToast('❌ Error al eliminar', true);
             }
-        }
-
-        function editarHorario(dni) {
-            document.getElementById('emp-select').value = dni;
-            cargarHorario();
-            showToast('📅 Horario cargado para edición');
-        }
-
-        function eliminarHorario(dni) {
-            if (!confirm('¿Eliminar el horario de este empleado?')) return;
-            let horarios = {};
-            try {
-                horarios = JSON.parse(localStorage.getItem('horarios_empleados') || '{}');
-            } catch (e) { return; }
-            delete horarios[dni];
-            localStorage.setItem('horarios_empleados', JSON.stringify(horarios));
-            cargarListaHorarios();
-            if (document.getElementById('emp-select').value === dni) {
-                document.getElementById('horario-container').innerHTML = '<p style="text-align: center; color: #7f8c8d;">Horario eliminado.</p>';
-            }
-            showToast('🗑️ Horario eliminado');
-        }
-
-        function capitalizar(str) {
-            return str.charAt(0).toUpperCase() + str.slice(1);
         }
 
         // Inicializar
-        window.onload = function () {
-            cargarEmpleados();
-            cargarListaHorarios();
-            document.getElementById('emp-select').addEventListener('change', cargarHorario);
+        window.onload = async function () {
+            await cargarEmpleados();
+            generarDias();
+            await cargarHorarios();
+
+            document.getElementById('form-horario-empleado').addEventListener('submit', guardarHorario);
         };
     </script>
 
-    <!-- ✅ BOTÓN FLOTANTE - SIEMPRE VISIBLE Y IGUAL QUE LOS DEMÁS -->
+    <!-- ✅ Botón flotante -->
     <script>
-        // Botón flotante infalible
-        function crearBotonMenu() {
+        document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
             const btn = document.createElement('button');
             btn.id = 'btn-menu-flotante';
@@ -375,23 +438,11 @@
                 display: block !important;
                 transition: all 0.2s ease !important;
             `;
-            btn.onclick = () => window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
+            btn.onclick = () => {
+                window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
+            };
             document.body.appendChild(btn);
-        }
-
-        // Intentar hasta que el body exista
-        let intentos = 0;
-        const maxIntentos = 100;
-        const intervalo = setInterval(() => {
-            if (document.body || intentos >= maxIntentos) {
-                clearInterval(intervalo);
-                setTimeout(crearBotonMenu, 200);
-            }
-            intentos++;
-        }, 100);
-
-        document.addEventListener('DOMContentLoaded', crearBotonMenu);
+        });
     </script>
 </body>
-
 </html>
