@@ -80,7 +80,7 @@
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
-        // Cargar categorías
+        // Cargar categorías (puestos)
         async function cargarCategorias() {
             try {
                 const res = await fetch(DB_CATEGORIAS);
@@ -137,7 +137,7 @@
         // Inicializar días
         async function inicializarDias() {
             const container = document.getElementById('dias-container');
-            const dias = ['lunes'];
+            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
             container.innerHTML = '';
             dias.forEach(dia => container.innerHTML += generarDiaHTML(dia));
 
@@ -181,7 +181,9 @@
                 const div = document.createElement('div');
                 div.innerHTML = `
                     <div style="display:flex; gap:10px; margin:5px 0;">
-                        <select style="flex:2;">${cat.puesto}</option></select>
+                        <select style="flex:2;">
+                            <option value="${cat.nombre}">${cat.puesto}</option>
+                        </select>
                         <input type="number" placeholder="Cantidad" min="1" style="flex:1;" value="1">
                     </div>
                 `;
@@ -195,28 +197,62 @@
             const local = document.getElementById('local-nombre').value.trim();
             if (!local) return showToast('⚠️ Nombre del local', true);
 
-            const dia = document.querySelector('.day-group');
-            const apertura = dia.querySelector('.hora-apertura').value;
-            const cierre = dia.querySelector('.hora-cierre').value;
+            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            const data = { local };
 
-            const data = {
-                local,
-                lunes: {
-                    apertura, cierre,
-                    doble: dia.querySelector('.chk-doble').checked,
-                    continuo: dia.querySelector('.chk-continuo').checked
+            let valido = true;
+
+            dias.forEach(dia => {
+                const group = document.querySelector(`[data-dia="${dia}"]`);
+                const apertura = group.querySelector('.hora-apertura').value;
+                const cierre = group.querySelector('.hora-cierre').value;
+
+                if (!apertura || !cierre) {
+                    valido = false;
+                    return;
                 }
-            };
 
-            // Guardar puestos del primer pico
-            const puestos = [];
-            const puestosCont = dia.querySelector('.puestos-container');
-            if (puestosCont) {
-                puestosCont.querySelectorAll('select').forEach((sel, i) => {
-                    const input = puestosCont.querySelectorAll('input')[i];
-                    puestos.push({ puesto: sel.value, cantidad: input.value });
-                });
-                data.lunes.puestos_pico = puestos;
+                data[dia] = {
+                    apertura,
+                    cierre,
+                    doble: group.querySelector('.chk-doble').checked,
+                    continuo: group.querySelector('.chk-continuo').checked
+                };
+
+                // Guardar puestos del primer pico
+                const puestosCont = group.querySelector('.puestos-container');
+                if (puestosCont && data[dia].continuo) {
+                    const puestos = [];
+                    puestosCont.querySelectorAll('select').forEach((sel, i) => {
+                        const input = puestosCont.querySelectorAll('input')[i];
+                        puestos.push({
+                            puesto: sel.value,
+                            puestoNombre: sel.options[sel.selectedIndex].text,
+                            cantidad: input.value
+                        });
+                    });
+                    data[dia].puestos_pico = puestos;
+                }
+
+                // Guardar puestos del segundo pico (si >14h)
+                const puestosExtraCont = group.querySelector('.puestos-extra-container');
+                if (puestosExtraCont && group.querySelector('.pico-extra').style.display === 'block') {
+                    const puestosExtra = [];
+                    puestosExtraCont.querySelectorAll('select').forEach((sel, i) => {
+                        const input = puestosExtraCont.querySelectorAll('input')[i];
+                        puestosExtra.push({
+                            puesto: sel.value,
+                            puestoNombre: sel.options[sel.selectedIndex].text,
+                            cantidad: input.value
+                        });
+                    });
+                    data[dia].puestos_pico_extra = puestosExtra;
+                }
+            });
+
+            if (!valido) {
+                showToast('⚠️ Completa todos los campos', true);
+                return;
             }
 
             try {
@@ -227,12 +263,14 @@
                 });
 
                 if (res.ok) {
-                    showToast('✅ Guardado');
+                    showToast('✅ Configuración guardada');
                     await cargarHorarios();
+                } else {
+                    throw new Error('Error al guardar');
                 }
             } catch (err) {
                 console.error(err);
-                showToast('❌ Error', true);
+                showToast('❌ Error al guardar', true);
             }
         }
 
@@ -248,11 +286,12 @@
                     '<tr><td colspan="3">No hay datos</td></tr>';
             } catch (e) {
                 console.error(e);
+                showToast('❌ Error al cargar horarios', true);
             }
         }
 
         async function eliminar(key) {
-            if (!confirm('¿Eliminar?')) return;
+            if (!confirm('¿Eliminar esta configuración?')) return;
             await fetch(`${DB_URL.replace('.json', `/${key}.json`)}`, { method: 'DELETE' });
             await cargarHorarios();
         }
@@ -260,7 +299,7 @@
         function limpiarFormulario() {
             document.getElementById('form-horario').reset();
             document.getElementById('edit-key').value = '';
-            document.getElementById('btn-texto').textContent = 'Guardar';
+            document.getElementById('btn-texto').textContent = 'Guardar Configuración';
             inicializarDias();
         }
 
@@ -272,6 +311,7 @@
         };
     </script>
 
+    <!-- ✅ Botón flotante sin espacios -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('btn-menu-flotante')) return;
