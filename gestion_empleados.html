@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Empleados</title>
-    <!-- Font Awesome -->
+    <!-- Font Awesome sin espacios -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
@@ -140,9 +140,12 @@
                 <input type="text" id="empleado-puesto" placeholder="Ej: Cajero" required readonly>
             </div>
 
+            <!-- ✅ Local como select -->
             <div class="form-group">
                 <label>Local *</label>
-                <input type="text" id="empleado-local" placeholder="Ej: Sucursal Centro" required>
+                <select id="empleado-local" required>
+                    <option value="">Cargando locales...</option>
+                </select>
             </div>
 
             <div class="form-group">
@@ -185,6 +188,7 @@
         // ✅ URLs de Firebase (sin espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_CATEGORIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/categorias.json';
+        const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
 
         let categorias = [];
 
@@ -196,6 +200,29 @@
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
+        // ✅ Cargar locales
+        async function cargarLocales() {
+            try {
+                const res = await fetch(DB_LOCALES);
+                const data = await res.json();
+                const locales = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+
+                const select = document.getElementById('empleado-local');
+                select.innerHTML = '<option value="">Selecciona un local</option>';
+
+                locales.forEach(loc => {
+                    const option = document.createElement('option');
+                    option.value = loc.nombre;
+                    option.textContent = loc.nombre;
+                    select.appendChild(option);
+                });
+            } catch (e) {
+                console.error('Error cargando locales:', e);
+                showToast('❌ Error al cargar locales', true);
+            }
+        }
+
+        // ✅ Cargar categorías
         async function cargarCategorias() {
             try {
                 const res = await fetch(DB_CATEGORIAS);
@@ -217,6 +244,7 @@
             }
         }
 
+        // ✅ Cargar empleados
         async function cargarEmpleados() {
             try {
                 const res = await fetch(DB_EMPLEADOS);
@@ -352,9 +380,10 @@
             }
         }
 
-        // Cargar categorías y empleados al iniciar
+        // Inicializar
         window.onload = async function () {
             await cargarCategorias();
+            await cargarLocales();
             await cargarEmpleados();
 
             // Actualizar puesto cuando cambia la categoría
@@ -367,7 +396,7 @@
         };
     </script>
 
-    <!-- ✅ Botón flotante -->
+    <!-- ✅ Botón flotante sin espacios -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
