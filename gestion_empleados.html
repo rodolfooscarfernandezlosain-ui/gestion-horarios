@@ -115,50 +115,13 @@
             </div>
 
             <div class="form-group">
-                <label>Sexo</label>
-                <select id="empleado-sexo">
-                    <option value="">Selecciona...</option>
-                    <option value="Masculino">Masculino</option>
-                    <option value="Femenino">Femenino</option>
-                    <option value="Otro">Otro</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Estado Civil</label>
-                <select id="empleado-estadocivil">
-                    <option value="">Selecciona...</option>
-                    <option value="Soltero/a">Soltero/a</option>
-                    <option value="Casado/a">Casado/a</option>
-                    <option value="Divorciado/a">Divorciado/a</option>
-                    <option value="Viudo/a">Viudo/a</option>
-                    <option value="Conviviente">Conviviente</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Nacionalidad</label>
-                <input type="text" id="empleado-nacionalidad" placeholder="Ej: Argentina">
-            </div>
-
-            <div class="form-group">
                 <label>Fecha de Nacimiento</label>
                 <input type="date" id="empleado-fecha-nac">
             </div>
 
             <div class="form-group">
-                <label>Fecha de Vencimiento del DNI</label>
-                <input type="date" id="empleado-fecha-vto-dni">
-            </div>
-
-            <div class="form-group">
                 <label>Teléfono</label>
                 <input type="text" id="empleado-telefono" placeholder="Ej: 1122334455">
-            </div>
-
-            <div class="form-group">
-                <label>Número de Emergencia</label>
-                <input type="text" id="empleado-emergencia" placeholder="Ej: 1199887766">
             </div>
 
             <div class="form-group">
@@ -169,23 +132,6 @@
             <div class="form-group">
                 <label>Domicilio</label>
                 <input type="text" id="empleado-domicilio" placeholder="Ej: Av. Siempre Viva 123">
-            </div>
-
-            <div class="form-group">
-                <label>Obra Social / ART</label>
-                <input type="text" id="empleado-obrasocial" placeholder="Ej: OSDE, PAMI, Sancor">
-            </div>
-
-            <div class="form-group">
-                <label>Nivel de Estudios</label>
-                <select id="empleado-estudios">
-                    <option value="">Selecciona...</option>
-                    <option value="Primario">Primario</option>
-                    <option value="Secundario">Secundario</option>
-                    <option value="Terciario">Terciario</option>
-                    <option value="Universitario">Universitario</option>
-                    <option value="Posgrado">Posgrado</option>
-                </select>
             </div>
 
             <div class="form-group">
@@ -237,11 +183,6 @@
             </div>
 
             <div class="form-group">
-                <label>Fecha de Egreso</label>
-                <input type="date" id="empleado-fecha-egreso">
-            </div>
-
-            <div class="form-group">
                 <label>Estado *</label>
                 <select id="empleado-estado" required>
                     <option value="Activo">Activo</option>
@@ -287,7 +228,7 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase (sin espacios)
+        // ✅ URLs de Firebase sin espacios
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_CATEGORIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/categorias.json';
 
