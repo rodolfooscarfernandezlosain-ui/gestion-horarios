@@ -197,6 +197,7 @@
         async function cargarLocales() {
             try {
                 const res = await fetch(DB_LOCALES);
+                if (!res.ok) throw new Error('Error en red');
                 const data = await res.json();
                 locales = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
                 const select = document.getElementById('filtro-local');
@@ -218,6 +219,7 @@
         async function cargarEmpleados() {
             try {
                 const res = await fetch(DB_EMPLEADOS);
+                if (!res.ok) throw new Error('Error en red');
                 const data = await res.json();
                 empleados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
                 filtrarEmpleados();
@@ -231,11 +233,12 @@
         async function cargarAusencias() {
             try {
                 const res = await fetch(DB_AUSENCIAS);
+                if (!res.ok) throw new Error('Error en red');
                 const data = await res.json();
                 ausencias = {};
                 if (data) {
                     Object.values(data).forEach(aus => {
-                        const dni = aus.empleadoDNI || aus.empleadoKey;
+                        const dni = aus.empleadoKey || aus.key;
                         if (!ausencias[dni]) ausencias[dni] = [];
                         ausencias[dni].push(aus);
                     });
@@ -258,7 +261,7 @@
 
             filtrados.forEach(emp => {
                 const opt = document.createElement('option');
-                opt.value = emp.dni || emp.key;
+                opt.value = emp.key;
                 opt.textContent = `${emp.nombre} (${emp.puesto})`;
                 select.appendChild(opt);
             });
@@ -276,14 +279,14 @@
         // Mostrar ausencias
         function mostrarNovedades() {
             const localFiltro = document.getElementById('filtro-local').value;
-            const dniSeleccionado = document.getElementById('emp-select').value;
+            const empleadoKey = document.getElementById('emp-select').value;
 
             const empleadosFiltrados = localFiltro 
                 ? empleados.filter(e => e.local === localFiltro)
                 : empleados;
 
-            const empleadosAMostrar = dniSeleccionado 
-                ? empleadosFiltrados.filter(e => e.dni === dniSeleccionado)
+            const empleadosAMostrar = empleadoKey 
+                ? empleadosFiltrados.filter(e => e.key === empleadoKey)
                 : empleadosFiltrados;
 
             const tbody = document.getElementById('tbody-ausencias');
@@ -291,8 +294,7 @@
 
             let tiene = false;
             empleadosAMostrar.forEach(emp => {
-                const dni = emp.dni || emp.key;
-                const lista = ausencias[dni] || [];
+                const lista = Object.values(ausencias).flat().filter(a => a.empleadoKey === emp.key);
 
                 if (lista.length === 0) return;
 
@@ -344,7 +346,7 @@
             if (!confirm(`¿Eliminar la ausencia de "${nombre}"?`)) return;
 
             try {
-                const res = await fetch(`https://gestion-personal-c9edd-default-rtdb.firebaseio.com/ausencias/${key}.json`, {
+                const res = await fetch(`${DB_AUSENCIAS.replace('.json', `/${key}.json`)}`, {
                     method: 'DELETE'
                 });
 
