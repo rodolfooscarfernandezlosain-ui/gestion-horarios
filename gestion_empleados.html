@@ -1,414 +1,123 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Empleados</title>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            background: #f4f6f9; 
-            padding: 20px; 
-        }
-        .container { 
-            max-width: 800px; 
-            margin: 0 auto; 
-            background: white; 
-            padding: 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-        }
-        h1 { 
-            color: #2c3e50; 
-            border-bottom: 2px solid #3498db; 
-            padding-bottom: 10px; 
-        }
-        .form-group { 
-            margin: 15px 0; 
-        }
-        .form-group label { 
-            display: block; 
-            margin-bottom: 5px; 
-            font-weight: 600; 
-        }
-        input, select, textarea { 
-            width: 100%; 
-            padding: 10px; 
-            border: 1px solid #ddd; 
-            border-radius: 4px; 
-            box-sizing: border-box; 
-        }
-        button { 
-            background: #3498db; 
-            color: white; 
-            border: none; 
-            padding: 10px 15px; 
-            border-radius: 4px; 
-            cursor: pointer; 
-        }
-        button.btn-danger { 
-            background: #e74c3c; 
-        }
-        button.btn-warning { 
-            background: #f39c12; 
-        }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 20px; 
-        }
-        th, td { 
-            border: 1px solid #ddd; 
-            padding: 12px; 
-            text-align: left; 
-        }
-        th { 
-            background: #ecf0f1; 
-        }
-        .snackbar { 
-            position: fixed; 
-            bottom: 20px; 
-            right: 20px; 
-            background: #27ae60; 
-            color: white; 
-            padding: 12px 20px; 
-            border-radius: 6px; 
-            z-index: 1000; 
-            opacity: 0; 
-            transition: opacity 0.3s; 
-        }
-        .snackbar.show { 
-            opacity: 1; 
-        }
-        .error { 
-            background: #e74c3c !important; 
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1><i class="fas fa-user-plus"></i> Alta de Empleados</h1>
+<form id="form-empleado">
+    <input type="hidden" id="edit-key" value="">
 
-        <form id="form-empleado">
-            <input type="hidden" id="edit-key" value="">
-
-            <div class="form-group">
-                <label>DNI *</label>
-                <input type="text" id="empleado-dni" placeholder="Ej: 12345678" required>
-            </div>
-
-            <div class="form-group">
-                <label>Nombre y Apellido *</label>
-                <input type="text" id="empleado-nombre" placeholder="Ej: Juan Pérez" required>
-            </div>
-
-            <div class="form-group">
-                <label>Fecha de Nacimiento</label>
-                <input type="date" id="empleado-fecha-nac">
-            </div>
-
-            <div class="form-group">
-                <label>Teléfono</label>
-                <input type="text" id="empleado-telefono" placeholder="Ej: 1122334455">
-            </div>
-
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="empleado-email" placeholder="Ej: juan@empresa.com">
-            </div>
-
-            <div class="form-group">
-                <label>Domicilio</label>
-                <input type="text" id="empleado-domicilio" placeholder="Ej: Av. Siempre Viva 123">
-            </div>
-
-            <div class="form-group">
-                <label>Categoría *</label>
-                <select id="empleado-categoria" required>
-                    <option value="">Selecciona una categoría</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Puesto *</label>
-                <input type="text" id="empleado-puesto" placeholder="Ej: Cajero" required readonly>
-            </div>
-
-            <div class="form-group">
-                <label>Local *</label>
-                <input type="text" id="empleado-local" placeholder="Ej: Sucursal Centro" required>
-            </div>
-
-            <div class="form-group">
-                <label>Fecha de Ingreso *</label>
-                <input type="date" id="empleado-fecha-ingreso" required>
-            </div>
-
-            <div class="form-group">
-                <label>Estado *</label>
-                <select id="empleado-estado" required>
-                    <option value="Activo">Activo</option>
-                    <option value="Inactivo">Inactivo</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Observaciones</label>
-                <textarea id="empleado-observaciones" rows="3"></textarea>
-            </div>
-
-            <button type="submit" class="btn-success">
-                <i class="fas fa-save"></i> <span id="btn-texto">Guardar Empleado</span>
-            </button>
-            <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6; margin-left:10px;">
-                Cancelar
-            </button>
-        </form>
-
-        <table id="tabla-empleados">
-            <thead>
-                <tr>
-                    <th>DNI</th>
-                    <th>Nombre</th>
-                    <th>Categoría</th>
-                    <th>Puesto</th>
-                    <th>Local</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+    <div class="form-group">
+        <label>Legajo *</label>
+        <input type="text" id="empleado-legajo" placeholder="Ej: 00123" required>
     </div>
 
-    <div id="snackbar" class="snackbar">Acción realizada</div>
+    <div class="form-group">
+        <label>DNI *</label>
+        <input type="text" id="empleado-dni" placeholder="Ej: 12345678" required>
+    </div>
 
-    <script>
-        // ✅ URLs de Firebase sin espacios
-        const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
-        const DB_CATEGORIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/categorias.json';
+    <div class="form-group">
+        <label>CUIL *</label>
+        <input type="text" id="empleado-cuil" placeholder="Ej: 20-12345678-9" required>
+    </div>
 
-        let categorias = [];
+    <div class="form-group">
+        <label>Nombre y Apellido *</label>
+        <input type="text" id="empleado-nombre" placeholder="Ej: Juan Pérez" required>
+    </div>
 
-        function showToast(msg, isError = false) {
-            const sb = document.getElementById('snackbar');
-            sb.textContent = msg;
-            sb.className = 'snackbar show';
-            if (isError) sb.classList.add('error');
-            setTimeout(() => sb.className = 'snackbar', 3000);
-        }
+    <div class="form-group">
+        <label>Fecha de Nacimiento</label>
+        <input type="date" id="empleado-fecha-nac">
+    </div>
 
-        async function cargarCategorias() {
-            try {
-                const res = await fetch(DB_CATEGORIAS);
-                const data = await res.json();
-                categorias = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+    <div class="form-group">
+        <label>Teléfono</label>
+        <input type="text" id="empleado-telefono" placeholder="Ej: 1122334455">
+    </div>
 
-                const select = document.getElementById('empleado-categoria');
-                select.innerHTML = '<option value="">Selecciona una categoría</option>';
+    <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="empleado-email" placeholder="Ej: juan@empresa.com">
+    </div>
 
-                categorias.forEach(cat => {
-                    const option = document.createElement('option');
-                    option.value = cat.nombre;
-                    option.textContent = cat.nombre;
-                    select.appendChild(option);
-                });
-            } catch (e) {
-                console.error('Error cargando categorías:', e);
-                showToast('❌ Error al cargar categorías', true);
-            }
-        }
+    <div class="form-group">
+        <label>Domicilio</label>
+        <input type="text" id="empleado-domicilio" placeholder="Ej: Av. Siempre Viva 123">
+    </div>
 
-        async function cargarEmpleados() {
-            try {
-                const res = await fetch(DB_EMPLEADOS);
-                const data = await res.json();
-                const empleados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+    <div class="form-group">
+        <label>Categoría *</label>
+        <select id="empleado-categoria" required>
+            <option value="">Selecciona una categoría</option>
+        </select>
+    </div>
 
-                const tbody = document.querySelector('#tabla-empleados tbody');
-                tbody.innerHTML = '';
+    <div class="form-group">
+        <label>Puesto *</label>
+        <input type="text" id="empleado-puesto" placeholder="Ej: Cajero" required readonly>
+    </div>
 
-                if (empleados.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center">No hay empleados</td></tr>`;
-                    return;
-                }
+    <div class="form-group">
+        <label>Local *</label>
+        <input type="text" id="empleado-local" placeholder="Ej: Sucursal Centro" required>
+    </div>
 
-                empleados.forEach(emp => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><strong>${emp.dni}</strong></td>
-                        <td>${emp.nombre}</td>
-                        <td>${emp.categoria}</td>
-                        <td>${emp.puesto}</td>
-                        <td>${emp.local}</td>
-                        <td>${emp.estado}</td>
-                        <td>
-                            <button class="btn-warning" onclick="editarEmpleado('${emp.key}', '${emp.dni}', '${emp.nombre}', '${emp.categoria}', '${emp.puesto}', '${emp.local}', '${emp.estado}', '${emp.telefono || ''}', '${emp.email || ''}', '${emp.domicilio || ''}', '${emp.fechaNac || ''}', '${emp.fechaIngreso || ''}', '${emp.observaciones || ''}')" style="padding:6px 10px; margin-right:5px;">
-                                <i class="fas fa-edit"></i> Editar
-                            </button>
-                            <button class="btn-danger" onclick="eliminarEmpleado('${emp.key}', '${emp.nombre}')">
-                                <i class="fas fa-trash"></i> Eliminar
-                            </button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            } catch (e) {
-                console.error('Error cargando empleados:', e);
-                document.querySelector('#tabla-empleados tbody').innerHTML = 
-                    `<tr><td colspan="7" style="text-align:center; color: red;">Error al cargar</td></tr>`;
-            }
-        }
+    <div class="form-group">
+        <label>Tipo de Contrato *</label>
+        <select id="empleado-contrato" required>
+            <option value="Planta">Planta</option>
+            <option value="Contrato">Contrato</option>
+            <option value="Temporal">Temporal</option>
+            <option value="Práctica">Práctica</option>
+        </select>
+    </div>
 
-        function limpiarFormulario() {
-            document.getElementById('form-empleado').reset();
-            document.getElementById('edit-key').value = '';
-            document.getElementById('btn-texto').textContent = 'Guardar Empleado';
-            document.querySelector('.container h1').innerHTML = '<i class="fas fa-user-plus"></i> Alta de Empleados';
-            document.getElementById('empleado-puesto').value = '';
-        }
+    <div class="form-group">
+        <label>Horas Semanales *</label>
+        <input type="number" id="empleado-horas" placeholder="Ej: 30" min="1" max="48" required>
+    </div>
 
-        function editarEmpleado(key, dni, nombre, categoria, puesto, local, estado, telefono, email, domicilio, fechaNac, fechaIngreso, observaciones) {
-            document.getElementById('empleado-dni').value = dni;
-            document.getElementById('empleado-nombre').value = nombre;
-            document.getElementById('empleado-categoria').value = categoria;
-            document.getElementById('empleado-puesto').value = puesto;
-            document.getElementById('empleado-local').value = local;
-            document.getElementById('empleado-estado').value = estado;
-            document.getElementById('empleado-telefono').value = telefono;
-            document.getElementById('empleado-email').value = email;
-            document.getElementById('empleado-domicilio').value = domicilio;
-            document.getElementById('empleado-fecha-nac').value = fechaNac;
-            document.getElementById('empleado-fecha-ingreso').value = fechaIngreso;
-            document.getElementById('empleado-observaciones').value = observaciones;
-            document.getElementById('edit-key').value = key;
-            document.getElementById('btn-texto').textContent = 'Actualizar Empleado';
-            document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Empleado';
-        }
+    <div class="form-group">
+        <label>Jornada *</label>
+        <select id="empleado-jornada" required>
+            <option value="Mañana">Mañana</option>
+            <option value="Tarde">Tarde</option>
+            <option value="Noche">Noche</option>
+            <option value="Rotativa">Rotativa</option>
+            <option value="Part-Time">Part-Time</option>
+        </select>
+    </div>
 
-        async function guardarEmpleado(e) {
-            e.preventDefault();
-            const dni = document.getElementById('empleado-dni').value.trim();
-            const nombre = document.getElementById('empleado-nombre').value.trim();
-            const categoria = document.getElementById('empleado-categoria').value;
-            const puesto = document.getElementById('empleado-puesto').value.trim();
-            const local = document.getElementById('empleado-local').value.trim();
-            const estado = document.getElementById('empleado-estado').value;
-            const key = document.getElementById('edit-key').value;
+    <div class="form-group">
+        <label>Fecha de Ingreso *</label>
+        <input type="date" id="empleado-fecha-ingreso" required>
+    </div>
 
-            if (!dni || !nombre || !categoria || !puesto || !local || !estado) {
-                showToast('⚠️ Completa los campos obligatorios', true);
-                return;
-            }
+    <div class="form-group">
+        <label>Fecha de Egreso</label>
+        <input type="date" id="empleado-fecha-egreso">
+    </div>
 
-            const empleado = {
-                dni,
-                nombre,
-                categoria,
-                puesto,
-                local,
-                estado,
-                telefono: document.getElementById('empleado-telefono').value.trim(),
-                email: document.getElementById('empleado-email').value.trim(),
-                domicilio: document.getElementById('empleado-domicilio').value.trim(),
-                fechaNac: document.getElementById('empleado-fecha-nac').value,
-                fechaIngreso: document.getElementById('empleado-fecha-ingreso').value,
-                observaciones: document.getElementById('empleado-observaciones').value.trim()
-            };
+    <div class="form-group">
+        <label>Estado *</label>
+        <select id="empleado-estado" required>
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
+            <option value="Vacaciones">Vacaciones</option>
+            <option value="Licencia">Licencia</option>
+        </select>
+    </div>
 
-            try {
-                let url = DB_EMPLEADOS;
-                let method = 'POST';
-                let body = JSON.stringify(empleado);
+    <div class="form-group">
+        <label>Responsable</label>
+        <input type="text" id="empleado-responsable" placeholder="Ej: Ana Gómez (Supervisor)">
+    </div>
 
-                if (key) {
-                    url = `https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados/${key}.json`;
-                    method = 'PUT';
-                }
+    <div class="form-group">
+        <label>Observaciones</label>
+        <textarea id="empleado-observaciones" rows="3"></textarea>
+    </div>
 
-                const res = await fetch(url, { 
-                    method, 
-                    body, 
-                    headers: { 'Content-Type': 'application/json' } 
-                });
-
-                if (!res.ok) throw new Error('Error al guardar');
-
-                showToast('✅ Empleado guardado en Firebase');
-                limpiarFormulario();
-                await cargarEmpleados();
-            } catch (err) {
-                console.error('Error:', err);
-                showToast('❌ Error al guardar', true);
-            }
-        }
-
-        async function eliminarEmpleado(key, nombre) {
-            if (!confirm(`¿Eliminar al empleado "${nombre}"?`)) return;
-
-            try {
-                const res = await fetch(`https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados/${key}.json`, {
-                    method: 'DELETE'
-                });
-
-                if (!res.ok) throw new Error('Error al eliminar');
-
-                showToast('🗑️ Empleado eliminado');
-                await cargarEmpleados();
-            } catch (err) {
-                console.error('Error:', err);
-                showToast('❌ Error al eliminar', true);
-            }
-        }
-
-        // Cargar categorías y empleados al iniciar
-        window.onload = async function () {
-            await cargarCategorias();
-            await cargarEmpleados();
-
-            // Actualizar puesto cuando cambia la categoría
-            document.getElementById('empleado-categoria').addEventListener('change', (e) => {
-                const cat = categorias.find(c => c.nombre === e.target.value);
-                document.getElementById('empleado-puesto').value = cat ? cat.puesto : '';
-            });
-
-            document.getElementById('form-empleado').addEventListener('submit', guardarEmpleado);
-        };
-    </script>
-
-    <!-- ✅ Botón flotante -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            if (document.getElementById('btn-menu-flotante')) return;
-            const btn = document.createElement('button');
-            btn.id = 'btn-menu-flotante';
-            btn.textContent = '☰ Menú';
-            btn.title = 'Volver al menú principal';
-            btn.style.cssText = `
-                position: fixed !important;
-                top: 20px !important;
-                right: 20px !important;
-                z-index: 99999 !important;
-                padding: 12px 16px !important;
-                font-size: 14px !important;
-                font-weight: bold !important;
-                color: white !important;
-                background-color: #2980b9 !important;
-                border: none !important;
-                border-radius: 6px !important;
-                box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
-                cursor: pointer !important;
-                opacity: 1 !important;
-                display: block !important;
-                transition: all 0.2s ease !important;
-            `;
-            btn.onclick = () => {
-                window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
-            };
-            document.body.appendChild(btn);
-        });
-    </script>
-</body>
-</html>
+    <button type="submit" class="btn-success">
+        <i class="fas fa-save"></i> <span id="btn-texto">Guardar Empleado</span>
+    </button>
+    <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6; margin-left:10px;">
+        Cancelar
+    </button>
+</form>
