@@ -3,156 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Novedades Mensuales</title>
-    <!-- Font Awesome -->
+    <title>Novedades del Personal</title>
+    <!-- Font Awesome sin espacios -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            background: #f4f6f9; 
-            padding: 20px; 
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f4f6f9;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
         }
-        .container { 
-            max-width: 900px; 
-            margin: 0 auto; 
-            background: white; 
-            padding: 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        h1 { 
-            color: #2c3e50; 
-            border-bottom: 2px solid #3498db; 
-            padding-bottom: 10px; 
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #27ae60;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        .form-group { 
-            margin: 15px 0; 
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
         }
-        .form-group label { 
-            display: block; 
-            margin-bottom: 5px; 
-            font-weight: 600; 
+        .filters .form-group {
+            flex: 1;
+            min-width: 200px;
+            margin: 0;
         }
-        select, input { 
-            width: 100%; 
-            padding: 10px; 
-            border: 1px solid #ddd; 
-            border-radius: 4px; 
-            box-sizing: border-box; 
+        .form-group {
+            margin: 15px 0;
         }
-        button { 
-            background: #3498db; 
-            color: white; 
-            border: none; 
-            padding: 10px 15px; 
-            border-radius: 4px; 
-            cursor: pointer; 
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
         }
-        button.btn-danger { 
-            background: #e74c3c; 
+        select, button {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
         }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 20px; 
+        select {
+            width: 100%;
         }
-        th, td { 
-            border: 1px solid #ddd; 
-            padding: 12px; 
-            text-align: left; 
+        button {
+            background: #27ae60;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 6px;
         }
-        th { 
-            background: #ecf0f1; 
+        button:hover {
+            opacity: 0.9;
         }
-        .badge { 
-            padding: 5px 10px; 
-            border-radius: 12px; 
-            font-size: 12px; 
-            color: white; 
+        .btn-warning {
+            background: #f39c12;
         }
-        .presente { background: #27ae60; }
-        .ausente { background: #e74c3c; }
-        .vacaciones { background: #3498db; }
-        .licencia { background: #f39c12; }
-        .domingo { background: #8e44ad; }
-        .feriado { background: #c0392b; }
-        .snackbar { 
-            position: fixed; 
-            bottom: 20px; 
-            right: 20px; 
-            background: #27ae60; 
-            color: white; 
-            padding: 12px 20px; 
-            border-radius: 6px; 
-            z-index: 1000; 
-            opacity: 0; 
-            transition: opacity 0.3s; 
+        .btn-danger {
+            background: #e74c3c;
         }
-        .snackbar.show { 
-            opacity: 1; 
+        .btn-export {
+            background: #3498db;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #ecf0f1;
+            font-weight: 600;
+        }
+        .summary {
+            background: #d4edda;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 4px solid #27ae60;
+        }
+        .summary strong {
+            color: #155724;
+        }
+        .snackbar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 14px 20px;
+            border-radius: 6px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .snackbar.show {
+            opacity: 1;
+        }
+        .error {
+            background: #e74c3c !important;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1><i class="fas fa-chart-line"></i> Novedades Mensuales</h1>
+        <h1><i class="fas fa-clipboard-list"></i> Novedades del Personal</h1>
 
-        <form id="form-novedades">
+        <div class="filters">
             <div class="form-group">
-                <label>Local *</label>
-                <select id="novedades-local" required>
-                    <option value="">Cargando locales...</option>
+                <label>Filtrar por Local</label>
+                <select id="filtro-local" onchange="filtrarEmpleados()">
+                    <option value="">Todos los locales</option>
                 </select>
             </div>
-
             <div class="form-group">
-                <label>Empleado *</label>
-                <select id="novedades-empleado" required>
-                    <option value="">Primero seleccione un local</option>
+                <label>Seleccionar Empleado</label>
+                <select id="emp-select" onchange="mostrarNovedades()">
+                    <option value="">-- Todos los empleados --</option>
                 </select>
             </div>
-
-            <div class="form-group">
-                <label>Mes y Año *</label>
-                <input type="month" id="novedades-mes" required>
-            </div>
-
-            <button type="submit" class="btn-success">
-                <i class="fas fa-search"></i> Generar Novedades
-            </button>
-        </form>
-
-        <div id="resumen-novedades" style="display:none; margin-top:30px;">
-            <h3>Resumen para <span id="empleado-nombre"></span></h3>
-            <p><strong>Local:</strong> <span id="local-nombre"></span></p>
-            <p><strong>Mes:</strong> <span id="mes-texto"></span></p>
-
-            <table id="tabla-novedades">
-                <thead>
-                    <tr>
-                        <th>Día</th>
-                        <th>Estado</th>
-                        <th>Tipo</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
         </div>
+
+        <button onclick="mostrarNovedades()">
+            <i class="fas fa-sync"></i> Actualizar Vista
+        </button>
+
+        <button class="btn-export" onclick="exportarAExcel()">
+            <i class="fas fa-file-excel"></i> Exportar a Excel
+        </button>
+
+        <h2><i class="fas fa-i-cursor"></i> Ausencias Registradas</h2>
+        <table id="tabla-ausencias">
+            <thead>
+                <tr>
+                    <th>Empleado</th>
+                    <th>Local</th>
+                    <th>Tipo</th>
+                    <th>Período</th>
+                    <th>Días</th>
+                    <th>Comentarios</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tbody-ausencias">
+                <tr><td colspan="7" style="text-align:center">Cargando datos...</td></tr>
+            </tbody>
+        </table>
     </div>
 
+    <!-- Snackbar -->
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase
+        // ✅ URLs de Firebase (sin espacios)
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
-        const DB_HORARIOS_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados.json';
-        const DB_FERIADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/feriados.json';
         const DB_AUSENCIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/ausencias.json';
 
         let locales = [];
         let empleados = [];
-        let feriados = [];
+        let ausencias = {};
 
         function showToast(msg, isError = false) {
             const sb = document.getElementById('snackbar');
@@ -162,174 +193,195 @@
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
-        // Cargar locales
+        // Cargar locales desde Firebase
         async function cargarLocales() {
             try {
                 const res = await fetch(DB_LOCALES);
                 const data = await res.json();
                 locales = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
-                const select = document.getElementById('novedades-local');
-                select.innerHTML = '<option value="">Selecciona un local</option>';
+                const select = document.getElementById('filtro-local');
+                select.innerHTML = '<option value="">Todos los locales</option>';
                 locales.forEach(loc => {
-                    const option = document.createElement('option');
-                    option.value = loc.nombre;
-                    option.textContent = loc.nombre;
-                    select.appendChild(option);
+                    const opt = document.createElement('option');
+                    opt.value = loc.nombre;
+                    opt.textContent = loc.nombre;
+                    select.appendChild(opt);
                 });
+                filtrarEmpleados();
             } catch (e) {
                 console.error('Error cargando locales:', e);
                 showToast('❌ Error al cargar locales', true);
             }
         }
 
-        // Cargar empleados por local
-        async function cargarEmpleadosPorLocal(local) {
+        // Cargar empleados desde Firebase
+        async function cargarEmpleados() {
             try {
                 const res = await fetch(DB_EMPLEADOS);
                 const data = await res.json();
                 empleados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
-                const select = document.getElementById('novedades-empleado');
-                select.innerHTML = '<option value="">Selecciona un empleado</option>';
-                const empleadosFiltrados = empleados.filter(emp => emp.local === local);
-                if (empleadosFiltrados.length === 0) {
-                    select.innerHTML = '<option value="">No hay empleados en este local</option>';
-                    return;
-                }
-                empleadosFiltrados.forEach(emp => {
-                    const option = document.createElement('option');
-                    option.value = emp.key;
-                    option.textContent = `${emp.nombre} (Legajo: ${emp.legajo})`;
-                    select.appendChild(option);
-                });
+                filtrarEmpleados();
             } catch (e) {
                 console.error('Error cargando empleados:', e);
                 showToast('❌ Error al cargar empleados', true);
             }
         }
 
-        // Cargar feriados
-        async function cargarFeriados() {
-            try {
-                const res = await fetch(DB_FERIADOS);
-                const data = await res.json();
-                feriados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
-            } catch (e) {
-                console.error('Error cargando feriados:', e);
-            }
-        }
-
-        // Eventos
-        document.getElementById('novedades-local').addEventListener('change', (e) => {
-            const local = e.target.value;
-            if (local) {
-                cargarEmpleadosPorLocal(local);
-            }
-        });
-
-        // Generar novedades
-        async function generarNovedades(e) {
-            e.preventDefault();
-            const local = document.getElementById('novedades-local').value;
-            const empleadoKey = document.getElementById('novedades-empleado').value;
-            const mesAnio = document.getElementById('novedades-mes').value;
-
-            if (!local || !empleadoKey || !mesAnio) {
-                showToast('⚠️ Completa todos los campos', true);
-                return;
-            }
-
-            const empleado = empleados.find(e => e.key === empleadoKey);
-            if (!empleado) return;
-
-            const [anio, mes] = mesAnio.split('-').map(Number); // mes es 0-indexed
-            const primerDia = new Date(anio, mes, 1);
-            const ultimoDia = new Date(anio, mes + 1, 0);
-            const diasDelMes = ultimoDia.getDate();
-
-            // Obtener horarios del empleado
-            let horarioEmpleado = null;
-            try {
-                const res = await fetch(DB_HORARIOS_EMPLEADOS);
-                const data = await res.json();
-                horarioEmpleado = Object.values(data).find(h => h.empleadoKey === empleadoKey);
-            } catch (e) {
-                console.error('Error cargando horarios:', e);
-            }
-
-            // Obtener ausencias
-            let ausencias = [];
+        // Cargar ausencias desde Firebase
+        async function cargarAusencias() {
             try {
                 const res = await fetch(DB_AUSENCIAS);
                 const data = await res.json();
-                ausencias = data ? Object.values(data).filter(a => a.empleadoKey === empleadoKey) : [];
+                ausencias = {};
+                if (data) {
+                    Object.values(data).forEach(aus => {
+                        const dni = aus.empleadoDNI || aus.empleadoKey;
+                        if (!ausencias[dni]) ausencias[dni] = [];
+                        ausencias[dni].push(aus);
+                    });
+                }
             } catch (e) {
                 console.error('Error cargando ausencias:', e);
+                showToast('❌ Error al cargar ausencias', true);
             }
+        }
 
-            // Generar tabla
-            const tbody = document.querySelector('#tabla-novedades tbody');
+        // Filtrar empleados por local
+        function filtrarEmpleados() {
+            const localFiltro = document.getElementById('filtro-local').value;
+            const select = document.getElementById('emp-select');
+            select.innerHTML = '<option value="">-- Todos los empleados --</option>';
+
+            const filtrados = localFiltro 
+                ? empleados.filter(e => e.local === localFiltro)
+                : empleados;
+
+            filtrados.forEach(emp => {
+                const opt = document.createElement('option');
+                opt.value = emp.dni || emp.key;
+                opt.textContent = `${emp.nombre} (${emp.puesto})`;
+                select.appendChild(opt);
+            });
+
+            mostrarNovedades();
+        }
+
+        // Calcular días entre dos fechas
+        function diasEntre(inicio, fin) {
+            const a = new Date(inicio);
+            const b = new Date(fin);
+            return Math.round((b - a) / (1000 * 60 * 60 * 24)) + 1;
+        }
+
+        // Mostrar ausencias
+        function mostrarNovedades() {
+            const localFiltro = document.getElementById('filtro-local').value;
+            const dniSeleccionado = document.getElementById('emp-select').value;
+
+            const empleadosFiltrados = localFiltro 
+                ? empleados.filter(e => e.local === localFiltro)
+                : empleados;
+
+            const empleadosAMostrar = dniSeleccionado 
+                ? empleadosFiltrados.filter(e => e.dni === dniSeleccionado)
+                : empleadosFiltrados;
+
+            const tbody = document.getElementById('tbody-ausencias');
             tbody.innerHTML = '';
 
-            let domingosTrabajados = 0;
-            let feriadosTrabajados = 0;
+            let tiene = false;
+            empleadosAMostrar.forEach(emp => {
+                const dni = emp.dni || emp.key;
+                const lista = ausencias[dni] || [];
 
-            for (let dia = 1; dia <= diasDelMes; dia++) {
-                const fecha = new Date(anio, mes, dia);
-                const diaSemana = fecha.getDay(); // 0 = Domingo
-                const fechaStr = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-                const esDomingo = diaSemana === 0;
-                const esFeriado = feriados.some(f => f.fecha === fechaStr);
+                if (lista.length === 0) return;
 
-                let estado = 'Ausente';
-                let tipo = 'Ausente';
-                let clase = 'ausente';
+                lista.forEach((a, i) => {
+                    const inicio = new Date(a.fechaInicio).toLocaleDateString();
+                    const fin = new Date(a.fechaFin).toLocaleDateString();
+                    const dias = diasEntre(a.fechaInicio, a.fechaFin);
+                    const tipoLabels = {
+                        'Vacaciones': '🏖️ Vacaciones',
+                        'Licencia': '📄 Licencia',
+                        'Enfermedad': '🤒 Enfermedad',
+                        'Otro': '📝 Otro'
+                    };
+                    const tipoLabel = tipoLabels[a.tipo] || a.tipo;
 
-                // Verificar si está de ausencia
-                const ausencia = ausencias.find(a => fechaStr >= a.fechaInicio && fechaStr <= a.fechaFin);
-                if (ausencia) {
-                    tipo = ausencia.tipo;
-                    clase = ausencia.tipo === 'Vacaciones' ? 'vacaciones' : 'licencia';
-                } else if (horarioEmpleado && horarioEmpleado.dias) {
-                    const nombreDia = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'][diaSemana];
-                    const horarioDia = horarioEmpleado.dias[nombreDia];
-                    if (horarioDia && !horarioDia.libre) {
-                        estado = 'Presente';
-                        tipo = esDomingo ? 'Domingo Trabajado' : 'Presente';
-                        clase = esDomingo ? 'domingo' : 'presente';
-                        if (esDomingo) domingosTrabajados++;
-                        if (esFeriado) feriadosTrabajados++;
-                    }
-                }
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${emp.nombre}</strong></td>
+                        <td>${emp.local}</td>
+                        <td>${tipoLabel}</td>
+                        <td>${inicio} a ${fin}</td>
+                        <td>${dias}</td>
+                        <td>${a.observaciones || '–'}</td>
+                        <td>
+                            <button class="btn-warning" onclick="editarAusencia('${a.key}')" style="padding:6px 10px;margin-right:5px;">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
+                            <button class="btn-danger" onclick="eliminarAusencia('${a.key}', '${emp.nombre}')">
+                                <i class="fas fa-trash"></i> Eliminar
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                    tiene = true;
+                });
+            });
 
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${dia}/${mes + 1}</td>
-                    <td><span class="badge ${clase}">${estado}</span></td>
-                    <td>${tipo}</td>
-                `;
-                tbody.appendChild(tr);
+            if (!tiene) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center">No hay ausencias registradas.</td></tr>`;
             }
+        }
 
-            // Mostrar resumen
-            document.getElementById('empleado-nombre').textContent = empleado.nombre;
-            document.getElementById('local-nombre').textContent = local;
-            document.getElementById('mes-texto').textContent = new Date(anio, mes, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-            document.getElementById('resumen-novedades').style.display = 'block';
+        function editarAusencia(key) {
+            localStorage.setItem('edit_ausencia_key', key);
+            window.location.href = 'gestion_ausencias.html';
+        }
 
-            // Mostrar totales (opcional: podrías agregar un resumen adicional)
-            showToast(`✅ ${domingosTrabajados} domingos y ${feriadosTrabajados} feriados trabajados`);
+        async function eliminarAusencia(key, nombre) {
+            if (!confirm(`¿Eliminar la ausencia de "${nombre}"?`)) return;
+
+            try {
+                const res = await fetch(`https://gestion-personal-c9edd-default-rtdb.firebaseio.com/ausencias/${key}.json`, {
+                    method: 'DELETE'
+                });
+
+                if (!res.ok) throw new Error('Error al eliminar');
+
+                showToast('🗑️ Ausencia eliminada');
+                await cargarAusencias();
+                mostrarNovedades();
+            } catch (err) {
+                console.error('Error:', err);
+                showToast('❌ Error al eliminar', true);
+            }
+        }
+
+        // Exportar a Excel
+        function exportarAExcel() {
+            const tabla = document.getElementById('tabla-ausencias');
+            if (!tabla || tabla.rows.length <= 1) {
+                showToast('⚠️ No hay datos para exportar', true);
+                return;
+            }
+            const wb = XLSX.utils.table_to_sheet(tabla, { sheet: "Novedades" });
+            const wbout = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wbout, wb, "Novedades");
+            XLSX.writeFile(wbout, `Novedades_${new Date().toISOString().slice(0,10)}.xlsx`);
+            showToast('✅ Exportado a Excel');
         }
 
         // Inicializar
         window.onload = async function () {
             await cargarLocales();
-            await cargarFeriados();
-
-            document.getElementById('form-novedades').addEventListener('submit', generarNovedades);
+            await cargarEmpleados();
+            await cargarAusencias();
         };
     </script>
 
-    <!-- ✅ Botón flotante -->
+    <!-- ✅ Botón flotante sin espacios -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
