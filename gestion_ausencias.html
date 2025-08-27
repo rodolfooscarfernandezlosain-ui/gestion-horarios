@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Ausencias</title>
-    <!-- Font Awesome -->
+    <!-- Font Awesome sin espacios -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
@@ -152,7 +152,7 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase
+        // ✅ URLs de Firebase (sin espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_AUSENCIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/ausencias.json';
 
@@ -168,19 +168,24 @@
         async function cargarEmpleados() {
             try {
                 const res = await fetch(DB_EMPLEADOS);
+                if (!res.ok) throw new Error('Error en la respuesta de red');
                 const data = await res.json();
                 const empleados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
                 const select = document.getElementById('ausencia-empleado');
                 select.innerHTML = '<option value="">Selecciona un empleado</option>';
+                if (empleados.length === 0) {
+                    select.innerHTML = '<option value="">No hay empleados registrados</option>';
+                    return;
+                }
                 empleados.forEach(emp => {
                     const option = document.createElement('option');
                     option.value = emp.key;
                     option.textContent = `${emp.nombre} (${emp.legajo})`;
-                    option.dataset.legajo = emp.legajo;
                     select.appendChild(option);
                 });
             } catch (e) {
                 console.error('Error cargando empleados:', e);
+                document.getElementById('ausencia-empleado').innerHTML = '<option value="">Error al cargar empleados</option>';
                 showToast('❌ Error al cargar empleados', true);
             }
         }
@@ -189,6 +194,7 @@
         async function cargarAusencias() {
             try {
                 const res = await fetch(DB_AUSENCIAS);
+                if (!res.ok) throw new Error('Error en la respuesta de red');
                 const data = await res.json();
                 const ausencias = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
 
@@ -222,7 +228,7 @@
                 });
             } catch (e) {
                 console.error('Error cargando ausencias:', e);
-                showToast('❌ Error al cargar', true);
+                showToast('❌ Error al cargar ausencias', true);
             }
         }
 
@@ -257,7 +263,7 @@
         async function guardarAusencia(e) {
             e.preventDefault();
             const empleadoKey = document.getElementById('ausencia-empleado').value;
-            const empleadoNombre = document.getElementById('ausencia-empleado').options[document.getElementById('ausencia-empleado').selectedIndex].text.split(' (')[0];
+            const empleadoNombre = document.getElementById('ausencia-empleado').options[document.getElementById('ausencia-empleado').selectedIndex]?.text.split(' (')[0];
             const tipo = document.getElementById('ausencia-tipo').value;
             const fechaInicio = document.getElementById('ausencia-fecha-inicio').value;
             const fechaFin = document.getElementById('ausencia-fecha-fin').value;
@@ -284,7 +290,7 @@
                 let body = JSON.stringify(ausencia);
 
                 if (key) {
-                    url = `${DB_AUSENCIAS.replace('.json', `/${key}.json`)}`;
+                    url = `https://gestion-personal-c9edd-default-rtdb.firebaseio.com/ausencias/${key}.json`;
                     method = 'PUT';
                 }
 
@@ -309,7 +315,7 @@
             if (!confirm(`¿Eliminar la ausencia de "${nombre}"?`)) return;
 
             try {
-                const res = await fetch(`${DB_AUSENCIAS.replace('.json', `/${key}.json`)}`, {
+                const res = await fetch(`https://gestion-personal-c9edd-default-rtdb.firebaseio.com/ausencias/${key}.json`, {
                     method: 'DELETE'
                 });
 
@@ -327,12 +333,11 @@
         window.onload = async function () {
             await cargarEmpleados();
             await cargarAusencias();
-
             document.getElementById('form-ausencia').addEventListener('submit', guardarAusencia);
         };
     </script>
 
-    <!-- ✅ Botón flotante -->
+    <!-- ✅ Botón flotante sin espacios -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
