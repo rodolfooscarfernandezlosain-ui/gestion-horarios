@@ -21,6 +21,7 @@
         .btn { background: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
         .btn-danger { background: #e74c3c; }
         .btn-warning { background: #f39c12; }
+        .btn-sm { padding: 6px 10px; font-size: 14px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #ecf0f1; }
@@ -119,6 +120,7 @@
                             <input type="time" class="pico-inicio">
                             <input type="time" class="pico-fin">
                         </div>
+                        <button type="button" class="btn btn-sm" onclick="agregarPuesto(this.closest('.day-group'), '.puestos-container')">+ Agregar Puesto</button>
                         <div class="puestos-container"></div>
                     </div>
 
@@ -128,6 +130,7 @@
                             <input type="time" class="pico-extra-inicio">
                             <input type="time" class="pico-extra-fin">
                         </div>
+                        <button type="button" class="btn btn-sm" onclick="agregarPuesto(this.closest('.day-group'), '.puestos-extra-container')">+ Agregar Puesto</button>
                         <div class="puestos-extra-container"></div>
                     </div>
                 </div>
@@ -143,18 +146,16 @@
 
             await cargarCategorias();
 
+            // Eventos
             document.querySelectorAll('.chk-continuo').forEach(checkbox => {
                 checkbox.addEventListener('change', function () {
-                    const group = this.closest('.day-group');
-                    group.querySelector('.pico-simple').style.display = this.checked ? 'block' : 'none';
-                    actualizarPuestos(group, '.puestos-container');
+                    this.closest('.day-group').querySelector('.pico-simple').style.display = this.checked ? 'block' : 'none';
                 });
             });
 
             document.querySelectorAll('.chk-doble').forEach(checkbox => {
                 checkbox.addEventListener('change', function () {
-                    const group = this.closest('.day-group');
-                    group.querySelector('.doble-horario').style.display = this.checked ? 'flex' : 'none';
+                    this.closest('.day-group').querySelector('.doble-horario').style.display = this.checked ? 'flex' : 'none';
                 });
             });
 
@@ -166,29 +167,27 @@
                     if (inicio && fin) {
                         const horas = (new Date(`2020-01-01T${fin}`) - new Date(`2020-01-01T${inicio}`)) / 3600000;
                         group.closest('.day-group').querySelector('.pico-extra').style.display = horas > 14 ? 'block' : 'none';
-                        actualizarPuestos(group.closest('.day-group'), '.puestos-extra-container');
                     }
                 });
             });
         }
 
-        // Actualizar puestos
-        function actualizarPuestos(group, selector) {
+        // ✅ Agregar un puesto manualmente
+        function agregarPuesto(group, selector) {
             const container = group.querySelector(selector);
-            if (!container) return;
-            container.innerHTML = '';
-            categorias.forEach(cat => {
-                const div = document.createElement('div');
-                div.innerHTML = `
-                    <div style="display:flex; gap:10px; margin:5px 0;">
-                        <select style="flex:2;">
-                            <option value="${cat.nombre}">${cat.puesto}</option>
-                        </select>
-                        <input type="number" placeholder="Cantidad" min="1" style="flex:1;" value="1">
-                    </div>
-                `;
-                container.appendChild(div);
-            });
+            const div = document.createElement('div');
+            div.className = 'puesto-item';
+            div.innerHTML = `
+                <div style="display:flex; gap:10px; margin:5px 0;">
+                    <select style="flex:2;" required>
+                        <option value="">Selecciona un puesto</option>
+                        ${categorias.map(cat => `<option value="${cat.nombre}">${cat.puesto}</option>`).join('')}
+                    </select>
+                    <input type="number" placeholder="Cantidad" min="1" style="flex:1;" value="1" required>
+                    <button type="button" class="btn-danger btn-sm" onclick="this.closest('.puesto-item').remove()">✖</button>
+                </div>
+            `;
+            container.appendChild(div);
         }
 
         // Guardar horario
@@ -202,14 +201,14 @@
 
             let valido = true;
 
-            dias.forEach(dia => {
+            for (const dia of dias) {
                 const group = document.querySelector(`[data-dia="${dia}"]`);
                 const apertura = group.querySelector('.hora-apertura').value;
                 const cierre = group.querySelector('.hora-cierre').value;
 
                 if (!apertura || !cierre) {
                     valido = false;
-                    return;
+                    continue;
                 }
 
                 data[dia] = {
@@ -223,11 +222,17 @@
                 const puestosCont = group.querySelector('.puestos-container');
                 if (puestosCont && data[dia].continuo) {
                     const puestos = [];
-                    puestosCont.querySelectorAll('select').forEach((sel, i) => {
-                        const input = puestosCont.querySelectorAll('input')[i];
+                    puestosCont.querySelectorAll('.puesto-item').forEach(item => {
+                        const select = item.querySelector('select');
+                        const input = item.querySelector('input');
+                        if (!select.value || !input.value) {
+                            valido = false;
+                            return;
+                        }
+                        const categoria = categorias.find(c => c.nombre === select.value);
                         puestos.push({
-                            puesto: sel.value,
-                            puestoNombre: sel.options[sel.selectedIndex].text,
+                            id: select.value,
+                            puesto: categoria ? categoria.puesto : select.value,
                             cantidad: input.value
                         });
                     });
@@ -238,17 +243,23 @@
                 const puestosExtraCont = group.querySelector('.puestos-extra-container');
                 if (puestosExtraCont && group.querySelector('.pico-extra').style.display === 'block') {
                     const puestosExtra = [];
-                    puestosExtraCont.querySelectorAll('select').forEach((sel, i) => {
-                        const input = puestosExtraCont.querySelectorAll('input')[i];
+                    puestosExtraCont.querySelectorAll('.puesto-item').forEach(item => {
+                        const select = item.querySelector('select');
+                        const input = item.querySelector('input');
+                        if (!select.value || !input.value) {
+                            valido = false;
+                            return;
+                        }
+                        const categoria = categorias.find(c => c.nombre === select.value);
                         puestosExtra.push({
-                            puesto: sel.value,
-                            puestoNombre: sel.options[sel.selectedIndex].text,
+                            id: select.value,
+                            puesto: categoria ? categoria.puesto : select.value,
                             cantidad: input.value
                         });
                     });
                     data[dia].puestos_pico_extra = puestosExtra;
                 }
-            });
+            }
 
             if (!valido) {
                 showToast('⚠️ Completa todos los campos', true);
