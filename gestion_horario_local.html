@@ -4,115 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Horarios por Local</title>
-    <!-- ✅ Font Awesome sin espacios -->
+    <!-- Font Awesome sin espacios -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            background: #f4f6f9; 
-            padding: 20px; 
-        }
-        .container { 
-            max-width: 900px; 
-            margin: 0 auto; 
-            background: white; 
-            padding: 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-        }
-        h1 { 
-            color: #2c3e50; 
-            border-bottom: 2px solid #3498db; 
-            padding-bottom: 10px; 
-        }
-        .form-group { 
-            margin: 15px 0; 
-        }
-        .form-group label { 
-            display: block; 
-            margin-bottom: 5px; 
-            font-weight: 600; 
-        }
-        input, select { 
-            width: 100%; 
-            padding: 8px; 
-            border: 1px solid #ddd; 
-            border-radius: 4px; 
-            box-sizing: border-box; 
-        }
-        .day-group {
-            margin: 15px 0;
-            padding: 15px;
-            background: #f9f9f9;
-            border-radius: 6px;
-            border: 1px solid #eee;
-        }
-        .toggle-row {
-            display: flex;
-            gap: 10px;
-            margin: 5px 0;
-        }
-        .time-row {
-            display: flex;
-            gap: 10px;
-            margin: 5px 0;
-            align-items: center;
-        }
-        .time-row input, .time-row select {
-            flex: 1;
-        }
-        .pico-group {
-            margin: 10px 0;
-            padding: 10px;
-            background: #e8f4fc;
-            border-radius: 6px;
-            border: 1px dashed #3498db;
-        }
-        .btn {
-            background: #3498db; 
-            color: white; 
-            border: none; 
-            padding: 10px 15px; 
-            border-radius: 4px; 
-            cursor: pointer; 
-        }
-        .btn-danger { 
-            background: #e74c3c; 
-        }
-        .btn-warning { 
-            background: #f39c12; 
-        }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 20px; 
-        }
-        th, td { 
-            border: 1px solid #ddd; 
-            padding: 12px; 
-            text-align: left; 
-        }
-        th { 
-            background: #ecf0f1; 
-        }
-        .snackbar { 
-            position: fixed; 
-            bottom: 20px; 
-            right: 20px; 
-            background: #27ae60; 
-            color: white; 
-            padding: 12px 20px; 
-            border-radius: 6px; 
-            z-index: 1000; 
-            opacity: 0; 
-            transition: opacity 0.3s; 
-        }
-        .snackbar.show { 
-            opacity: 1; 
-        }
-        .error { 
-            background: #e74c3c !important; 
-        }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .form-group { margin: 15px 0; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .day-group { margin: 15px 0; padding: 15px; background: #f9f9f9; border-radius: 6px; border: 1px solid #eee; }
+        .toggle-row { display: flex; gap: 10px; margin: 5px 0; }
+        .time-row { display: flex; gap: 10px; margin: 5px 0; align-items: center; }
+        .time-row input, .time-row select { flex: 1; }
+        .pico-group { margin: 10px 0; padding: 10px; background: #e8f4fc; border-radius: 6px; border: 1px dashed #3498db; }
+        .btn { background: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+        .btn-danger { background: #e74c3c; }
+        .btn-warning { background: #f39c12; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #ecf0f1; }
+        .snackbar { position: fixed; bottom: 20px; right: 20px; background: #27ae60; color: white; padding: 12px 20px; border-radius: 6px; z-index: 1000; opacity: 0; transition: opacity 0.3s; }
+        .snackbar.show { opacity: 1; }
+        .error { background: #e74c3c !important; }
     </style>
 </head>
 <body>
@@ -127,9 +41,7 @@
                 <input type="text" id="local-nombre" placeholder="Ej: Sucursal Centro" required>
             </div>
 
-            <div id="dias-container">
-                <!-- Día dinámico será generado por JS -->
-            </div>
+            <div id="dias-container"></div>
 
             <button type="submit" class="btn">
                 <i class="fas fa-save"></i> <span id="btn-texto">Guardar Configuración</span>
@@ -144,12 +56,6 @@
                 <tr>
                     <th>Local</th>
                     <th>Lunes</th>
-                    <th>Martes</th>
-                    <th>Miércoles</th>
-                    <th>Jueves</th>
-                    <th>Viernes</th>
-                    <th>Sábado</th>
-                    <th>Domingo</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -160,7 +66,7 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase sin espacios
+        // ✅ URLs de Firebase (sin espacios)
         const DB_URL = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_locales.json';
         const DB_CATEGORIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/categorias.json';
 
@@ -174,7 +80,7 @@
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
-        // Cargar categorías (puestos)
+        // Cargar categorías
         async function cargarCategorias() {
             try {
                 const res = await fetch(DB_CATEGORIAS);
@@ -202,13 +108,11 @@
                         <input type="time" class="hora-cierre" required>
                     </div>
 
-                    <!-- Turno Doble -->
                     <div class="time-row doble-horario" style="display:none;">
                         <input type="time" class="hora-apertura2">
                         <input type="time" class="hora-cierre2">
                     </div>
 
-                    <!-- Horario Pico (Continuo) -->
                     <div class="pico-group pico-simple" style="display:none;">
                         <h4>Horario Pico (Mayor Venta)</h4>
                         <div class="time-row">
@@ -218,7 +122,6 @@
                         <div class="puestos-container"></div>
                     </div>
 
-                    <!-- Segundo Horario Pico (si >14h) -->
                     <div class="pico-group pico-extra" style="display:none;">
                         <h4>Segundo Horario Pico (Mayor Venta)</h4>
                         <div class="time-row">
@@ -232,21 +135,19 @@
         }
 
         // Inicializar días
-        function inicializarDias() {
+        async function inicializarDias() {
             const container = document.getElementById('dias-container');
-            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            const dias = ['lunes'];
             container.innerHTML = '';
-            dias.forEach(dia => {
-                container.innerHTML += generarDiaHTML(dia);
-            });
+            dias.forEach(dia => container.innerHTML += generarDiaHTML(dia));
 
-            // Agregar eventos
+            await cargarCategorias();
+
             document.querySelectorAll('.chk-continuo').forEach(checkbox => {
                 checkbox.addEventListener('change', function () {
                     const group = this.closest('.day-group');
                     group.querySelector('.pico-simple').style.display = this.checked ? 'block' : 'none';
-                    actualizarPuestosEnGrupo(group, '.puestos-container');
-                    if (!this.checked) group.querySelector('.pico-extra').style.display = 'none';
+                    actualizarPuestos(group, '.puestos-container');
                 });
             });
 
@@ -257,46 +158,30 @@
                 });
             });
 
-            // Actualizar puestos al cambiar continuidad
-            document.querySelectorAll('.day-group').forEach(group => {
-                group.querySelector('.pico-simple').addEventListener('input', () => {
-                    const horas = calcularHorasPico(group);
-                    if (horas > 14) {
-                        group.querySelector('.pico-extra').style.display = 'block';
-                        actualizarPuestosEnGrupo(group, '.puestos-extra-container');
-                    } else {
-                        group.querySelector('.pico-extra').style.display = 'none';
+            // Detectar si supera 14h
+            document.querySelectorAll('.pico-simple').forEach(group => {
+                group.addEventListener('input', () => {
+                    const inicio = group.querySelector('.pico-inicio').value;
+                    const fin = group.querySelector('.pico-fin').value;
+                    if (inicio && fin) {
+                        const horas = (new Date(`2020-01-01T${fin}`) - new Date(`2020-01-01T${inicio}`)) / 3600000;
+                        group.closest('.day-group').querySelector('.pico-extra').style.display = horas > 14 ? 'block' : 'none';
+                        actualizarPuestos(group.closest('.day-group'), '.puestos-extra-container');
                     }
                 });
             });
         }
 
-        // Calcular horas del horario pico
-        function calcularHorasPico(group) {
-            const inicio = group.querySelector('.pico-inicio').value;
-            const fin = group.querySelector('.pico-fin').value;
-            if (!inicio || !fin) return 0;
-            const inicioMin = timeToMinutes(inicio);
-            const finMin = timeToMinutes(fin);
-            return (finMin - inicioMin) / 60;
-        }
-
-        function timeToMinutes(time) {
-            const [h, m] = time.split(':').map(Number);
-            return h * 60 + m;
-        }
-
-        // Actualizar puestos en un contenedor
-        function actualizarPuestosEnGrupo(group, selector) {
+        // Actualizar puestos
+        function actualizarPuestos(group, selector) {
             const container = group.querySelector(selector);
+            if (!container) return;
             container.innerHTML = '';
             categorias.forEach(cat => {
                 const div = document.createElement('div');
                 div.innerHTML = `
                     <div style="display:flex; gap:10px; margin:5px 0;">
-                        <select style="flex:2;">
-                            <option value="${cat.nombre}">${cat.puesto}</option>
-                        </select>
+                        <select style="flex:2;">${cat.puesto}</option></select>
                         <input type="number" placeholder="Cantidad" min="1" style="flex:1;" value="1">
                     </div>
                 `;
@@ -304,208 +189,97 @@
             });
         }
 
-        // Cargar horarios guardados
-        async function cargarHorarios() {
-            await cargarCategorias();
-            inicializarDias();
+        // Guardar horario
+        async function guardarHorario(e) {
+            e.preventDefault();
+            const local = document.getElementById('local-nombre').value.trim();
+            if (!local) return showToast('⚠️ Nombre del local', true);
+
+            const dia = document.querySelector('.day-group');
+            const apertura = dia.querySelector('.hora-apertura').value;
+            const cierre = dia.querySelector('.hora-cierre').value;
+
+            const data = {
+                local,
+                lunes: {
+                    apertura, cierre,
+                    doble: dia.querySelector('.chk-doble').checked,
+                    continuo: dia.querySelector('.chk-continuo').checked
+                }
+            };
+
+            // Guardar puestos del primer pico
+            const puestos = [];
+            const puestosCont = dia.querySelector('.puestos-container');
+            if (puestosCont) {
+                puestosCont.querySelectorAll('select').forEach((sel, i) => {
+                    const input = puestosCont.querySelectorAll('input')[i];
+                    puestos.push({ puesto: sel.value, cantidad: input.value });
+                });
+                data.lunes.puestos_pico = puestos;
+            }
 
             try {
-                const res = await fetch(DB_URL);
-                const data = await res.json();
-                const horarios = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
-
-                const tbody = document.querySelector('#tabla-horarios tbody');
-                tbody.innerHTML = '';
-
-                if (horarios.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center">No hay configuraciones</td></tr>`;
-                    return;
-                }
-
-                horarios.forEach(horario => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><strong>${horario.local}</strong></td>
-                        <td>${formatoDia(horario.lunes)}</td>
-                        <td>${formatoDia(horario.martes)}</td>
-                        <td>${formatoDia(horario.miercoles)}</td>
-                        <td>${formatoDia(horario.jueves)}</td>
-                        <td>${formatoDia(horario.viernes)}</td>
-                        <td>${formatoDia(horario.sabado)}</td>
-                        <td>${formatoDia(horario.domingo)}</td>
-                        <td style="text-align:center;">
-                            <button class="btn btn-warning" onclick="editarHorario('${horario.key}', '${horario.local}')">Editar</button>
-                            <button class="btn btn-danger" onclick="eliminarHorario('${horario.key}', '${horario.local}')">Eliminar</button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
+                const res = await fetch(DB_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(data),
+                    headers: { 'Content-Type': 'application/json' }
                 });
-            } catch (e) {
-                console.error('Error cargando horarios:', e);
-                showToast('❌ Error al cargar horarios', true);
+
+                if (res.ok) {
+                    showToast('✅ Guardado');
+                    await cargarHorarios();
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('❌ Error', true);
             }
         }
 
-        function formatoDia(dia) {
-            if (!dia) return 'Cerrado';
-            return `${dia.apertura}-${dia.cierre}`;
+        // Cargar horarios
+        async function cargarHorarios() {
+            try {
+                const res = await fetch(DB_URL);
+                const data = await res.json();
+                const horarios = data ? Object.entries(data).map(([k,v]) => ({k, ...v })) : [];
+                const tbody = document.querySelector('#tabla-horarios tbody');
+                tbody.innerHTML = horarios.length ? 
+                    horarios.map(h => `<tr><td>${h.local}</td><td>Lunes</td><td><button onclick="eliminar('${h.k}')">Eliminar</button></td></tr>`).join('') :
+                    '<tr><td colspan="3">No hay datos</td></tr>';
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function eliminar(key) {
+            if (!confirm('¿Eliminar?')) return;
+            await fetch(`${DB_URL.replace('.json', `/${key}.json`)}`, { method: 'DELETE' });
+            await cargarHorarios();
         }
 
         function limpiarFormulario() {
             document.getElementById('form-horario').reset();
             document.getElementById('edit-key').value = '';
-            document.getElementById('btn-texto').textContent = 'Guardar Configuración';
-            document.querySelector('.container h1').innerHTML = '<i class="fas fa-clock"></i> Configuración de Horarios por Local';
+            document.getElementById('btn-texto').textContent = 'Guardar';
             inicializarDias();
         }
 
-        function editarHorario(key, local) {
-            // TODO: Implementar carga de datos
-            limpiarFormulario();
-            document.getElementById('local-nombre').value = local;
-            document.getElementById('edit-key').value = key;
-            document.getElementById('btn-texto').textContent = 'Actualizar Configuración';
-            document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Horarios';
-        }
-
-        async function guardarHorario(e) {
-            e.preventDefault();
-            const local = document.getElementById('local-nombre').value.trim();
-            const key = document.getElementById('edit-key').value;
-
-            if (!local) {
-                showToast('⚠️ Ingresa el nombre del local', true);
-                return;
-            }
-
-            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-            const horario = { local };
-
-            let valido = true;
-
-            dias.forEach(dia => {
-                const group = document.querySelector(`[data-dia="${dia}"]`);
-                const apertura = group.querySelector('.hora-apertura').value;
-                const cierre = group.querySelector('.hora-cierre').value;
-                const esContinuo = group.querySelector('.chk-continuo').checked;
-                const esDoble = group.querySelector('.chk-doble').checked;
-
-                if (!apertura || !cierre) {
-                    valido = false;
-                    return;
-                }
-
-                const diaData = {
-                    apertura,
-                    cierre,
-                    doble: esDoble,
-                    continuo: esContinuo
-                };
-
-                if (esDoble) {
-                    const apertura2 = group.querySelector('.hora-apertura2').value;
-                    const cierre2 = group.querySelector('.hora-cierre2').value;
-                    if (!apertura2 || !cierre2) valido = false;
-                    diaData.apertura2 = apertura2;
-                    diaData.cierre2 = cierre2;
-                }
-
-                if (esContinuo) {
-                    const picoInicio = group.querySelector('.pico-inicio').value;
-                    const picoFin = group.querySelector('.pico-fin').value;
-                    if (!picoInicio || !picoFin) valido = false;
-                    diaData.pico = { inicio: picoInicio, fin: picoFin };
-                }
-
-                horario[dia] = diaData;
-            });
-
-            if (!valido) {
-                showToast('⚠️ Completa todos los campos', true);
-                return;
-            }
-
-            try {
-                let url = DB_URL;
-                let method = 'POST';
-                let body = JSON.stringify(horario);
-
-                if (key) {
-                    url = `https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_locales/${key}.json`;
-                    method = 'PUT';
-                }
-
-                const res = await fetch(url, { 
-                    method, 
-                    body, 
-                    headers: { 'Content-Type': 'application/json' } 
-                });
-
-                if (!res.ok) throw new Error('Error al guardar');
-
-                showToast('✅ Configuración guardada');
-                limpiarFormulario();
-                await cargarHorarios();
-            } catch (err) {
-                console.error('Error:', err);
-                showToast('❌ Error al guardar', true);
-            }
-        }
-
-        async function eliminarHorario(key, local) {
-            if (!confirm(`¿Eliminar la configuración de "${local}"?`)) return;
-
-            try {
-                const res = await fetch(`https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_locales/${key}.json`, {
-                    method: 'DELETE'
-                });
-
-                if (!res.ok) throw new Error('Error al eliminar');
-
-                showToast('🗑️ Configuración eliminada');
-                await cargarHorarios();
-            } catch (err) {
-                console.error('Error:', err);
-                showToast('❌ Error al eliminar', true);
-            }
-        }
-
         // Inicializar
-        window.onload = async function () {
+        window.onload = async () => {
             await cargarHorarios();
+            await inicializarDias();
             document.getElementById('form-horario').addEventListener('submit', guardarHorario);
         };
     </script>
 
-    <!-- ✅ Botón flotante sin espacios -->
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('btn-menu-flotante')) return;
             const btn = document.createElement('button');
             btn.id = 'btn-menu-flotante';
             btn.textContent = '☰ Menú';
-            btn.title = 'Volver al menú principal';
-            btn.style.cssText = `
-                position: fixed !important;
-                top: 20px !important;
-                right: 20px !important;
-                z-index: 99999 !important;
-                padding: 12px 16px !important;
-                font-size: 14px !important;
-                font-weight: bold !important;
-                color: white !important;
-                background-color: #2980b9 !important;
-                border: none !important;
-                border-radius: 6px !important;
-                box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
-                cursor: pointer !important;
-                opacity: 1 !important;
-                display: block !important;
-                transition: all 0.2s ease !important;
-            `;
-            btn.onclick = () => {
-                window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
-            };
+            btn.onclick = () => window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
+            btn.style.cssText = 'position:fixed;top:20px;right:20px;z-index:999;padding:12px;background:#2980b9;color:white;border:none;border-radius:6px;cursor:pointer;';
             document.body.appendChild(btn);
         });
     </script>
