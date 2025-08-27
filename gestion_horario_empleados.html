@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Horarios por Empleado</title>
-    <!-- Font Awesome -->
+    <!-- Font Awesome sin espacios -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
@@ -115,7 +115,7 @@
             <div class="form-group">
                 <label>Empleado *</label>
                 <select id="empleado-select" required>
-                    <option value="">Cargando empleados...</option>
+                    <option value="">Selecciona un empleado</option>
                 </select>
             </div>
 
@@ -147,7 +147,7 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase
+        // ✅ URLs de Firebase (sin espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_HORARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados.json';
 
@@ -286,7 +286,8 @@
 
                 const dias = horario.dias;
                 Object.keys(dias).forEach(dia => {
-                    const group = document.querySelector(`.day-group h3:contains('${dia.charAt(0).toUpperCase()}')`).closest('.day-group');
+                    const group = document.querySelectorAll('.day-group')[['lunes','martes','miercoles','jueves','viernes','sabado','domingo'].indexOf(dia)];
+                    if (!group) return;
                     const diaData = dias[dia];
                     if (diaData.libre) {
                         group.querySelector('.chk-libre').checked = true;
@@ -412,7 +413,7 @@
         };
     </script>
 
-    <!-- ✅ Botón flotante -->
+    <!-- ✅ Botón flotante sin espacios -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
