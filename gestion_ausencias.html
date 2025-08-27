@@ -4,202 +4,158 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Ausencias</title>
-    <!-- ✅ Corregido: sin espacios extra -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f4f6f9;
-            color: #333;
-            line-height: 1.6;
-            padding: 20px;
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #f4f6f9; 
+            padding: 20px; 
         }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
         }
-        h1, h2 {
-            color: #2c3e50;
-            border-bottom: 2px solid #e67e22;
-            padding-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        h1 { 
+            color: #2c3e50; 
+            border-bottom: 2px solid #3498db; 
+            padding-bottom: 10px; 
         }
-        h1 {
-            border-bottom: 2px solid #e67e22;
+        .form-group { 
+            margin: 15px 0; 
         }
-        .form-group {
-            margin: 15px 0;
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: 600; 
         }
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #2c3e50;
+        input, select, textarea { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
         }
-        select, input, button {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 1rem;
-            width: 100%;
-            box-sizing: border-box;
+        button { 
+            background: #3498db; 
+            color: white; 
+            border: none; 
+            padding: 10px 15px; 
+            border-radius: 4px; 
+            cursor: pointer; 
         }
-        button {
-            background: #e67e22;
-            color: white;
-            border: none;
-            cursor: pointer;
-            margin-top: 10px;
+        button.btn-danger { 
+            background: #e74c3c; 
         }
-        button:hover {
-            opacity: 0.9;
+        button.btn-warning { 
+            background: #f39c12; 
         }
-        .btn {
-            padding: 12px 20px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
         }
-        .btn-success {
-            background: #27ae60;
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: left; 
         }
-        .btn-warning {
-            background: #f39c12;
+        th { 
+            background: #ecf0f1; 
         }
-        .btn-danger {
-            background: #c0392b;
+        .snackbar { 
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px; 
+            background: #27ae60; 
+            color: white; 
+            padding: 12px 20px; 
+            border-radius: 6px; 
+            z-index: 1000; 
+            opacity: 0; 
+            transition: opacity 0.3s; 
         }
-        .ausencia-item {
-            background: #f8f9fa;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 8px;
-            border-left: 5px solid #e67e22;
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 10px;
-            align-items: center;
+        .snackbar.show { 
+            opacity: 1; 
         }
-        .ausencia-header {
-            font-weight: bold;
-            color: #d35400;
-        }
-        .ausencia-info {
-            font-size: 0.9rem;
-            color: #555;
-            margin: 4px 0;
-        }
-        .snackbar {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #27ae60;
-            color: white;
-            padding: 14px 20px;
-            border-radius: 6px;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .snackbar.show {
-            opacity: 1;
-        }
-        .error {
-            background: #e74c3c !important;
-        }
-        .no-data {
-            text-align: center;
-            padding: 20px;
-            color: #7f8c8d;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: left;
-        }
-        th {
-            background: #ecf0f1;
+        .error { 
+            background: #e74c3c !important; 
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1><i class="fas fa-i-cursor"></i> Gestión de Ausencias</h1>
+        <h1><i class="fas fa-calendar-times"></i> Gestión de Ausencias</h1>
 
-        <div class="form-group">
-            <label>Seleccionar Empleado</label>
-            <select id="emp-select" onchange="cargarAusencias()">
-                <option value="">-- Cargando empleados --</option>
-            </select>
-        </div>
+        <form id="form-ausencia">
+            <input type="hidden" id="edit-key" value="">
 
-        <h2><span id="form-title">Registrar Nueva Ausencia</span></h2>
-        <div class="form-group">
-            <label>Tipo de Ausencia</label>
-            <select id="tipo-ausencia">
-                <option value="vacaciones">Vacaciones</option>
-                <option value="enfermedad">Licencia por Enfermedad</option>
-                <option value="maternidad">Licencia por Maternidad/Paternidad</option>
-                <option value="otros">Otros</option>
-            </select>
-        </div>
+            <div class="form-group">
+                <label>Empleado *</label>
+                <select id="ausencia-empleado" required>
+                    <option value="">Cargando empleados...</option>
+                </select>
+            </div>
 
-        <div class="form-group">
-            <label>Fecha de Inicio</label>
-            <input type="date" id="inicio-ausencia">
-        </div>
-        <div class="form-group">
-            <label>Fecha de Fin</label>
-            <input type="date" id="fin-ausencia">
-        </div>
+            <div class="form-group">
+                <label>Tipo de Ausencia *</label>
+                <select id="ausencia-tipo" required>
+                    <option value="">Selecciona un tipo</option>
+                    <option value="Vacaciones">Vacaciones</option>
+                    <option value="Licencia">Licencia</option>
+                    <option value="Enfermedad">Enfermedad</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </div>
 
-        <div class="form-group">
-            <label>Comentarios (opcional)</label>
-            <input type="text" id="comentarios-ausencia" placeholder="Motivo, médico, etc.">
-        </div>
+            <div class="form-group">
+                <label>Fecha de Inicio *</label>
+                <input type="date" id="ausencia-fecha-inicio" required>
+            </div>
 
-        <input type="hidden" id="edit-index" value="">
-        <input type="hidden" id="edit-dni" value="">
+            <div class="form-group">
+                <label>Fecha de Fin *</label>
+                <input type="date" id="ausencia-fecha-fin" required>
+            </div>
 
-        <button class="btn btn-success" onclick="guardarAusencia()">
-            <i class="fas fa-save"></i> <span id="btn-texto">Registrar Ausencia</span>
-        </button>
-        <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6; margin-left:10px;">
-            Cancelar
-        </button>
+            <div class="form-group">
+                <label>Observaciones</label>
+                <textarea id="ausencia-observaciones" rows="3"></textarea>
+            </div>
 
-        <h2><i class="fas fa-list"></i> Ausencias Registradas</h2>
+            <button type="submit" class="btn-success">
+                <i class="fas fa-save"></i> <span id="btn-texto">Guardar Ausencia</span>
+            </button>
+            <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6; margin-left:10px;">
+                Cancelar
+            </button>
+        </form>
+
         <table id="tabla-ausencias">
             <thead>
                 <tr>
+                    <th>Empleado</th>
                     <th>Tipo</th>
                     <th>Período</th>
-                    <th>Días</th>
-                    <th>Comentarios</th>
+                    <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
-            <tbody id="tbody-ausencias">
-                <tr><td colspan="5" style="text-align:center">Selecciona un empleado.</td></tr>
-            </tbody>
+            <tbody></tbody>
         </table>
     </div>
 
-    <!-- Snackbar -->
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
+        // ✅ URLs de Firebase
+        const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
+        const DB_AUSENCIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/ausencias.json';
+
         function showToast(msg, isError = false) {
             const sb = document.getElementById('snackbar');
             sb.textContent = msg;
@@ -208,231 +164,177 @@
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
-        function limpiarFormulario() {
-            document.getElementById('tipo-ausencia').value = 'vacaciones';
-            document.getElementById('inicio-ausencia').value = '';
-            document.getElementById('fin-ausencia').value = '';
-            document.getElementById('comentarios-ausencia').value = '';
-            document.getElementById('edit-index').value = '';
-            document.getElementById('edit-dni').value = '';
-            document.getElementById('btn-texto').textContent = 'Registrar Ausencia';
-            document.getElementById('form-title').textContent = 'Registrar Nueva Ausencia';
+        // Cargar empleados
+        async function cargarEmpleados() {
+            try {
+                const res = await fetch(DB_EMPLEADOS);
+                const data = await res.json();
+                const empleados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+                const select = document.getElementById('ausencia-empleado');
+                select.innerHTML = '<option value="">Selecciona un empleado</option>';
+                empleados.forEach(emp => {
+                    const option = document.createElement('option');
+                    option.value = emp.key;
+                    option.textContent = `${emp.nombre} (${emp.legajo})`;
+                    option.dataset.legajo = emp.legajo;
+                    select.appendChild(option);
+                });
+            } catch (e) {
+                console.error('Error cargando empleados:', e);
+                showToast('❌ Error al cargar empleados', true);
+            }
         }
 
-        function cargarEmpleados() {
-            let empleados = [];
+        // Cargar ausencias
+        async function cargarAusencias() {
             try {
-                empleados = JSON.parse(localStorage.getItem('empleados') || '[]');
+                const res = await fetch(DB_AUSENCIAS);
+                const data = await res.json();
+                const ausencias = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+
+                const tbody = document.querySelector('#tabla-ausencias tbody');
+                tbody.innerHTML = '';
+
+                if (ausencias.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center">No hay ausencias</td></tr>`;
+                    return;
+                }
+
+                ausencias.forEach(aus => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${aus.empleadoNombre}</strong></td>
+                        <td>${aus.tipo}</td>
+                        <td>${formatDate(aus.fechaInicio)} → ${formatDate(aus.fechaFin)}</td>
+                        <td><span style="padding:5px 10px; border-radius:12px; background:${
+                            esActiva(aus.fechaInicio, aus.fechaFin) ? '#e74c3c' : '#27ae60'
+                        }; color:white; font-size:12px;">${esActiva(aus.fechaInicio, aus.fechaFin) ? 'Activa' : 'Finalizada'}</span></td>
+                        <td style="text-align:center;">
+                            <button class="btn-warning" onclick="editarAusencia('${aus.key}', '${aus.empleadoKey}', '${aus.tipo}', '${aus.fechaInicio}', '${aus.fechaFin}', '${aus.observaciones || ''}')">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
+                            <button class="btn-danger" onclick="eliminarAusencia('${aus.key}', '${aus.empleadoNombre}')">
+                                <i class="fas fa-trash"></i> Eliminar
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
             } catch (e) {
-                console.error('Error leyendo empleados:', e);
-            }
-
-            const select = document.getElementById('emp-select');
-            select.innerHTML = '<option value="">-- Selecciona un empleado --</option>';
-
-            if (empleados.length === 0) {
-                const opt = document.createElement('option');
-                opt.disabled = true;
-                opt.textContent = 'No hay empleados. Crea uno primero.';
-                select.appendChild(opt);
-                return;
-            }
-
-            empleados.forEach(emp => {
-                const opt = document.createElement('option');
-                opt.value = emp.dni;
-                opt.textContent = `${emp.nombre} (${emp.puesto}) - ${emp.local}`;
-                select.appendChild(opt);
-            });
-        }
-
-        function cargarAusencias() {
-            const dni = document.getElementById('emp-select').value;
-            const tbody = document.getElementById('tbody-ausencias');
-            tbody.innerHTML = '';
-
-            if (!dni) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center">Selecciona un empleado.</td></tr>`;
-                return;
-            }
-
-            let ausencias = {};
-            try {
-                ausencias = JSON.parse(localStorage.getItem('ausencias') || '{}');
-            } catch (e) {
-                tbody.innerHTML = `<tr><td colspan="5" style="color:red">Error de datos</td></tr>`;
-                return;
-            }
-
-            const items = ausencias[dni] || [];
-
-            if (items.length === 0) {
-                // ✅ Datos de prueba si no hay ausencias
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>🏖️ Vacaciones</td>
-                    <td>01/01/2024 - 10/01/2024</td>
-                    <td>10</td>
-                    <td>Descanso anual</td>
-                    <td>
-                        <button class="btn-warning" onclick="alert('Editar vacaciones')" style="padding:6px 10px;margin-right:5px;">
-                            <i class="fas fa-edit"></i> Editar
-                        </button>
-                        <button class="btn-danger" onclick="alert('Eliminar vacaciones')">
-                            <i class="fas fa-trash"></i> Eliminar
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-                return;
-            }
-
-            items.forEach((a, i) => {
-                const inicio = new Date(a.inicio);
-                const fin = new Date(a.fin);
-                const dias = Math.round((fin - inicio) / (1000 * 60 * 60 * 24)) + 1;
-
-                const inicioStr = inicio.toLocaleDateString();
-                const finStr = fin.toLocaleDateString();
-
-                const tipoLabels = {
-                    'vacaciones': '🏖️ Vacaciones',
-                    'enfermedad': '🤒 Enfermedad',
-                    'maternidad': '👶 Maternidad/Paternidad',
-                    'otros': '📄 Otros'
-                };
-                const tipoLabel = tipoLabels[a.tipo] || a.tipo;
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><strong>${tipoLabel}</strong></td>
-                    <td>${inicioStr} a ${finStr}</td>
-                    <td>${dias}</td>
-                    <td>${a.comentarios || '–'}</td>
-                    <td>
-                        <button class="btn-warning" onclick="editarAusencia('${dni}', ${i})" style="padding:6px 10px;margin-right:5px;">
-                            <i class="fas fa-edit"></i> Editar
-                        </button>
-                        <button class="btn-danger" onclick="eliminarAusencia('${dni}', ${i})">
-                            <i class="fas fa-trash"></i> Eliminar
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function editarAusencia(dni, index) {
-            let ausencias = {};
-            try {
-                ausencias = JSON.parse(localStorage.getItem('ausencias') || '{}');
-            } catch (e) {
+                console.error('Error cargando ausencias:', e);
                 showToast('❌ Error al cargar', true);
-                return;
             }
-
-            if (!ausencias[dni] || !ausencias[dni][index]) {
-                showToast('❌ Ausencia no encontrada', true);
-                return;
-            }
-
-            const a = ausencias[dni][index];
-            document.getElementById('emp-select').value = dni;
-            document.getElementById('tipo-ausencia').value = a.tipo;
-            document.getElementById('inicio-ausencia').value = a.inicio;
-            document.getElementById('fin-ausencia').value = a.fin;
-            document.getElementById('comentarios-ausencia').value = a.comentarios;
-            document.getElementById('edit-index').value = index;
-            document.getElementById('edit-dni').value = dni;
-            document.getElementById('btn-texto').textContent = 'Actualizar Ausencia';
-            document.getElementById('form-title').textContent = 'Editar Ausencia';
-            cargarAusencias();
         }
 
-        function guardarAusencia() {
-            const dni = document.getElementById('emp-select').value;
-            const tipo = document.getElementById('tipo-ausencia').value;
-            const inicio = document.getElementById('inicio-ausencia').value;
-            const fin = document.getElementById('fin-ausencia').value;
-            const comentarios = document.getElementById('comentarios-ausencia').value.trim();
+        function formatDate(dateStr) {
+            const [year, month, day] = dateStr.split('-');
+            return `${day}/${month}/${year}`;
+        }
 
-            if (!dni) {
-                showToast('⚠️ Selecciona un empleado', true);
-                return;
-            }
-            if (!tipo || !inicio || !fin) {
+        function esActiva(fechaInicio, fechaFin) {
+            const hoy = new Date().toISOString().split('T')[0];
+            return hoy >= fechaInicio && hoy <= fechaFin;
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('form-ausencia').reset();
+            document.getElementById('edit-key').value = '';
+            document.getElementById('btn-texto').textContent = 'Guardar Ausencia';
+            document.querySelector('.container h1').innerHTML = '<i class="fas fa-calendar-times"></i> Gestión de Ausencias';
+        }
+
+        function editarAusencia(key, empleadoKey, tipo, fechaInicio, fechaFin, observaciones) {
+            document.getElementById('ausencia-empleado').value = empleadoKey;
+            document.getElementById('ausencia-tipo').value = tipo;
+            document.getElementById('ausencia-fecha-inicio').value = fechaInicio;
+            document.getElementById('ausencia-fecha-fin').value = fechaFin;
+            document.getElementById('ausencia-observaciones').value = observaciones || '';
+            document.getElementById('edit-key').value = key;
+            document.getElementById('btn-texto').textContent = 'Actualizar Ausencia';
+            document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Ausencia';
+        }
+
+        async function guardarAusencia(e) {
+            e.preventDefault();
+            const empleadoKey = document.getElementById('ausencia-empleado').value;
+            const empleadoNombre = document.getElementById('ausencia-empleado').options[document.getElementById('ausencia-empleado').selectedIndex].text.split(' (')[0];
+            const tipo = document.getElementById('ausencia-tipo').value;
+            const fechaInicio = document.getElementById('ausencia-fecha-inicio').value;
+            const fechaFin = document.getElementById('ausencia-fecha-fin').value;
+            const observaciones = document.getElementById('ausencia-observaciones').value.trim();
+            const key = document.getElementById('edit-key').value;
+
+            if (!empleadoKey || !tipo || !fechaInicio || !fechaFin) {
                 showToast('⚠️ Completa todos los campos obligatorios', true);
                 return;
             }
-            if (new Date(fin) < new Date(inicio)) {
-                showToast('⚠️ La fecha de fin no puede ser anterior a la de inicio', true);
-                return;
-            }
 
-            let ausencias = {};
-            try {
-                ausencias = JSON.parse(localStorage.getItem('ausencias') || '{}');
-            } catch (e) {
-                ausencias = {};
-            }
-
-            if (!ausencias[dni]) ausencias[dni] = [];
-
-            const nuevo = { tipo, inicio, fin, comentarios };
-            const index = document.getElementById('edit-index').value;
-            const editDni = document.getElementById('edit-dni').value;
-
-            if (index !== '' && editDni === dni) {
-                ausencias[dni][index] = nuevo;
-                showToast('✅ Ausencia actualizada');
-            } else {
-                ausencias[dni].push(nuevo);
-                showToast('✅ Ausencia registrada');
-            }
+            const ausencia = {
+                empleadoKey,
+                empleadoNombre,
+                tipo,
+                fechaInicio,
+                fechaFin,
+                observaciones
+            };
 
             try {
-                localStorage.setItem('ausencias', JSON.stringify(ausencias));
+                let url = DB_AUSENCIAS;
+                let method = 'POST';
+                let body = JSON.stringify(ausencia);
+
+                if (key) {
+                    url = `${DB_AUSENCIAS.replace('.json', `/${key}.json`)}`;
+                    method = 'PUT';
+                }
+
+                const res = await fetch(url, { 
+                    method, 
+                    body, 
+                    headers: { 'Content-Type': 'application/json' } 
+                });
+
+                if (!res.ok) throw new Error('Error al guardar');
+
+                showToast('✅ Ausencia guardada');
                 limpiarFormulario();
-                cargarAusencias();
-            } catch (e) {
+                await cargarAusencias();
+            } catch (err) {
+                console.error('Error:', err);
                 showToast('❌ Error al guardar', true);
             }
         }
 
-        function eliminarAusencia(dni, index) {
-            if (!confirm('¿Eliminar esta ausencia?')) return;
+        async function eliminarAusencia(key, nombre) {
+            if (!confirm(`¿Eliminar la ausencia de "${nombre}"?`)) return;
 
-            let ausencias = {};
             try {
-                ausencias = JSON.parse(localStorage.getItem('ausencias') || '{}');
-            } catch (e) {
-                showToast('❌ Error al eliminar', true);
-                return;
-            }
+                const res = await fetch(`${DB_AUSENCIAS.replace('.json', `/${key}.json`)}`, {
+                    method: 'DELETE'
+                });
 
-            if (!ausencias[dni] || !ausencias[dni][index]) return;
+                if (!res.ok) throw new Error('Error al eliminar');
 
-            ausencias[dni].splice(index, 1);
-            try {
-                localStorage.setItem('ausencias', JSON.stringify(ausencias));
                 showToast('🗑️ Ausencia eliminada');
-                cargarAusencias();
-            } catch (e) {
-                showToast('❌ Error al guardar', true);
+                await cargarAusencias();
+            } catch (err) {
+                console.error('Error:', err);
+                showToast('❌ Error al eliminar', true);
             }
         }
 
         // Inicializar
-        window.onload = function () {
-            cargarEmpleados();
-            document.getElementById('emp-select').addEventListener('change', cargarAusencias);
+        window.onload = async function () {
+            await cargarEmpleados();
+            await cargarAusencias();
+
+            document.getElementById('form-ausencia').addEventListener('submit', guardarAusencia);
         };
     </script>
 
-    <!-- ✅ Botón flotante - SIEMPRE VISIBLE Y IGUAL QUE LOS DEMÁS -->
+    <!-- ✅ Botón flotante -->
     <script>
-        // Botón flotante infalible
-        function crearBotonMenu() {
+        document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
             const btn = document.createElement('button');
             btn.id = 'btn-menu-flotante';
@@ -456,23 +358,11 @@
                 display: block !important;
                 transition: all 0.2s ease !important;
             `;
-            btn.onclick = () => window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
+            btn.onclick = () => {
+                window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
+            };
             document.body.appendChild(btn);
-        }
-
-        // Intentar hasta que el body exista
-        let intentos = 0;
-        const maxIntentos = 100;
-        const intervalo = setInterval(() => {
-            if (document.body || intentos >= maxIntentos) {
-                clearInterval(intervalo);
-                setTimeout(crearBotonMenu, 200);
-            }
-            intentos++;
-        }, 100);
-
-        document.addEventListener('DOMContentLoaded', crearBotonMenu);
+        });
     </script>
 </body>
-
 </html>
