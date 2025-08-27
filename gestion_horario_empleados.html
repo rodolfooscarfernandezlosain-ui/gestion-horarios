@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Horarios por Empleado</title>
-    <!-- Font Awesome sin espacios -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
@@ -147,7 +147,7 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase (sin espacios)
+        // ✅ URLs de Firebase
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_HORARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados.json';
 
@@ -195,7 +195,6 @@
                     <div class="time-row main-shift">
                         <input type="time" class="entrada" placeholder="Entrada">
                         <input type="time" class="salida" placeholder="Salida">
-                        <input type="time" class="descanso" placeholder="Descanso (opcional)">
                         <label><input type="checkbox" class="chk-doble"> Turno Doble</label>
                     </div>
                     <div class="doble-turno">
@@ -296,7 +295,6 @@
                     } else {
                         group.querySelector('.entrada').value = diaData.entrada || '';
                         group.querySelector('.salida').value = diaData.salida || '';
-                        group.querySelector('.descanso').value = diaData.descanso || '';
                         if (diaData.doble) {
                             group.querySelector('.chk-doble').checked = true;
                             group.querySelector('.doble-turno').style.display = 'block';
@@ -342,7 +340,6 @@
                     horario.dias[dia] = {
                         entrada,
                         salida,
-                        descanso: group.querySelector('.descanso').value,
                         doble: group.querySelector('.chk-doble').checked
                     };
                     if (horario.dias[dia].doble) {
@@ -413,7 +410,7 @@
         };
     </script>
 
-    <!-- ✅ Botón flotante sin espacios -->
+    <!-- ✅ Botón flotante -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
