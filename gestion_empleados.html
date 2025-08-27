@@ -4,87 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Empleados</title>
-    <!-- Font Awesome -->
+    <!-- Font Awesome sin espacios -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            background: #f4f6f9; 
-            padding: 20px; 
-        }
-        .container { 
-            max-width: 800px; 
-            margin: 0 auto; 
-            background: white; 
-            padding: 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-        }
-        h1 { 
-            color: #2c3e50; 
-            border-bottom: 2px solid #3498db; 
-            padding-bottom: 10px; 
-        }
-        .form-group { 
-            margin: 15px 0; 
-        }
-        .form-group label { 
-            display: block; 
-            margin-bottom: 5px; 
-            font-weight: 600; 
-        }
-        input { 
-            width: 100%; 
-            padding: 10px; 
-            border: 1px solid #ddd; 
-            border-radius: 4px; 
-            box-sizing: border-box; 
-        }
-        button { 
-            background: #3498db; 
-            color: white; 
-            border: none; 
-            padding: 10px 15px; 
-            border-radius: 4px; 
-            cursor: pointer; 
-        }
-        button.btn-danger { 
-            background: #e74c3c; 
-        }
-        button.btn-warning { 
-            background: #f39c12; 
-        }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 20px; 
-        }
-        th, td { 
-            border: 1px solid #ddd; 
-            padding: 12px; 
-            text-align: left; 
-        }
-        th { 
-            background: #ecf0f1; 
-        }
-        .snackbar { 
-            position: fixed; 
-            bottom: 20px; 
-            right: 20px; 
-            background: #27ae60; 
-            color: white; 
-            padding: 12px 20px; 
-            border-radius: 6px; 
-            z-index: 1000; 
-            opacity: 0; 
-            transition: opacity 0.3s; 
-        }
-        .snackbar.show { 
-            opacity: 1; 
-        }
-        .error { 
-            background: #e74c3c !important; 
-        }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .form-group { margin: 15px 0; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { background: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+        button.btn-danger { background: #e74c3c; }
+        button.btn-warning { background: #f39c12; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #ecf0f1; }
+        .snackbar { position: fixed; bottom: 20px; right: 20px; background: #27ae60; color: white; padding: 12px 20px; border-radius: 6px; z-index: 1000; opacity: 0; transition: opacity 0.3s; }
+        .snackbar.show { opacity: 1; }
+        .error { background: #e74c3c !important; }
     </style>
 </head>
 <body>
@@ -102,8 +39,14 @@
                 <input type="text" id="empleado-nombre" placeholder="Ej: Juan Pérez" required>
             </div>
             <div class="form-group">
+                <label>Categoría *</label>
+                <select id="empleado-categoria" required>
+                    <option value="">Selecciona una categoría</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <label>Puesto *</label>
-                <input type="text" id="empleado-puesto" placeholder="Ej: Cajero" required>
+                <input type="text" id="empleado-puesto" placeholder="Ej: Cajero" required readonly>
             </div>
             <div class="form-group">
                 <label>Local *</label>
@@ -122,6 +65,7 @@
                 <tr>
                     <th>DNI</th>
                     <th>Nombre</th>
+                    <th>Categoría</th>
                     <th>Puesto</th>
                     <th>Local</th>
                     <th>Acciones</th>
@@ -134,8 +78,11 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URL de Firebase Realtime Database
-        const DB_URL = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
+        // ✅ URLs de Firebase sin espacios
+        const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
+        const DB_CATEGORIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/categorias.json';
+
+        let categorias = [];
 
         function showToast(msg, isError = false) {
             const sb = document.getElementById('snackbar');
@@ -145,9 +92,29 @@
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
+        async function cargarCategorias() {
+            try {
+                const res = await fetch(DB_CATEGORIAS);
+                const data = await res.json();
+                categorias = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+
+                const select = document.getElementById('empleado-categoria');
+                select.innerHTML = '<option value="">Selecciona una categoría</option>';
+
+                categorias.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.nombre;
+                    option.textContent = cat.nombre;
+                    select.appendChild(option);
+                });
+            } catch (e) {
+                console.error('Error cargando categorías:', e);
+            }
+        }
+
         async function cargarEmpleados() {
             try {
-                const res = await fetch(DB_URL);
+                const res = await fetch(DB_EMPLEADOS);
                 const data = await res.json();
                 const empleados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
 
@@ -155,7 +122,7 @@
                 tbody.innerHTML = '';
 
                 if (empleados.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center">No hay empleados</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center">No hay empleados</td></tr>`;
                     return;
                 }
 
@@ -164,10 +131,11 @@
                     tr.innerHTML = `
                         <td><strong>${emp.dni}</strong></td>
                         <td>${emp.nombre}</td>
+                        <td>${emp.categoria}</td>
                         <td>${emp.puesto}</td>
                         <td>${emp.local}</td>
                         <td>
-                            <button class="btn-warning" onclick="editarEmpleado('${emp.key}', '${emp.dni}', '${emp.nombre}', '${emp.puesto}', '${emp.local}')" style="padding:6px 10px; margin-right:5px;">
+                            <button class="btn-warning" onclick="editarEmpleado('${emp.key}', '${emp.dni}', '${emp.nombre}', '${emp.categoria}', '${emp.puesto}', '${emp.local}')" style="padding:6px 10px; margin-right:5px;">
                                 <i class="fas fa-edit"></i> Editar
                             </button>
                             <button class="btn-danger" onclick="eliminarEmpleado('${emp.key}', '${emp.nombre}')">
@@ -180,7 +148,7 @@
             } catch (e) {
                 console.error('Error cargando empleados:', e);
                 document.querySelector('#tabla-empleados tbody').innerHTML = 
-                    `<tr><td colspan="5" style="text-align:center; color: red;">Error al cargar</td></tr>`;
+                    `<tr><td colspan="6" style="text-align:center; color: red;">Error al cargar</td></tr>`;
             }
         }
 
@@ -189,11 +157,13 @@
             document.getElementById('edit-key').value = '';
             document.getElementById('btn-texto').textContent = 'Guardar Empleado';
             document.querySelector('.container h1').innerHTML = '<i class="fas fa-user-plus"></i> Alta de Empleados';
+            document.getElementById('empleado-puesto').value = '';
         }
 
-        function editarEmpleado(key, dni, nombre, puesto, local) {
+        function editarEmpleado(key, dni, nombre, categoria, puesto, local) {
             document.getElementById('empleado-dni').value = dni;
             document.getElementById('empleado-nombre').value = nombre;
+            document.getElementById('empleado-categoria').value = categoria;
             document.getElementById('empleado-puesto').value = puesto;
             document.getElementById('empleado-local').value = local;
             document.getElementById('edit-key').value = key;
@@ -205,19 +175,20 @@
             e.preventDefault();
             const dni = document.getElementById('empleado-dni').value.trim();
             const nombre = document.getElementById('empleado-nombre').value.trim();
+            const categoria = document.getElementById('empleado-categoria').value;
             const puesto = document.getElementById('empleado-puesto').value.trim();
             const local = document.getElementById('empleado-local').value.trim();
             const key = document.getElementById('edit-key').value;
 
-            if (!dni || !nombre || !puesto || !local) {
+            if (!dni || !nombre || !categoria || !puesto || !local) {
                 showToast('⚠️ Completa todos los campos', true);
                 return;
             }
 
-            const empleado = { dni, nombre, puesto, local };
+            const empleado = { dni, nombre, categoria, puesto, local };
 
             try {
-                let url = DB_URL;
+                let url = DB_EMPLEADOS;
                 let method = 'POST';
                 let body = JSON.stringify(empleado);
 
@@ -257,13 +228,22 @@
             }
         }
 
+        // Cargar categorías y empleados al iniciar
         window.onload = async function () {
+            await cargarCategorias();
             await cargarEmpleados();
+
+            // Actualizar puesto cuando cambia la categoría
+            document.getElementById('empleado-categoria').addEventListener('change', (e) => {
+                const cat = categorias.find(c => c.nombre === e.target.value);
+                document.getElementById('empleado-puesto').value = cat ? cat.puesto : '';
+            });
+
             document.getElementById('form-empleado').addEventListener('submit', guardarEmpleado);
         };
     </script>
 
-    <!-- ✅ Botón flotante -->
+    <!-- ✅ Botón flotante sin espacios -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
