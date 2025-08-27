@@ -66,7 +66,21 @@
         }
         th { 
             background: #ecf0f1; 
+            text-align: center;
         }
+        .accion-btn {
+            padding: 6px 10px;
+            margin: 0 2px;
+            border-radius: 4px;
+            color: white;
+            text-align: center;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .editar { background: #f39c12; }
+        .eliminar { background: #e74c3c; }
+        .accion-btn i { margin-right: 5px; }
         .snackbar { 
             position: fixed; 
             bottom: 20px; 
@@ -115,26 +129,6 @@
             </div>
 
             <div class="form-group">
-                <label>Fecha de Nacimiento</label>
-                <input type="date" id="empleado-fecha-nac">
-            </div>
-
-            <div class="form-group">
-                <label>Teléfono</label>
-                <input type="text" id="empleado-telefono" placeholder="Ej: 1122334455">
-            </div>
-
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="empleado-email" placeholder="Ej: juan@empresa.com">
-            </div>
-
-            <div class="form-group">
-                <label>Domicilio</label>
-                <input type="text" id="empleado-domicilio" placeholder="Ej: Av. Siempre Viva 123">
-            </div>
-
-            <div class="form-group">
                 <label>Categoría *</label>
                 <select id="empleado-categoria" required>
                     <option value="">Selecciona una categoría</option>
@@ -152,37 +146,6 @@
             </div>
 
             <div class="form-group">
-                <label>Tipo de Contrato *</label>
-                <select id="empleado-contrato" required>
-                    <option value="Planta">Planta</option>
-                    <option value="Contrato">Contrato</option>
-                    <option value="Temporal">Temporal</option>
-                    <option value="Práctica">Práctica</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Horas Semanales *</label>
-                <input type="number" id="empleado-horas" placeholder="Ej: 30" min="1" max="48" required>
-            </div>
-
-            <div class="form-group">
-                <label>Jornada *</label>
-                <select id="empleado-jornada" required>
-                    <option value="Mañana">Mañana</option>
-                    <option value="Tarde">Tarde</option>
-                    <option value="Noche">Noche</option>
-                    <option value="Rotativa">Rotativa</option>
-                    <option value="Part-Time">Part-Time</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Fecha de Ingreso *</label>
-                <input type="date" id="empleado-fecha-ingreso" required>
-            </div>
-
-            <div class="form-group">
                 <label>Estado *</label>
                 <select id="empleado-estado" required>
                     <option value="Activo">Activo</option>
@@ -190,16 +153,6 @@
                     <option value="Vacaciones">Vacaciones</option>
                     <option value="Licencia">Licencia</option>
                 </select>
-            </div>
-
-            <div class="form-group">
-                <label>Responsable</label>
-                <input type="text" id="empleado-responsable" placeholder="Ej: Ana Gómez (Supervisor)">
-            </div>
-
-            <div class="form-group">
-                <label>Observaciones</label>
-                <textarea id="empleado-observaciones" rows="3"></textarea>
             </div>
 
             <button type="submit" class="btn-success">
@@ -216,6 +169,7 @@
                     <th>Legajo</th>
                     <th>Nombre</th>
                     <th>Categoría</th>
+                    <th>Puesto</th>
                     <th>Local</th>
                     <th>Estado</th>
                     <th>Acciones</th>
@@ -228,7 +182,7 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase sin espacios
+        // ✅ URLs de Firebase (sin espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_CATEGORIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/categorias.json';
 
@@ -273,7 +227,7 @@
                 tbody.innerHTML = '';
 
                 if (empleados.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center">No hay empleados</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center">No hay empleados</td></tr>`;
                     return;
                 }
 
@@ -283,15 +237,20 @@
                         <td><strong>${emp.legajo}</strong></td>
                         <td>${emp.nombre}</td>
                         <td>${emp.categoria}</td>
+                        <td>${emp.puesto}</td>
                         <td>${emp.local}</td>
-                        <td>${emp.estado}</td>
-                        <td>
-                            <button class="btn-warning" onclick="editarEmpleado('${emp.key}', '${emp.legajo}', '${emp.dni}', '${emp.cuil}', '${emp.nombre}', '${emp.sexo || ''}', '${emp.estadoCivil || ''}', '${emp.nacionalidad || ''}', '${emp.fechaNac || ''}', '${emp.fechaVtoDni || ''}', '${emp.telefono || ''}', '${emp.emergencia || ''}', '${emp.email || ''}', '${emp.domicilio || ''}', '${emp.obrasocial || ''}', '${emp.estudios || ''}', '${emp.categoria}', '${emp.puesto}', '${emp.local}', '${emp.contrato}', '${emp.horas}', '${emp.jornada}', '${emp.estado}', '${emp.fechaIngreso}', '${emp.fechaEgreso || ''}', '${emp.responsable || ''}', '${emp.observaciones || ''}')" style="padding:6px 10px; margin-right:5px;">
+                        <td><span style="padding:5px 10px; border-radius:12px; background:${
+                            emp.estado === 'Activo' ? '#27ae60' :
+                            emp.estado === 'Vacaciones' ? '#f39c12' :
+                            emp.estado === 'Licencia' ? '#3498db' : '#e74c3c'
+                        }; color:white; font-size:12px;">${emp.estado}</span></td>
+                        <td style="text-align: center;">
+                            <a href="#" class="accion-btn editar" onclick="editarEmpleado('${emp.key}', '${emp.legajo}', '${emp.dni}', '${emp.cuil}', '${emp.nombre}', '${emp.categoria}', '${emp.puesto}', '${emp.local}', '${emp.estado}')">
                                 <i class="fas fa-edit"></i> Editar
-                            </button>
-                            <button class="btn-danger" onclick="eliminarEmpleado('${emp.key}', '${emp.nombre}')">
+                            </a>
+                            <a href="#" class="accion-btn eliminar" onclick="eliminarEmpleado('${emp.key}', '${emp.nombre}')">
                                 <i class="fas fa-trash"></i> Eliminar
-                            </button>
+                            </a>
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -299,7 +258,7 @@
             } catch (e) {
                 console.error('Error cargando empleados:', e);
                 document.querySelector('#tabla-empleados tbody').innerHTML = 
-                    `<tr><td colspan="6" style="text-align:center; color: red;">Error al cargar</td></tr>`;
+                    `<tr><td colspan="7" style="text-align:center; color: red;">Error al cargar</td></tr>`;
             }
         }
 
@@ -312,37 +271,16 @@
         }
 
         function editarEmpleado(
-            key, legajo, dni, cuil, nombre, sexo, estadoCivil, nacionalidad, fechaNac, fechaVtoDni,
-            telefono, emergencia, email, domicilio, obrasocial, estudios,
-            categoria, puesto, local, contrato, horas, jornada, estado,
-            fechaIngreso, fechaEgreso, responsable, observaciones
+            key, legajo, dni, cuil, nombre, categoria, puesto, local, estado
         ) {
             document.getElementById('empleado-legajo').value = legajo || '';
             document.getElementById('empleado-dni').value = dni;
             document.getElementById('empleado-cuil').value = cuil || '';
             document.getElementById('empleado-nombre').value = nombre;
-            document.getElementById('empleado-sexo').value = sexo || '';
-            document.getElementById('empleado-estadocivil').value = estadoCivil || '';
-            document.getElementById('empleado-nacionalidad').value = nacionalidad || '';
-            document.getElementById('empleado-fecha-nac').value = fechaNac || '';
-            document.getElementById('empleado-fecha-vto-dni').value = fechaVtoDni || '';
-            document.getElementById('empleado-telefono').value = telefono || '';
-            document.getElementById('empleado-emergencia').value = emergencia || '';
-            document.getElementById('empleado-email').value = email || '';
-            document.getElementById('empleado-domicilio').value = domicilio || '';
-            document.getElementById('empleado-obrasocial').value = obrasocial || '';
-            document.getElementById('empleado-estudios').value = estudios || '';
             document.getElementById('empleado-categoria').value = categoria;
             document.getElementById('empleado-puesto').value = puesto;
             document.getElementById('empleado-local').value = local;
-            document.getElementById('empleado-contrato').value = contrato || 'Planta';
-            document.getElementById('empleado-horas').value = horas || '';
-            document.getElementById('empleado-jornada').value = jornada || 'Mañana';
             document.getElementById('empleado-estado').value = estado;
-            document.getElementById('empleado-fecha-ingreso').value = fechaIngreso || '';
-            document.getElementById('empleado-fecha-egreso').value = fechaEgreso || '';
-            document.getElementById('empleado-responsable').value = responsable || '';
-            document.getElementById('empleado-observaciones').value = observaciones || '';
             document.getElementById('edit-key').value = key;
             document.getElementById('btn-texto').textContent = 'Actualizar Empleado';
             document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Empleado';
@@ -357,35 +295,16 @@
             const categoria = document.getElementById('empleado-categoria').value;
             const puesto = document.getElementById('empleado-puesto').value.trim();
             const local = document.getElementById('empleado-local').value.trim();
-            const contrato = document.getElementById('empleado-contrato').value;
-            const horas = document.getElementById('empleado-horas').value;
-            const jornada = document.getElementById('empleado-jornada').value;
             const estado = document.getElementById('empleado-estado').value;
-            const fechaIngreso = document.getElementById('empleado-fecha-ingreso').value;
             const key = document.getElementById('edit-key').value;
 
-            if (!legajo || !dni || !cuil || !nombre || !categoria || !puesto || !local || !contrato || !horas || !jornada || !estado || !fechaIngreso) {
+            if (!legajo || !dni || !cuil || !nombre || !categoria || !puesto || !local || !estado) {
                 showToast('⚠️ Completa todos los campos obligatorios', true);
                 return;
             }
 
             const empleado = {
-                legajo, dni, cuil, nombre,
-                sexo: document.getElementById('empleado-sexo').value,
-                estadoCivil: document.getElementById('empleado-estadocivil').value,
-                nacionalidad: document.getElementById('empleado-nacionalidad').value.trim(),
-                fechaNac: document.getElementById('empleado-fecha-nac').value,
-                fechaVtoDni: document.getElementById('empleado-fecha-vto-dni').value,
-                telefono: document.getElementById('empleado-telefono').value.trim(),
-                emergencia: document.getElementById('empleado-emergencia').value.trim(),
-                email: document.getElementById('empleado-email').value.trim(),
-                domicilio: document.getElementById('empleado-domicilio').value.trim(),
-                obrasocial: document.getElementById('empleado-obrasocial').value.trim(),
-                estudios: document.getElementById('empleado-estudios').value,
-                categoria, puesto, local, contrato, horas, jornada, estado,
-                fechaIngreso, fechaEgreso: document.getElementById('empleado-fecha-egreso').value,
-                responsable: document.getElementById('empleado-responsable').value.trim(),
-                observaciones: document.getElementById('empleado-observaciones').value.trim()
+                legajo, dni, cuil, nombre, categoria, puesto, local, estado
             };
 
             try {
