@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Horarios por Local</title>
+    <title>Horarios por Local</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -13,7 +13,7 @@
             padding: 20px; 
         }
         .container { 
-            max-width: 800px; 
+            max-width: 900px; 
             margin: 0 auto; 
             background: white; 
             padding: 20px; 
@@ -35,29 +35,40 @@
         }
         input, select { 
             width: 100%; 
-            padding: 10px; 
+            padding: 8px; 
             border: 1px solid #ddd; 
             border-radius: 4px; 
             box-sizing: border-box; 
         }
         .day-group {
-            margin: 10px 0;
-            padding: 10px;
+            margin: 15px 0;
+            padding: 15px;
             background: #f9f9f9;
             border-radius: 6px;
+            border: 1px solid #eee;
         }
-        .day-group label {
-            font-weight: bold;
+        .toggle-row {
+            display: flex;
+            gap: 10px;
+            margin: 5px 0;
         }
         .time-row {
             display: flex;
             gap: 10px;
-            margin-top: 5px;
+            margin: 5px 0;
+            align-items: center;
         }
-        .time-row input {
+        .time-row input, .time-row select {
             flex: 1;
         }
-        button { 
+        .pico-group {
+            margin: 10px 0;
+            padding: 10px;
+            background: #e8f4fc;
+            border-radius: 6px;
+            border: 1px dashed #3498db;
+        }
+        .btn {
             background: #3498db; 
             color: white; 
             border: none; 
@@ -65,10 +76,10 @@
             border-radius: 4px; 
             cursor: pointer; 
         }
-        button.btn-danger { 
+        .btn-danger { 
             background: #e74c3c; 
         }
-        button.btn-warning { 
+        .btn-warning { 
             background: #f39c12; 
         }
         table { 
@@ -106,7 +117,7 @@
 </head>
 <body>
     <div class="container">
-        <h1><i class="fas fa-clock"></i> Horarios por Local</h1>
+        <h1><i class="fas fa-clock"></i> Configuración de Horarios por Local</h1>
 
         <form id="form-horario">
             <input type="hidden" id="edit-key" value="">
@@ -116,61 +127,12 @@
                 <input type="text" id="local-nombre" placeholder="Ej: Sucursal Centro" required>
             </div>
 
-            <h3>Horarios por Día</h3>
             <div id="dias-container">
-                <div class="day-group">
-                    <label>Lunes</label>
-                    <div class="time-row">
-                        <input type="time" class="hora-apertura" data-dia="lunes" required>
-                        <input type="time" class="hora-cierre" data-dia="lunes" required>
-                    </div>
-                </div>
-                <div class="day-group">
-                    <label>Martes</label>
-                    <div class="time-row">
-                        <input type="time" class="hora-apertura" data-dia="martes" required>
-                        <input type="time" class="hora-cierre" data-dia="martes" required>
-                    </div>
-                </div>
-                <div class="day-group">
-                    <label>Miércoles</label>
-                    <div class="time-row">
-                        <input type="time" class="hora-apertura" data-dia="miercoles" required>
-                        <input type="time" class="hora-cierre" data-dia="miercoles" required>
-                    </div>
-                </div>
-                <div class="day-group">
-                    <label>Jueves</label>
-                    <div class="time-row">
-                        <input type="time" class="hora-apertura" data-dia="jueves" required>
-                        <input type="time" class="hora-cierre" data-dia="jueves" required>
-                    </div>
-                </div>
-                <div class="day-group">
-                    <label>Viernes</label>
-                    <div class="time-row">
-                        <input type="time" class="hora-apertura" data-dia="viernes" required>
-                        <input type="time" class="hora-cierre" data-dia="viernes" required>
-                    </div>
-                </div>
-                <div class="day-group">
-                    <label>Sábado</label>
-                    <div class="time-row">
-                        <input type="time" class="hora-apertura" data-dia="sabado" required>
-                        <input type="time" class="hora-cierre" data-dia="sabado" required>
-                    </div>
-                </div>
-                <div class="day-group">
-                    <label>Domingo</label>
-                    <div class="time-row">
-                        <input type="time" class="hora-apertura" data-dia="domingo" required>
-                        <input type="time" class="hora-cierre" data-dia="domingo" required>
-                    </div>
-                </div>
+                <!-- Día dinámico será generado por JS -->
             </div>
 
-            <button type="submit" class="btn-success">
-                <i class="fas fa-save"></i> <span id="btn-texto">Guardar Horario</span>
+            <button type="submit" class="btn">
+                <i class="fas fa-save"></i> <span id="btn-texto">Guardar Configuración</span>
             </button>
             <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6; margin-left:10px;">
                 Cancelar
@@ -198,8 +160,11 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URL de Firebase
+        // ✅ URLs de Firebase
         const DB_URL = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_locales.json';
+        const DB_CATEGORIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/categorias.json';
+
+        let categorias = [];
 
         function showToast(msg, isError = false) {
             const sb = document.getElementById('snackbar');
@@ -209,7 +174,141 @@
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
+        // Cargar categorías (puestos)
+        async function cargarCategorias() {
+            try {
+                const res = await fetch(DB_CATEGORIAS);
+                const data = await res.json();
+                categorias = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+            } catch (e) {
+                console.error('Error cargando categorías:', e);
+                showToast('⚠️ No se cargaron los puestos', true);
+            }
+        }
+
+        // Generar HTML para un día
+        function generarDiaHTML(dia) {
+            return `
+                <div class="day-group" data-dia="${dia}">
+                    <h3>${dia.charAt(0).toUpperCase() + dia.slice(1)}</h3>
+
+                    <div class="toggle-row">
+                        <label><input type="checkbox" class="chk-continuo"> Horario Continuo</label>
+                        <label><input type="checkbox" class="chk-doble"> Turno Doble</label>
+                    </div>
+
+                    <div class="time-row">
+                        <input type="time" class="hora-apertura" required>
+                        <input type="time" class="hora-cierre" required>
+                    </div>
+
+                    <!-- Turno Doble -->
+                    <div class="time-row doble-horario" style="display:none;">
+                        <input type="time" class="hora-apertura2">
+                        <input type="time" class="hora-cierre2">
+                    </div>
+
+                    <!-- Horario Pico (Continuo) -->
+                    <div class="pico-group pico-simple" style="display:none;">
+                        <h4>Horario Pico (Mayor Venta)</h4>
+                        <div class="time-row">
+                            <input type="time" class="pico-inicio">
+                            <input type="time" class="pico-fin">
+                        </div>
+                        <div class="puestos-container"></div>
+                    </div>
+
+                    <!-- Segundo Horario Pico (si >14h) -->
+                    <div class="pico-group pico-extra" style="display:none;">
+                        <h4>Segundo Horario Pico (Mayor Venta)</h4>
+                        <div class="time-row">
+                            <input type="time" class="pico-extra-inicio">
+                            <input type="time" class="pico-extra-fin">
+                        </div>
+                        <div class="puestos-extra-container"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Inicializar días
+        function inicializarDias() {
+            const container = document.getElementById('dias-container');
+            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            container.innerHTML = '';
+            dias.forEach(dia => {
+                container.innerHTML += generarDiaHTML(dia);
+            });
+
+            // Agregar eventos
+            document.querySelectorAll('.chk-continuo').forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    const group = this.closest('.day-group');
+                    group.querySelector('.pico-simple').style.display = this.checked ? 'block' : 'none';
+                    actualizarPuestosEnGrupo(group, '.puestos-container');
+                    if (!this.checked) group.querySelector('.pico-extra').style.display = 'none';
+                });
+            });
+
+            document.querySelectorAll('.chk-doble').forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    const group = this.closest('.day-group');
+                    group.querySelector('.doble-horario').style.display = this.checked ? 'flex' : 'none';
+                });
+            });
+
+            // Actualizar puestos al cambiar continuidad
+            document.querySelectorAll('.day-group').forEach(group => {
+                group.querySelector('.pico-simple').addEventListener('input', () => {
+                    const horas = calcularHorasPico(group);
+                    if (horas > 14) {
+                        group.querySelector('.pico-extra').style.display = 'block';
+                        actualizarPuestosEnGrupo(group, '.puestos-extra-container');
+                    } else {
+                        group.querySelector('.pico-extra').style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // Calcular horas del horario pico
+        function calcularHorasPico(group) {
+            const inicio = group.querySelector('.pico-inicio').value;
+            const fin = group.querySelector('.pico-fin').value;
+            if (!inicio || !fin) return 0;
+            const inicioMin = timeToMinutes(inicio);
+            const finMin = timeToMinutes(fin);
+            return (finMin - inicioMin) / 60;
+        }
+
+        function timeToMinutes(time) {
+            const [h, m] = time.split(':').map(Number);
+            return h * 60 + m;
+        }
+
+        // Actualizar puestos en un contenedor
+        function actualizarPuestosEnGrupo(group, selector) {
+            const container = group.querySelector(selector);
+            container.innerHTML = '';
+            categorias.forEach(cat => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <div style="display:flex; gap:10px; margin:5px 0;">
+                        <select style="flex:2;">
+                            <option value="${cat.nombre}">${cat.puesto}</option>
+                        </select>
+                        <input type="number" placeholder="Cantidad" min="1" style="flex:1;" value="1">
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Cargar horarios guardados
         async function cargarHorarios() {
+            await cargarCategorias();
+            inicializarDias();
+
             try {
                 const res = await fetch(DB_URL);
                 const data = await res.json();
@@ -219,7 +318,7 @@
                 tbody.innerHTML = '';
 
                 if (horarios.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center">No hay horarios</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center">No hay configuraciones</td></tr>`;
                     return;
                 }
 
@@ -227,63 +326,46 @@
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td><strong>${horario.local}</strong></td>
-                        <td>${formatTime(horario.lunes)}</td>
-                        <td>${formatTime(horario.martes)}</td>
-                        <td>${formatTime(horario.miercoles)}</td>
-                        <td>${formatTime(horario.jueves)}</td>
-                        <td>${formatTime(horario.viernes)}</td>
-                        <td>${formatTime(horario.sabado)}</td>
-                        <td>${formatTime(horario.domingo)}</td>
-                        <td>
-                            <button class="btn-warning" onclick="editarHorario('${horario.key}', '${horario.local}', '${horario.lunes}', '${horario.martes}', '${horario.miercoles}', '${horario.jueves}', '${horario.viernes}', '${horario.sabado}', '${horario.domingo}')" style="padding:6px 10px; margin-right:5px;">
-                                <i class="fas fa-edit"></i> Editar
-                            </button>
-                            <button class="btn-danger" onclick="eliminarHorario('${horario.key}', '${horario.local}')">
-                                <i class="fas fa-trash"></i> Eliminar
-                            </button>
+                        <td>${formatoDia(horario.lunes)}</td>
+                        <td>${formatoDia(horario.martes)}</td>
+                        <td>${formatoDia(horario.miercoles)}</td>
+                        <td>${formatoDia(horario.jueves)}</td>
+                        <td>${formatoDia(horario.viernes)}</td>
+                        <td>${formatoDia(horario.sabado)}</td>
+                        <td>${formatoDia(horario.domingo)}</td>
+                        <td style="text-align:center;">
+                            <button class="btn btn-warning" onclick="editarHorario('${horario.key}', '${horario.local}')">Editar</button>
+                            <button class="btn btn-danger" onclick="eliminarHorario('${horario.key}', '${horario.local}')">Eliminar</button>
                         </td>
                     `;
                     tbody.appendChild(tr);
                 });
             } catch (e) {
                 console.error('Error cargando horarios:', e);
-                document.querySelector('#tabla-horarios tbody').innerHTML = 
-                    `<tr><td colspan="9" style="text-align:center; color: red;">Error al cargar</td></tr>`;
+                showToast('❌ Error al cargar horarios', true);
             }
         }
 
-        function formatTime(horario) {
-            if (!horario || horario === 'Cerrado') return 'Cerrado';
-            const [apertura, cierre] = horario.split('-');
-            return `${apertura} - ${cierre}`;
+        function formatoDia(dia) {
+            if (!dia) return 'Cerrado';
+            return `${dia.apertura}-${dia.cierre}`;
         }
 
         function limpiarFormulario() {
             document.getElementById('form-horario').reset();
             document.getElementById('edit-key').value = '';
-            document.getElementById('btn-texto').textContent = 'Guardar Horario';
-            document.querySelector('.container h1').innerHTML = '<i class="fas fa-clock"></i> Horarios por Local';
+            document.getElementById('btn-texto').textContent = 'Guardar Configuración';
+            document.querySelector('.container h1').innerHTML = '<i class="fas fa-clock"></i> Configuración de Horarios por Local';
+            inicializarDias();
         }
 
-        function editarHorario(key, local, lunes, martes, miercoles, jueves, viernes, sabado, domingo) {
+        function editarHorario(key, local) {
+            // TODO: Implementar carga de datos
+            limpiarFormulario();
             document.getElementById('local-nombre').value = local;
-            document.querySelector('.day-group:nth-child(1) .hora-apertura').value = lunes.split('-')[0];
-            document.querySelector('.day-group:nth-child(1) .hora-cierre').value = lunes.split('-')[1];
-            document.querySelector('.day-group:nth-child(2) .hora-apertura').value = martes.split('-')[0];
-            document.querySelector('.day-group:nth-child(2) .hora-cierre').value = martes.split('-')[1];
-            document.querySelector('.day-group:nth-child(3) .hora-apertura').value = miercoles.split('-')[0];
-            document.querySelector('.day-group:nth-child(3) .hora-cierre').value = miercoles.split('-')[1];
-            document.querySelector('.day-group:nth-child(4) .hora-apertura').value = jueves.split('-')[0];
-            document.querySelector('.day-group:nth-child(4) .hora-cierre').value = jueves.split('-')[1];
-            document.querySelector('.day-group:nth-child(5) .hora-apertura').value = viernes.split('-')[0];
-            document.querySelector('.day-group:nth-child(5) .hora-cierre').value = viernes.split('-')[1];
-            document.querySelector('.day-group:nth-child(6) .hora-apertura').value = sabado.split('-')[0];
-            document.querySelector('.day-group:nth-child(6) .hora-cierre').value = sabado.split('-')[1];
-            document.querySelector('.day-group:nth-child(7) .hora-apertura').value = domingo.split('-')[0];
-            document.querySelector('.day-group:nth-child(7) .hora-cierre').value = domingo.split('-')[1];
             document.getElementById('edit-key').value = key;
-            document.getElementById('btn-texto').textContent = 'Actualizar Horario';
-            document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Horario';
+            document.getElementById('btn-texto').textContent = 'Actualizar Configuración';
+            document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Horarios';
         }
 
         async function guardarHorario(e) {
@@ -296,14 +378,51 @@
                 return;
             }
 
-            // Obtener horarios por día
             const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
             const horario = { local };
 
-            for (const dia of dias) {
-                const apertura = document.querySelector(`[data-dia="${dia}"].hora-apertura`).value;
-                const cierre = document.querySelector(`[data-dia="${dia}"].hora-cierre`).value;
-                horario[dia] = `${apertura}-${cierre}`;
+            let valido = true;
+
+            dias.forEach(dia => {
+                const group = document.querySelector(`[data-dia="${dia}"]`);
+                const apertura = group.querySelector('.hora-apertura').value;
+                const cierre = group.querySelector('.hora-cierre').value;
+                const esContinuo = group.querySelector('.chk-continuo').checked;
+                const esDoble = group.querySelector('.chk-doble').checked;
+
+                if (!apertura || !cierre) {
+                    valido = false;
+                    return;
+                }
+
+                const diaData = {
+                    apertura,
+                    cierre,
+                    doble: esDoble,
+                    continuo: esContinuo
+                };
+
+                if (esDoble) {
+                    const apertura2 = group.querySelector('.hora-apertura2').value;
+                    const cierre2 = group.querySelector('.hora-cierre2').value;
+                    if (!apertura2 || !cierre2) valido = false;
+                    diaData.apertura2 = apertura2;
+                    diaData.cierre2 = cierre2;
+                }
+
+                if (esContinuo) {
+                    const picoInicio = group.querySelector('.pico-inicio').value;
+                    const picoFin = group.querySelector('.pico-fin').value;
+                    if (!picoInicio || !picoFin) valido = false;
+                    diaData.pico = { inicio: picoInicio, fin: picoFin };
+                }
+
+                horario[dia] = diaData;
+            });
+
+            if (!valido) {
+                showToast('⚠️ Completa todos los campos', true);
+                return;
             }
 
             try {
@@ -324,7 +443,7 @@
 
                 if (!res.ok) throw new Error('Error al guardar');
 
-                showToast('✅ Horario guardado en Firebase');
+                showToast('✅ Configuración guardada');
                 limpiarFormulario();
                 await cargarHorarios();
             } catch (err) {
@@ -334,7 +453,7 @@
         }
 
         async function eliminarHorario(key, local) {
-            if (!confirm(`¿Eliminar los horarios del local "${local}"?`)) return;
+            if (!confirm(`¿Eliminar la configuración de "${local}"?`)) return;
 
             try {
                 const res = await fetch(`https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_locales/${key}.json`, {
@@ -343,7 +462,7 @@
 
                 if (!res.ok) throw new Error('Error al eliminar');
 
-                showToast('🗑️ Horario eliminado');
+                showToast('🗑️ Configuración eliminada');
                 await cargarHorarios();
             } catch (err) {
                 console.error('Error:', err);
@@ -392,3 +511,4 @@
     </script>
 </body>
 </html>
+
