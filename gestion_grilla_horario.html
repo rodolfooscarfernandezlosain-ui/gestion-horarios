@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grilla de Horarios</title>
@@ -133,23 +132,22 @@
                 </thead>
                 <tbody></tbody>
             </table>
-
         </div>
     </div>
 
     <div id="snackbar" class="snackbar">Grilla actualizada</div>
 
     <script>
-        // ✅ URLs de Firebase (SIN espacios)
+        // ✅ URLs de Firebase (SIN espacios y con nombres correctos)
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
-        const DB_HORARIOS_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_local.json';
-        const DB_HORARIOS_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_empleados.json';
+        const DB_HORARIOS_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_locales.json';
+        const DB_HORARIOS_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados.json';
 
         let locales = [];
         let empleados = [];
-        let horarioLocal = [];
-        let horarioEmpleados = [];
+        let horariosLocales = [];     // ✅ Nombre correcto
+        let horariosEmpleados = [];   // ✅ Nombre correcto
 
         function showToast(msg, isError = false) {
             const sb = document.getElementById('snackbar');
@@ -162,20 +160,20 @@
         // Cargar datos
         async function cargarDatos() {
             try {
-                const [dataLocales, dataEmpleados, dataHorarioLocal, dataHorarioEmpleados] = await Promise.all([
+                const [dataLocales, dataEmpleados, dataHorariosLocales, dataHorariosEmpleados] = await Promise.all([
                     fetch(DB_LOCALES).then(r => r.json()),
                     fetch(DB_EMPLEADOS).then(r => r.json()),
-                    fetch(DB_HORARIO_LOCAL).then(r => r.json()),
-                    fetch(DB_HORARIO_EMPLEADOS).then(r => r.json())
+                    fetch(DB_HORARIOS_LOCALES).then(r => r.json()),        // ✅ Correcto
+                    fetch(DB_HORARIOS_EMPLEADOS).then(r => r.json())       // ✅ Correcto
                 ]);
 
                 // ✅ Procesar datos correctamente
                 locales = dataLocales ? Object.values(dataLocales) : [];
                 empleados = dataEmpleados ? Object.values(dataEmpleados) : [];
-                horarioLocal = dataHorarioLocal ? Object.values(dataHorarioLocal) : [];
-                horarioEmpleados = dataHorarioEmpleados ? Object.values(dataHorarioEmpleados) : [];
+                horariosLocales = dataHorariosLocales ? Object.values(dataHorariosLocales) : [];
+                horariosEmpleados = dataHorariosEmpleados ? Object.values(dataHorariosEmpleados) : [];
 
-                console.log('✅ Datos cargados:', { locales, empleados, horarioLocal, horarioEmpleados });
+                console.log('✅ Datos cargados:', { locales, empleados, horariosLocales, horariosEmpleados });
                 cargarLocales();
             } catch (e) {
                 console.error('❌ Error cargando datos:', e);
@@ -212,7 +210,7 @@
 
             const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
             const empleadosLocal = empleados.filter(e => e.local === localNombre);
-            const horarioLocal = horarioLocal.find(h => h.local === localNombre);
+            const horarioLocal = horariosLocales.find(h => h.local === localNombre);  // ✅ horariosLocales
 
             if (empleadosLocal.length === 0) {
                 const tr = document.createElement('tr');
@@ -223,7 +221,7 @@
 
             empleadosLocal.forEach(emp => {
                 const tr = document.createElement('tr');
-                const horarioEmp = horarioEmpleados.find(h => h.empleadoKey === emp.key);
+                const horarioEmp = horariosEmpleados.find(h => h.empleadoKey === emp.key);  // ✅ horariosEmpleados
 
                 if (!horarioEmp) {
                     console.warn(`❌ No hay horario para: ${emp.nombre} (key: ${emp.key})`);
@@ -300,5 +298,3 @@
     </script>
 </body>
 </html>
-
-
