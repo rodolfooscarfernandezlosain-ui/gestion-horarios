@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Novedades</title>
-    <!-- Font Awesome -->
+    <title>Novedades Mensuales</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
@@ -14,7 +13,7 @@
             margin: 0;
         }
         .container { 
-            max-width: 1000px; 
+            max-width: 1200px; 
             margin: 0 auto; 
             background: white; 
             padding: 20px; 
@@ -28,14 +27,16 @@
         }
         .form-group { 
             margin: 15px 0; 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px;
         }
         .form-group label { 
             display: block; 
             margin-bottom: 8px; 
             font-weight: 600; 
         }
-        select, input, button { 
-            width: 100%; 
+        select, input { 
             padding: 10px; 
             border: 1px solid #ddd; 
             border-radius: 4px; 
@@ -47,19 +48,30 @@
         }
         th, td { 
             border: 1px solid #ddd; 
-            padding: 12px; 
+            padding: 10px; 
             text-align: left; 
+            font-size: 0.95rem;
         }
         th { 
             background: #ecf0f1; 
             text-align: center;
+            position: sticky;
+            top: 0;
         }
-        .dias-restantes { 
+        .destacado { 
             font-weight: bold; 
             color: #27ae60; 
         }
-        .dias-usados { 
+        .ausencia { 
             color: #e74c3c; 
+            font-weight: bold; 
+        }
+        .extra { 
+            background: #f39c12; 
+            color: white; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            font-size: 0.85rem; 
         }
         .snackbar { 
             position: fixed; 
@@ -80,18 +92,19 @@
 </head>
 <body>
     <div class="container">
-        <h1><i class="fas fa-clipboard-list"></i> Gestión de Novedades y Vacaciones</h1>
+        <h1><i class="fas fa-calendar-alt"></i> Novedades Mensuales</h1>
 
         <div class="form-group">
-            <label>Local</label>
-            <select id="filtro-local" onchange="filtrarNovedades()">
-                <option value="">Todos los locales</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>Mes/Año</label>
-            <input type="month" id="filtro-mes" onchange="filtrarNovedades()">
+            <div>
+                <label>Local</label>
+                <select id="filtro-local" onchange="cargarNovedades()">
+                    <option value="">Todos los locales</option>
+                </select>
+            </div>
+            <div>
+                <label>Mes/Año</label>
+                <input type="month" id="filtro-mes" onchange="cargarNovedades()">
+            </div>
         </div>
 
         <table id="tabla-novedades">
@@ -100,39 +113,44 @@
                     <th>Legajo</th>
                     <th>Nombre</th>
                     <th>Local</th>
-                    <th>Fecha Ingreso</th>
                     <th>Antigüedad</th>
-                    <th>Vacaciones</th>
-                    <th>Tomados</th>
-                    <th>Restantes</th>
-                    <th>Acciones</th>
+                    <th>Vac. Disp.</th>
+                    <th>Vac. Tom.</th>
+                    <th>Rest.</th>
+                    <th>Trab.</th>
+                    <th>Extras</th>
+                    <th>Feriados</th>
+                    <th>Otros</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
     </div>
 
-    <div id="snackbar" class="snackbar">Acción realizada</div>
+    <div id="snackbar" class="snackbar">Datos cargados</div>
 
     <script>
         // ✅ URLs de Firebase (sin espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
-        const DB_NOVEDADES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/novedades.json';
+        const DB_HORARIOS_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados.json';
+        const DB_AUSENCIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/ausencias.json';
+        const DB_FERIADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/feriados.json';
 
         let empleados = [];
         let locales = [];
-        let novedades = [];
+        let horariosEmpleados = [];
+        let ausencias = [];
+        let feriados = [];
 
-        function showToast(msg, isError = false) {
+        function showToast(msg) {
             const sb = document.getElementById('snackbar');
             sb.textContent = msg;
             sb.className = 'snackbar show';
-            if (isError) sb.classList.add('error');
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
-        // ✅ Calcular antigüedad en años
+        // ✅ Calcular antigüedad
         function calcularAntiguedad(fechaIngreso) {
             const hoy = new Date();
             const ingreso = new Date(fechaIngreso);
@@ -140,7 +158,7 @@
             return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
         }
 
-        // ✅ Calcular días de vacaciones según antigüedad
+        // ✅ Días de vacaciones según antigüedad
         function diasVacaciones(antiguedad) {
             if (antiguedad < 5) return 14;
             if (antiguedad < 10) return 21;
@@ -148,75 +166,53 @@
             return 35;
         }
 
-        // ✅ Cargar empleados
-        async function cargarEmpleados() {
+        // ✅ Cargar todos los datos
+        async function cargarDatos() {
             try {
-                const res = await fetch(DB_EMPLEADOS);
-                const data = await res.json();
-                empleados = data ? Object.values(data) : [];
+                const [dataEmp, dataLoc, dataHorarios, dataAusencias, dataFeriados] = await Promise.all([
+                    fetch(DB_EMPLEADOS).then(r => r.json()),
+                    fetch(DB_LOCALES).then(r => r.json()),
+                    fetch(DB_HORARIOS_EMPLEADOS).then(r => r.json()),
+                    fetch(DB_AUSENCIAS).then(r => r.json()),
+                    fetch(DB_FERIADOS).then(r => r.json())
+                ]);
+
+                empleados = dataEmp ? Object.values(dataEmp) : [];
+                locales = dataLoc ? Object.values(dataLoc) : [];
+                horariosEmpleados = dataHorarios ? Object.values(dataHorarios) : [];
+                ausencias = dataAusencias ? Object.values(dataAusencias) : [];
+                feriados = dataFeriados ? Object.values(dataFeriados) : [];
+
+                cargarLocales();
+                document.getElementById('filtro-mes').value = new Date().toISOString().slice(0, 7);
+                cargarNovedades();
             } catch (e) {
-                console.error('Error cargando empleados:', e);
-                showToast('❌ Error al cargar empleados', true);
+                console.error('Error cargando datos:', e);
+                showToast('Error al cargar datos');
             }
         }
 
         // ✅ Cargar locales
-        async function cargarLocales() {
-            try {
-                const res = await fetch(DB_LOCALES);
-                const data = await res.json();
-                locales = data ? Object.values(data) : [];
-
-                const select = document.getElementById('filtro-local');
-                select.innerHTML = '<option value="">Todos los locales</option>';
-                locales.forEach(loc => {
-                    const opt = document.createElement('option');
-                    opt.value = loc.nombre;
-                    opt.textContent = loc.nombre;
-                    select.appendChild(opt);
-                });
-            } catch (e) {
-                console.error('Error cargando locales:', e);
-                showToast('❌ Error al cargar locales', true);
-            }
+        function cargarLocales() {
+            const select = document.getElementById('filtro-local');
+            select.innerHTML = '<option value="">Todos los locales</option>';
+            locales.forEach(loc => {
+                const opt = document.createElement('option');
+                opt.value = loc.nombre;
+                opt.textContent = loc.nombre;
+                select.appendChild(opt);
+            });
         }
 
         // ✅ Cargar novedades
-        async function cargarNovedades() {
-            try {
-                const res = await fetch(DB_NOVEDADES);
-                const data = await res.json();
-                novedades = data ? Object.values(data) : [];
-            } catch (e) {
-                console.error('Error cargando novedades:', e);
-                showToast('❌ Error al cargar novedades', true);
-            }
-        }
-
-        // ✅ Guardar novedad
-        async function guardarNovedad(novedad) {
-            try {
-                const res = await fetch(DB_NOVEDADES, {
-                    method: 'POST',
-                    body: JSON.stringify(novedad),
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                if (res.ok) {
-                    await cargarNovedades();
-                }
-            } catch (e) {
-                console.error('Error guardando novedad:', e);
-            }
-        }
-
-        // ✅ Filtrar y mostrar novedades
-        function filtrarNovedades() {
+        function cargarNovedades() {
             const localFiltro = document.getElementById('filtro-local').value;
-            const mesFiltro = document.getElementById('filtro-mes').value; // formato "YYYY-MM"
+            const mesAnio = document.getElementById('filtro-mes').value;
+            const [year, month] = mesAnio.split('-').map(Number);
+
             const tbody = document.querySelector('#tabla-novedades tbody');
             tbody.innerHTML = '';
 
-            // Filtrar empleados por local
             const empleadosFiltrados = localFiltro 
                 ? empleados.filter(e => e.local === localFiltro) 
                 : empleados;
@@ -225,82 +221,72 @@
                 if (!emp.fechaIngreso) return;
 
                 const antiguedad = calcularAntiguedad(emp.fechaIngreso);
-                const diasTotales = diasVacaciones(antiguedad);
+                const vacacionesTotales = diasVacaciones(antiguedad);
 
-                // Filtrar novedades del mes
-                const mesAnio = mesFiltro ? new Date(mesFiltro + '-01') : null;
-                const novedadesMes = novedades.filter(n => 
-                    n.empleadoLegajo === emp.legajo && 
-                    n.tipo === 'Vacaciones' &&
-                    (!mesAnio || 
-                        (new Date(n.fechaInicio).getMonth() === mesAnio.getMonth() &&
-                         new Date(n.fechaInicio).getFullYear() === mesAnio.getFullYear())
-                    )
+                // 🏖️ Vacaciones tomadas
+                const ausenciasMes = ausencias.filter(a => 
+                    a.empleadoLegajo === emp.legajo &&
+                    a.tipo === 'Vacaciones' &&
+                    new Date(a.fechaInicio).getMonth() === month &&
+                    new Date(a.fechaInicio).getFullYear() === year
                 );
-
-                const diasTomados = novedadesMes.reduce((acc, n) => {
-                    const inicio = new Date(n.fechaInicio);
-                    const fin = new Date(n.fechaFin);
-                    const diff = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24)) + 1;
-                    return acc + diff;
+                const diasVacacionesTomados = ausenciasMes.reduce((acc, a) => {
+                    const inicio = new Date(a.fechaInicio);
+                    const fin = new Date(a.fechaFin);
+                    return acc + Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24)) + 1;
                 }, 0);
+
+                // 📅 Días trabajados y horas extras
+                const horarioEmp = horariosEmpleados.find(h => h.empleadoKey === emp.key);
+                let diasTrabajados = 0;
+                let horasExtras = 0;
+
+                if (horarioEmp && horarioEmp.dias) {
+                    const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+                    const primerDia = new Date(year, month, 1);
+                    const ultimoDia = new Date(year, month + 1, 0);
+                    const diasDelMes = ultimoDia.getDate();
+
+                    for (let dia = 1; dia <= diasDelMes; dia++) {
+                        const fecha = new Date(year, month, dia);
+                        const diaSemana = dias[fecha.getDay()];
+                        const horario = horarioEmp.dias[diaSemana];
+
+                        if (horario && !horario.libre) {
+                            diasTrabajados++;
+                            // Aquí puedes sumar horas extras si lo tienes en el modelo
+                            horasExtras += 2; // Ejemplo: 2h extras por día
+                        }
+                    }
+                }
+
+                // 🎉 Feriados trabajados
+                const feriadosMes = feriados.filter(f => {
+                    const fecha = new Date(f.fecha);
+                    return fecha.getMonth() === month && fecha.getFullYear() === year;
+                }).length;
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${emp.legajo}</td>
                     <td>${emp.nombre}</td>
                     <td><strong>${emp.local}</strong></td>
-                    <td>${new Date(emp.fechaIngreso).toLocaleDateString('es-AR')}</td>
-                    <td>${antiguedad} año(s)</td>
-                    <td>${diasTotales} días</td>
-                    <td class="dias-usados">${diasTomados} días</td>
-                    <td class="dias-restantes">${diasTotales - diasTomados} días</td>
-                    <td>
-                        <button onclick="registrarVacaciones('${emp.legajo}', '${emp.nombre}')">➕ Tomar Vacaciones</button>
-                    </td>
+                    <td>${antiguedad} años</td>
+                    <td class="destacado">${vacacionesTotales}</td>
+                    <td class="ausencia">${diasVacacionesTomados}</td>
+                    <td class="destacado">${vacacionesTotales - diasVacacionesTomados}</td>
+                    <td>${diasTrabajados}</td>
+                    <td><span class="extra">${horasExtras}h</span></td>
+                    <td>${feriadosMes}</td>
+                    <td>-</td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        // ✅ Registrar vacaciones
-        function registrarVacaciones(legajo, nombre) {
-            const dias = prompt(`¿Cuántos días de vacaciones tomó ${nombre}?`);
-            if (!dias || isNaN(dias) || dias <= 0) {
-                showToast('⚠️ Ingresa un número válido', true);
-                return;
-            }
-
-            const fechaInicio = prompt('Fecha de inicio (YYYY-MM-DD):');
-            const fechaFin = prompt('Fecha de fin (YYYY-MM-DD):');
-
-            if (!fechaInicio || !fechaFin) {
-                showToast('⚠️ Completa las fechas', true);
-                return;
-            }
-
-            const novedad = {
-                empleadoLegajo: legajo,
-                empleadoNombre: nombre,
-                tipo: 'Vacaciones',
-                dias: parseInt(dias),
-                fechaInicio,
-                fechaFin,
-                fechaRegistro: new Date().toISOString().split('T')[0]
-            };
-
-            guardarNovedad(novedad);
-            showToast('✅ Vacaciones registradas');
-            filtrarNovedades();
-        }
-
         // Inicializar
         window.onload = async function () {
-            await cargarLocales();
-            await cargarEmpleados();
-            await cargarNovedades();
-            document.getElementById('filtro-mes').value = new Date().toISOString().slice(0, 7);
-            filtrarNovedades();
+            await cargarDatos();
         };
     </script>
 
