@@ -157,7 +157,7 @@
                 </select>
             </div>
 
-            <!-- ✅ NUEVO: Fecha de ingreso -->
+            <!-- ✅ NUEVO: Fecha de ingreso al trabajo -->
             <div class="form-group">
                 <label>Fecha de Ingreso *</label>
                 <input type="date" id="empleado-fecha-ingreso" required>
@@ -191,7 +191,7 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase (sin espacios)
+        // ✅ URLs de Firebase (SIN espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_CATEGORIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/categorias.json';
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
@@ -270,7 +270,7 @@
                     tr.innerHTML = `
                         <td><strong>${emp.legajo}</strong></td>
                         <td>${emp.nombre}</td>
-                        <td>${emp.fechaIngreso || '—'}</td>
+                        <td>${emp.fechaIngreso ? new Date(emp.fechaIngreso).toLocaleDateString('es-AR') : '—'}</td>
                         <td>${emp.categoria}</td>
                         <td>${emp.puesto}</td>
                         <td>${emp.local}</td>
@@ -283,7 +283,7 @@
                             <a href="#" class="accion-btn editar" onclick="editarEmpleado('${emp.key || ''}', '${emp.legajo}', '${emp.dni}', '${emp.cuil}', '${emp.nombre}', '${emp.categoria}', '${emp.puesto}', '${emp.local}', '${emp.estado}', '${emp.fechaIngreso || ''}')">
                                 <i class="fas fa-edit"></i> Editar
                             </a>
-                            <a href="#" class="accion-btn eliminar" onclick="eliminarEmpleado('${emp.key || ''}', '${emp.nombre}')">
+                            <a href="#" class="accion-btn eliminar" onclick="eliminarEmpleado('${emp.key || ''}', '${emp.nombre}', '${emp.legajo}')">
                                 <i class="fas fa-trash"></i> Eliminar
                             </a>
                         </td>
@@ -332,7 +332,7 @@
             const puesto = document.getElementById('empleado-puesto').value.trim();
             const local = document.getElementById('empleado-local').value.trim();
             const estado = document.getElementById('empleado-estado').value;
-            const fechaIngreso = document.getElementById('empleado-fecha-ingreso').value; // ✅ Nuevo campo
+            const fechaIngreso = document.getElementById('empleado-fecha-ingreso').value;
             const key = document.getElementById('edit-key').value;
 
             if (!legajo || !dni || !cuil || !nombre || !categoria || !puesto || !local || !estado || !fechaIngreso) {
@@ -371,8 +371,14 @@
             }
         }
 
-        async function eliminarEmpleado(key, nombre) {
-            if (!confirm(`¿Eliminar al empleado "${nombre}"?`)) return;
+        // ✅ Eliminar con confirmación segura
+        async function eliminarEmpleado(key, nombre, legajo) {
+            const confirmacion = prompt(`¿Eliminar a "${nombre}" (Legajo: ${legajo})?\nEscribe "ELIMINAR" para confirmar:`);
+            
+            if (confirmacion !== "ELIMINAR") {
+                showToast('❌ Acción cancelada', true);
+                return;
+            }
 
             if (!key) {
                 showToast('❌ No se puede eliminar: falta clave', true);
