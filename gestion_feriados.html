@@ -3,146 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Feriados</title>
-    <!-- ✅ Corregido: sin espacios -->
+    <title>Feriados por Local</title>
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f4f6f9;
-            color: #333;
-            line-height: 1.6;
-            padding: 20px;
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #f4f6f9; 
+            padding: 20px; 
         }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        .container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
         }
-        h1 {
-            color: #2c3e50;
-            border-bottom: 2px solid #e67e22;
-            padding-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        h1 { 
+            color: #2c3e50; 
+            border-bottom: 2px solid #3498db; 
+            padding-bottom: 10px; 
         }
-        .form-group {
-            margin-bottom: 15px;
+        .form-group { 
+            margin: 15px 0; 
         }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #555;
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: 600; 
         }
-        input, select, button {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 1rem;
+        input, select { 
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
         }
-        button {
-            background: #e67e22;
-            color: white;
-            border: none;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        button.btn-warning {
-            background: #f39c12;
-        }
-        button.btn-danger {
-            background: #e74c3c;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: left;
-        }
-        th {
-            background: #ecf0f1;
-        }
-        .snackbar {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #27ae60;
-            color: white;
-            padding: 12px 20px;
+        .day-group {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f9f9f9;
             border-radius: 6px;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s;
+            border: 1px solid #eee;
         }
-        .snackbar.show {
-            opacity: 1;
+        .toggle-row {
+            display: flex;
+            gap: 10px;
+            margin: 5px 0;
         }
-        .error {
-            background: #e74c3c !important;
+        .time-row {
+            display: flex;
+            gap: 10px;
+            margin: 5px 0;
+            align-items: center;
+        }
+        .time-row input, .time-row select {
+            flex: 1;
+        }
+        .pico-group {
+            margin: 10px 0;
+            padding: 10px;
+            background: #e8f4fc;
+            border-radius: 6px;
+            border: 1px dashed #3498db;
+        }
+        .btn { 
+            background: #3498db; 
+            color: white; 
+            border: none; 
+            padding: 10px 15px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        .btn-danger { 
+            background: #e74c3c; 
+        }
+        .btn-warning { 
+            background: #f39c12; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: left; 
+        }
+        th { 
+            background: #ecf0f1; 
+        }
+        .snackbar { 
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px; 
+            background: #27ae60; 
+            color: white; 
+            padding: 12px 20px; 
+            border-radius: 6px; 
+            z-index: 1000; 
+            opacity: 0; 
+            transition: opacity 0.3s; 
+        }
+        .snackbar.show { 
+            opacity: 1; 
+        }
+        .error { 
+            background: #e74c3c !important; 
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1><i class="fas fa-calendar-alt"></i> Gestión de Feriados</h1>
+        <h1><i class="fas fa-calendar-alt"></i> Gestión de Feriados por Local</h1>
 
-        <div class="form-group">
-            <label>Local *</label>
-            <select id="local-select" required>
-                <option value="">-- Cargando --</option>
-            </select>
-        </div>
-
-        <h2><i class="fas fa-plus"></i> Agregar Feriado</h2>
         <form id="form-feriado">
-            <input type="hidden" id="edit-index" value="">
-            <input type="hidden" id="edit-local" value="">
+            <input type="hidden" id="edit-key" value="">
 
             <div class="form-group">
-                <label>Fecha *</label>
+                <label>Local *</label>
+                <select id="feriado-local" required>
+                    <option value="">Cargando locales...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Fecha del Feriado *</label>
                 <input type="date" id="feriado-fecha" required>
             </div>
+
             <div class="form-group">
-                <label>Descripción *</label>
-                <input type="text" id="feriado-descripcion" placeholder="Ej: Navidad" required>
+                <label>Nombre del Feriado *</label>
+                <input type="text" id="feriado-nombre" placeholder="Ej: Día del Trabajador" required>
             </div>
-            <button type="submit" class="btn-success">
-                <i class="fas fa-save"></i> <span id="btn-texto">Agregar Feriado</span>
+
+            <div class="form-group">
+                <label>¿Abre el local en este feriado?</label>
+                <select id="feriado-abre" required>
+                    <option value="si">Sí, abre</option>
+                    <option value="no">No abre</option>
+                </select>
+            </div>
+
+            <div id="horario-container" style="display:none;">
+                <h3>Horario del Feriado</h3>
+                <p>Modifique si es diferente al horario habitual.</p>
+
+                <div id="dias-container">
+                    <!-- Generado por JS -->
+                </div>
+            </div>
+
+            <button type="submit" class="btn">
+                <i class="fas fa-save"></i> <span id="btn-texto">Guardar Feriado</span>
             </button>
-            <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6; margin-left: 10px;">
+            <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6; margin-left:10px;">
                 Cancelar
             </button>
         </form>
 
-        <h2><i class="fas fa-list"></i> Feriados Programados</h2>
         <table id="tabla-feriados">
             <thead>
                 <tr>
+                    <th>Local</th>
+                    <th>Feriado</th>
                     <th>Fecha</th>
-                    <th>Descripción</th>
+                    <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
-            <tbody id="tbody-feriados">
-                <tr><td colspan="3" style="text-align:center">Selecciona un local.</td></tr>
-            </tbody>
+            <tbody></tbody>
         </table>
     </div>
 
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
+        // ✅ URLs de Firebase
+        const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
+        const DB_HORARIOS_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_locales.json';
+        const DB_FERIADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/feriados.json';
+
+        let locales = [];
+        let horariosLocales = [];
+
         function showToast(msg, isError = false) {
             const sb = document.getElementById('snackbar');
             sb.textContent = msg;
@@ -151,205 +197,343 @@
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
-        function cargarLocales() {
-            const locales = JSON.parse(localStorage.getItem('locales') || '[]');
-            const select = document.getElementById('local-select');
-            select.innerHTML = '<option value="">-- Selecciona un local --</option>';
-            if (locales.length === 0) {
-                // Datos de prueba
-                ['Sucursal Centro', 'Sucursal Norte'].forEach(nombre => {
-                    const opt = document.createElement('option');
-                    opt.value = nombre;
-                    opt.textContent = nombre;
-                    select.appendChild(opt);
-                });
-            } else {
+        // Cargar locales
+        async function cargarLocales() {
+            try {
+                const res = await fetch(DB_LOCALES);
+                const data = await res.json();
+                locales = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+                const select = document.getElementById('feriado-local');
+                select.innerHTML = '<option value="">Selecciona un local</option>';
                 locales.forEach(loc => {
-                    const opt = document.createElement('option');
-                    opt.value = loc.nombre;
-                    opt.textContent = loc.nombre;
-                    select.appendChild(opt);
+                    const option = document.createElement('option');
+                    option.value = loc.nombre;
+                    option.textContent = loc.nombre;
+                    select.appendChild(option);
                 });
+            } catch (e) {
+                console.error('Error cargando locales:', e);
+                showToast('❌ Error al cargar locales', true);
             }
         }
 
-        function cargarFeriados() {
-            const nombre = document.getElementById('local-select').value;
-            const tbody = document.getElementById('tbody-feriados');
-            tbody.innerHTML = '';
-
-            if (!nombre) {
-                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center">Selecciona un local.</td></tr>`;
-                return;
-            }
-
-            let feriados = {};
+        // Cargar horarios de locales
+        async function cargarHorariosLocales() {
             try {
-                feriados = JSON.parse(localStorage.getItem('feriados_locales') || '{}');
+                const res = await fetch(DB_HORARIOS_LOCALES);
+                const data = await res.json();
+                horariosLocales = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
             } catch (e) {
-                tbody.innerHTML = `<tr><td colspan="3" style="color:red">Error de datos</td></tr>`;
-                return;
+                console.error('Error cargando horarios de locales:', e);
             }
+        }
 
-            const items = feriados[nombre] || [];
+        // Generar HTML para un día (igual que horarios_local)
+        function generarDiaHTML(dia) {
+            return `
+                <div class="day-group" data-dia="${dia}">
+                    <h3>${dia.charAt(0).toUpperCase() + dia.slice(1)}</h3>
 
-            if (items.length === 0) {
-                // ✅ Mostrar datos de prueba si no hay feriados
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>25/12/2024</td>
-                    <td>Navidad</td>
-                    <td>
-                        <button class="btn-warning" onclick="alert('Editar Navidad')" style="padding:6px 10px;margin-right:5px;">
-                            <i class="fas fa-edit"></i> Editar
-                        </button>
-                        <button class="btn-danger" onclick="alert('Eliminar Navidad')">
-                            <i class="fas fa-trash"></i> Eliminar
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-                return;
-            }
+                    <div class="toggle-row">
+                        <label><input type="checkbox" class="chk-continuo"> Horario Continuo</label>
+                        <label><input type="checkbox" class="chk-doble"> Turno Doble</label>
+                    </div>
 
-            items.forEach((f, i) => {
-                const fecha = new Date(f.fecha).toLocaleDateString();
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${fecha}</td>
-                    <td><strong>${f.descripcion}</strong></td>
-                    <td>
-                        <button class="btn-warning" onclick="editarFeriado('${nombre}', ${i})" style="padding:6px 10px;margin-right:5px;">
-                            <i class="fas fa-edit"></i> Editar
-                        </button>
-                        <button class="btn-danger" onclick="eliminarFeriado('${nombre}', ${i})">
-                            <i class="fas fa-trash"></i> Eliminar
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
+                    <div class="time-row">
+                        <input type="time" class="hora-apertura" required>
+                        <input type="time" class="hora-cierre" required>
+                    </div>
+
+                    <div class="time-row doble-horario" style="display:none;">
+                        <input type="time" class="hora-apertura2">
+                        <input type="time" class="hora-cierre2">
+                    </div>
+
+                    <div class="pico-group pico-simple" style="display:none;">
+                        <h4>Horario Pico (Mayor Venta)</h4>
+                        <div class="time-row">
+                            <input type="time" class="pico-inicio">
+                            <input type="time" class="pico-fin">
+                        </div>
+                        <div class="puestos-container"></div>
+                    </div>
+
+                    <div class="pico-group pico-extra" style="display:none;">
+                        <h4>Segundo Horario Pico (Mayor Venta)</h4>
+                        <div class="time-row">
+                            <input type="time" class="pico-extra-inicio">
+                            <input type="time" class="pico-extra-fin">
+                        </div>
+                        <div class="puestos-extra-container"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Inicializar días (para el feriado)
+        function inicializarDias() {
+            const container = document.getElementById('dias-container');
+            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            container.innerHTML = '';
+            dias.forEach(dia => {
+                container.innerHTML += generarDiaHTML(dia);
             });
+
+            // Eventos
+            document.querySelectorAll('.chk-continuo').forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    this.closest('.day-group').querySelector('.pico-simple').style.display = this.checked ? 'block' : 'none';
+                });
+            });
+
+            document.querySelectorAll('.chk-doble').forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    this.closest('.day-group').querySelector('.doble-horario').style.display = this.checked ? 'flex' : 'none';
+                });
+            });
+        }
+
+        // Cargar horario del local seleccionado
+        function cargarHorarioLocal(localNombre) {
+            const horario = horariosLocales.find(h => h.local === localNombre);
+            if (!horario) return;
+
+            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            dias.forEach(dia => {
+                const group = document.querySelector(`[data-dia="${dia}"]`);
+                const diaData = horario[dia];
+                if (!diaData) return;
+
+                group.querySelector('.hora-apertura').value = diaData.apertura;
+                group.querySelector('.hora-cierre').value = diaData.cierre;
+                group.querySelector('.chk-doble').checked = diaData.doble;
+                group.querySelector('.doble-horario').style.display = diaData.doble ? 'flex' : 'none';
+                group.querySelector('.chk-continuo').checked = diaData.continuo;
+                group.querySelector('.pico-simple').style.display = diaData.continuo ? 'block' : 'none';
+
+                if (diaData.continuo && diaData.pico) {
+                    group.querySelector('.pico-inicio').value = diaData.pico.inicio;
+                    group.querySelector('.pico-fin').value = diaData.pico.fin;
+                }
+            });
+        }
+
+        // Mostrar/ocultar horario según si abre
+        document.getElementById('feriado-abre').addEventListener('change', function () {
+            document.getElementById('horario-container').style.display = this.value === 'si' ? 'block' : 'none';
+        });
+
+        // Cambiar local
+        document.getElementById('feriado-local').addEventListener('change', function () {
+            const local = this.value;
+            if (local && document.getElementById('feriado-abre').value === 'si') {
+                cargarHorarioLocal(local);
+            }
+        });
+
+        // Cargar feriados guardados
+        async function cargarFeriados() {
+            try {
+                const res = await fetch(DB_FERIADOS);
+                const data = await res.json();
+                const feriados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+
+                const tbody = document.querySelector('#tabla-feriados tbody');
+                tbody.innerHTML = '';
+
+                if (feriados.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center">No hay feriados registrados</td></tr>`;
+                    return;
+                }
+
+                feriados.forEach(feriado => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${feriado.local}</strong></td>
+                        <td>${feriado.nombre}</td>
+                        <td>${new Date(feriado.fecha).toLocaleDateString()}</td>
+                        <td><span style="padding:5px 10px; border-radius:12px; background:${
+                            feriado.abre === 'si' ? '#27ae60' : '#e74c3c'
+                        }; color:white; font-size:12px;">${feriado.abre === 'si' ? 'Abierto' : 'Cerrado'}</span></td>
+                        <td style="text-align:center;">
+                            <button class="btn-warning" onclick="editarFeriado('${feriado.key}')">Editar</button>
+                            <button class="btn-danger" onclick="eliminarFeriado('${feriado.key}', '${feriado.nombre}')">Eliminar</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error('Error cargando feriados:', e);
+                showToast('❌ Error al cargar', true);
+            }
         }
 
         function limpiarFormulario() {
             document.getElementById('form-feriado').reset();
-            document.getElementById('edit-index').value = '';
-            document.getElementById('edit-local').value = '';
-            document.getElementById('btn-texto').textContent = 'Agregar Feriado';
+            document.getElementById('edit-key').value = '';
+            document.getElementById('btn-texto').textContent = 'Guardar Feriado';
+            document.querySelector('.container h1').innerHTML = '<i class="fas fa-calendar-alt"></i> Gestión de Feriados por Local';
+            document.getElementById('horario-container').style.display = 'none';
+            inicializarDias();
         }
 
-        function editarFeriado(nombre, index) {
-            let feriados = {};
+        async function editarFeriado(key) {
             try {
-                feriados = JSON.parse(localStorage.getItem('feriados_locales') || '{}');
-            } catch (e) {
-                showToast('❌ Error al cargar', true);
-                return;
-            }
-
-            if (!feriados[nombre] || !feriados[nombre][index]) {
-                showToast('❌ Feriado no encontrado', true);
-                return;
-            }
-
-            const f = feriados[nombre][index];
-            document.getElementById('local-select').value = nombre;
-            document.getElementById('feriado-fecha').value = f.fecha;
-            document.getElementById('feriado-descripcion').value = f.descripcion;
-            document.getElementById('edit-index').value = index;
-            document.getElementById('edit-local').value = nombre;
-            document.getElementById('btn-texto').textContent = 'Actualizar Feriado';
-            cargarFeriados();
-        }
-
-        function eliminarFeriado(nombre, index) {
-            if (!confirm('¿Eliminar este feriado?')) return;
-
-            let feriados = {};
-            try {
-                feriados = JSON.parse(localStorage.getItem('feriados_locales') || '{}');
-            } catch (e) {
-                showToast('❌ Error al eliminar', true);
-                return;
-            }
-
-            if (!feriados[nombre] || !feriados[nombre][index]) return;
-
-            const desc = feriados[nombre][index].descripcion;
-            feriados[nombre].splice(index, 1);
-
-            try {
-                localStorage.setItem('feriados_locales', JSON.stringify(feriados));
-                showToast(`🗑️ "${desc}" eliminado`);
-                cargarFeriados();
-            } catch (e) {
-                showToast('❌ Error al guardar', true);
-            }
-        }
-
-        function guardarFeriado(e) {
-            e.preventDefault();
-            const nombre = document.getElementById('local-select').value;
-            const fecha = document.getElementById('feriado-fecha').value;
-            const desc = document.getElementById('feriado-descripcion').value.trim();
-
-            if (!nombre || !fecha || !desc) {
-                showToast('⚠️ Completa todos los campos', true);
-                return;
-            }
-
-            let feriados = {};
-            try {
-                feriados = JSON.parse(localStorage.getItem('feriados_locales') || '{}');
-            } catch (e) {
-                showToast('❌ Error de almacenamiento', true);
-                return;
-            }
-
-            if (!feriados[nombre]) feriados[nombre] = [];
-
-            const index = document.getElementById('edit-index').value;
-            const localEdit = document.getElementById('edit-local').value;
-
-            // Evitar duplicados (excepto en edición)
-            const existe = feriados[nombre].some(f => f.fecha === fecha && f.descripcion === desc && 
-                !(index !== '' && localEdit === nombre));
-            if (existe) {
-                showToast('❌ Ya existe ese feriado en esta fecha', true);
-                return;
-            }
-
-            const nuevo = { fecha, descripcion: desc };
-
-            if (index !== '' && localEdit === nombre) {
-                feriados[nombre][index] = nuevo;
-                showToast('✅ Feriado actualizado');
-            } else {
-                feriados[nombre].push(nuevo);
-                showToast('✅ Feriado agregado');
-            }
-
-            try {
-                localStorage.setItem('feriados_locales', JSON.stringify(feriados));
+                const res = await fetch(`${DB_FERIADOS.replace('.json', `/${key}.json`)}`);
+                const feriado = await res.json();
                 limpiarFormulario();
-                cargarFeriados();
+
+                document.getElementById('feriado-local').value = feriado.local;
+                document.getElementById('feriado-fecha').value = feriado.fecha;
+                document.getElementById('feriado-nombre').value = feriado.nombre;
+                document.getElementById('feriado-abre').value = feriado.abre;
+                document.getElementById('horario-container').style.display = feriado.abre === 'si' ? 'block' : 'none';
+
+                if (feriado.abre === 'si' && feriado.horario) {
+                    const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+                    dias.forEach(dia => {
+                        const group = document.querySelector(`[data-dia="${dia}"]`);
+                        const diaData = feriado.horario[dia];
+                        if (!diaData) return;
+
+                        group.querySelector('.hora-apertura').value = diaData.apertura || '';
+                        group.querySelector('.hora-cierre').value = diaData.cierre || '';
+                        group.querySelector('.chk-doble').checked = diaData.doble || false;
+                        group.querySelector('.doble-horario').style.display = diaData.doble ? 'flex' : 'none';
+                        group.querySelector('.hora-apertura2').value = diaData.apertura2 || '';
+                        group.querySelector('.hora-cierre2').value = diaData.cierre2 || '';
+                        group.querySelector('.chk-continuo').checked = diaData.continuo || false;
+                        group.querySelector('.pico-simple').style.display = diaData.continuo ? 'block' : 'none';
+                        group.querySelector('.pico-inicio').value = diaData.pico?.inicio || '';
+                        group.querySelector('.pico-fin').value = diaData.pico?.fin || '';
+                    });
+                }
+
+                document.getElementById('edit-key').value = key;
+                document.getElementById('btn-texto').textContent = 'Actualizar Feriado';
+                document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Feriado';
             } catch (e) {
+                console.error('Error al editar:', e);
+                showToast('❌ Error al cargar feriado', true);
+            }
+        }
+
+        async function guardarFeriado(e) {
+            e.preventDefault();
+            const local = document.getElementById('feriado-local').value;
+            const fecha = document.getElementById('feriado-fecha').value;
+            const nombre = document.getElementById('feriado-nombre').value.trim();
+            const abre = document.getElementById('feriado-abre').value;
+            const key = document.getElementById('edit-key').value;
+
+            if (!local || !fecha || !nombre) {
+                showToast('⚠️ Completa todos los campos obligatorios', true);
+                return;
+            }
+
+            const feriado = {
+                local,
+                fecha,
+                nombre,
+                abre
+            };
+
+            if (abre === 'si') {
+                const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+                feriado.horario = {};
+                let valido = true;
+
+                dias.forEach(dia => {
+                    const group = document.querySelector(`[data-dia="${dia}"]`);
+                    const apertura = group.querySelector('.hora-apertura').value;
+                    const cierre = group.querySelector('.hora-cierre').value;
+                    if (!apertura || !cierre) valido = false;
+
+                    feriado.horario[dia] = {
+                        apertura,
+                        cierre,
+                        doble: group.querySelector('.chk-doble').checked,
+                        continuo: group.querySelector('.chk-continuo').checked
+                    };
+
+                    if (feriado.horario[dia].doble) {
+                        feriado.horario[dia].apertura2 = group.querySelector('.hora-apertura2').value;
+                        feriado.horario[dia].cierre2 = group.querySelector('.hora-cierre2').value;
+                    }
+
+                    if (feriado.horario[dia].continuo) {
+                        feriado.horario[dia].pico = {
+                            inicio: group.querySelector('.pico-inicio').value,
+                            fin: group.querySelector('.pico-fin').value
+                        };
+                    }
+                });
+
+                if (!valido) {
+                    showToast('⚠️ Completa todos los horarios', true);
+                    return;
+                }
+            }
+
+            try {
+                let url = DB_FERIADOS;
+                let method = 'POST';
+                let body = JSON.stringify(feriado);
+
+                if (key) {
+                    url = `${DB_FERIADOS.replace('.json', `/${key}.json`)}`;
+                    method = 'PUT';
+                }
+
+                const res = await fetch(url, { 
+                    method, 
+                    body, 
+                    headers: { 'Content-Type': 'application/json' } 
+                });
+
+                if (!res.ok) throw new Error('Error al guardar');
+
+                showToast('✅ Feriado guardado');
+                limpiarFormulario();
+                await cargarFeriados();
+            } catch (err) {
+                console.error('Error:', err);
                 showToast('❌ Error al guardar', true);
+            }
+        }
+
+        async function eliminarFeriado(key, nombre) {
+            if (!confirm(`¿Eliminar el feriado "${nombre}"?`)) return;
+
+            try {
+                const res = await fetch(`${DB_FERIADOS.replace('.json', `/${key}.json`)}`, {
+                    method: 'DELETE'
+                });
+
+                if (!res.ok) throw new Error('Error al eliminar');
+
+                showToast('🗑️ Feriado eliminado');
+                await cargarFeriados();
+            } catch (err) {
+                console.error('Error:', err);
+                showToast('❌ Error al eliminar', true);
             }
         }
 
         // Inicializar
-        window.onload = function () {
-            cargarLocales();
-            document.getElementById('local-select').addEventListener('change', cargarFeriados);
+        window.onload = async function () {
+            await cargarLocales();
+            await cargarHorariosLocales();
+            inicializarDias();
+            await cargarFeriados();
+
             document.getElementById('form-feriado').addEventListener('submit', guardarFeriado);
         };
     </script>
 
-    <!-- ✅ Botón flotante - SIEMPRE VISIBLE Y IGUAL QUE LOS DEMÁS -->
+    <!-- ✅ Botón flotante -->
     <script>
-        // Botón flotante infalible
-        function crearBotonMenu() {
+        document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
             const btn = document.createElement('button');
             btn.id = 'btn-menu-flotante';
@@ -373,23 +557,11 @@
                 display: block !important;
                 transition: all 0.2s ease !important;
             `;
-            btn.onclick = () => window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
+            btn.onclick = () => {
+                window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
+            };
             document.body.appendChild(btn);
-        }
-
-        // Intentar hasta que el body exista
-        let intentos = 0;
-        const maxIntentos = 100;
-        const intervalo = setInterval(() => {
-            if (document.body || intentos >= maxIntentos) {
-                clearInterval(intervalo);
-                setTimeout(crearBotonMenu, 200);
-            }
-            intentos++;
-        }, 100);
-
-        document.addEventListener('DOMContentLoaded', crearBotonMenu);
+        });
     </script>
 </body>
-
 </html>
