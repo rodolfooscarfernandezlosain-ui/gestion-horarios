@@ -157,7 +157,7 @@
                 </select>
             </div>
 
-            <!-- ✅ NUEVO: Fecha de ingreso al trabajo -->
+            <!-- ✅ Fecha de ingreso al trabajo -->
             <div class="form-group">
                 <label>Fecha de Ingreso *</label>
                 <input type="date" id="empleado-fecha-ingreso" required>
@@ -350,6 +350,7 @@
                 let body = JSON.stringify(empleado);
 
                 if (key) {
+                    // ✅ URL corregida: sin espacios
                     url = `https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados/${key}.json`;
                     method = 'PUT';
                 }
@@ -371,45 +372,43 @@
             }
         }
 
+        // ✅ Eliminar con confirmación segura y URL sin espacios
         async function eliminarEmpleado(key, nombre, legajo) {
-    const confirmacion = prompt(`¿Eliminar a "${nombre}" (Legajo: ${legajo})?\nEscribe "ELIMINAR" para confirmar:`);
-    
-    if (confirmacion !== "ELIMINAR") {
-        showToast('❌ Acción cancelada', true);
-        return;
-    }
+            const confirmacion = prompt(`¿Eliminar a "${nombre}" (Legajo: ${legajo})?\nEscribe "ELIMINAR" para confirmar:`);
+            
+            if (confirmacion !== "ELIMINAR") {
+                showToast('❌ Acción cancelada', true);
+                return;
+            }
 
-    if (!key) {
-        showToast('❌ No se puede eliminar: falta clave', true);
-        return;
-    }
+            if (!key) {
+                showToast('❌ No se puede eliminar: falta clave', true);
+                return;
+            }
 
-    // ✅ Validar que la key no tenga espacios o caracteres extraños
-    const cleanKey = key.trim();
-    if (!cleanKey) {
-        showToast('❌ Clave inválida', true);
-        return;
-    }
+            const cleanKey = key.trim();
+            if (!cleanKey) {
+                showToast('❌ Clave inválida', true);
+                return;
+            }
 
-    try {
-        // ✅ URL sin espacios
-        const url = `https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados/${cleanKey}.json`;
+            try {
+                // ✅ URL corregida: sin espacios
+                const url = `https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados/${cleanKey}.json`;
 
-        const res = await fetch(url, {
-            method: 'DELETE'
-        });
+                const res = await fetch(url, { method: 'DELETE' });
 
-        if (!res.ok) {
-            throw new Error(`Error ${res.status}: ${res.statusText}`);
+                if (!res.ok) {
+                    throw new Error(`Error ${res.status}: ${res.statusText}`);
+                }
+
+                showToast('🗑️ Empleado eliminado');
+                await cargarEmpleados();
+            } catch (err) {
+                console.error('Error al eliminar:', err);
+                showToast(`❌ Error al eliminar: ${err.message}`, true);
+            }
         }
-
-        showToast('🗑️ Empleado eliminado');
-        await cargarEmpleados(); // ✅ Recargar la tabla
-    } catch (err) {
-        console.error('Error al eliminar:', err);
-        showToast(`❌ Error al eliminar: ${err.message}`, true);
-    }
-}
 
         // Inicializar
         window.onload = async function () {
@@ -461,4 +460,3 @@
     </script>
 </body>
 </html>
-
