@@ -185,7 +185,7 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase (sin espacios)
+        // ✅ URLs de Firebase (SIN espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_CATEGORIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/categorias.json';
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
@@ -205,7 +205,7 @@
             try {
                 const res = await fetch(DB_LOCALES);
                 const data = await res.json();
-                const locales = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+                const locales = data ? Object.values(data) : [];
 
                 const select = document.getElementById('empleado-local');
                 select.innerHTML = '<option value="">Selecciona un local</option>';
@@ -227,7 +227,7 @@
             try {
                 const res = await fetch(DB_CATEGORIAS);
                 const data = await res.json();
-                categorias = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+                categorias = data ? Object.values(data) : [];
 
                 const select = document.getElementById('empleado-categoria');
                 select.innerHTML = '<option value="">Selecciona una categoría</option>';
@@ -249,7 +249,7 @@
             try {
                 const res = await fetch(DB_EMPLEADOS);
                 const data = await res.json();
-                const empleados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+                const empleados = data ? Object.values(data) : [];
 
                 const tbody = document.querySelector('#tabla-empleados tbody');
                 tbody.innerHTML = '';
@@ -273,10 +273,10 @@
                             emp.estado === 'Licencia' ? '#3498db' : '#e74c3c'
                         }; color:white; font-size:12px;">${emp.estado}</span></td>
                         <td style="text-align: center;">
-                            <a href="#" class="accion-btn editar" onclick="editarEmpleado('${emp.key}', '${emp.legajo}', '${emp.dni}', '${emp.cuil}', '${emp.nombre}', '${emp.categoria}', '${emp.puesto}', '${emp.local}', '${emp.estado}')">
+                            <a href="#" class="accion-btn editar" onclick="editarEmpleado('${emp.key || ''}', '${emp.legajo}', '${emp.dni}', '${emp.cuil}', '${emp.nombre}', '${emp.categoria}', '${emp.puesto}', '${emp.local}', '${emp.estado}')">
                                 <i class="fas fa-edit"></i> Editar
                             </a>
-                            <a href="#" class="accion-btn eliminar" onclick="eliminarEmpleado('${emp.key}', '${emp.nombre}')">
+                            <a href="#" class="accion-btn eliminar" onclick="eliminarEmpleado('${emp.key || ''}', '${emp.nombre}')">
                                 <i class="fas fa-trash"></i> Eliminar
                             </a>
                         </td>
@@ -286,7 +286,7 @@
             } catch (e) {
                 console.error('Error cargando empleados:', e);
                 document.querySelector('#tabla-empleados tbody').innerHTML = 
-                    `<tr><td colspan="7" style="text-align:center; color: red;">Error al cargar</td></tr>`;
+                    `<tr><td colspan="7" style="text-align:center; color: red;">Error al cargar datos. Revisa la consola.</td></tr>`;
             }
         }
 
@@ -364,6 +364,11 @@
 
         async function eliminarEmpleado(key, nombre) {
             if (!confirm(`¿Eliminar al empleado "${nombre}"?`)) return;
+
+            if (!key) {
+                showToast('❌ No se puede eliminar: falta clave', true);
+                return;
+            }
 
             try {
                 const res = await fetch(`https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados/${key}.json`, {
