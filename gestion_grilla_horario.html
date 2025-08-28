@@ -224,7 +224,7 @@
                 const horarioEmp = horariosEmpleados.find(h => h.empleadoKey === emp.key);
 
                 if (!horarioEmp) {
-                    console.warn(`❌ No hay horario para: ${emp.nombre}`);
+                    console.warn(`❌ No hay horario para: ${emp.nombre} (key: ${emp.key})`);
                     const celdas = `<td class="empleado">${emp.nombre}</td><td colspan="7">No tiene horario asignado</td>`;
                     tr.innerHTML = celdas;
                     tbody.appendChild(tr);
