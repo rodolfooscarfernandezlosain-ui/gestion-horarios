@@ -130,7 +130,7 @@
     <div id="snackbar" class="snackbar">Datos cargados</div>
 
     <script>
-        // ✅ URLs de Firebase (sin espacios)
+        // ✅ URLs de Firebase (SIN espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
         const DB_HORARIOS_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados.json';
@@ -152,8 +152,10 @@
 
         // ✅ Calcular antigüedad
         function calcularAntiguedad(fechaIngreso) {
+            if (!fechaIngreso) return 0;
             const hoy = new Date();
             const ingreso = new Date(fechaIngreso);
+            if (isNaN(ingreso.getTime())) return 0;
             const diff = hoy - ingreso;
             return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
         }
@@ -164,6 +166,14 @@
             if (antiguedad < 10) return 21;
             if (antiguedad < 20) return 28;
             return 35;
+        }
+
+        // ✅ Convertir fecha string a objeto Date seguro
+        function parseFecha(fechaStr) {
+            if (!fechaStr) return null;
+            // Formatos comunes: "2025-10-15", "15/10/2025", "2025-10-15T00:00:00"
+            const fecha = new Date(fechaStr);
+            return isNaN(fecha.getTime()) ? null : fecha;
         }
 
         // ✅ Cargar todos los datos
@@ -183,12 +193,14 @@
                 ausencias = dataAusencias ? Object.values(dataAusencias) : [];
                 feriados = dataFeriados ? Object.values(dataFeriados) : [];
 
+                console.log('✅ Datos cargados:', { empleados, ausencias, feriados });
+
                 cargarLocales();
                 document.getElementById('filtro-mes').value = new Date().toISOString().slice(0, 7);
                 cargarNovedades();
             } catch (e) {
-                console.error('Error cargando datos:', e);
-                showToast('Error al cargar datos');
+                console.error('❌ Error cargando datos:', e);
+                showToast('Error al cargar datos. Revisa la consola.', true);
             }
         }
 
@@ -208,7 +220,9 @@
         function cargarNovedades() {
             const localFiltro = document.getElementById('filtro-local').value;
             const mesAnio = document.getElementById('filtro-mes').value;
-            const [year, month] = mesAnio.split('-').map(Number);
+            if (!mesAnio) return;
+
+            const [year, month] = mesAnio.split('-').map(Number); // month es 0-indexado: enero=0, octubre=9
 
             const tbody = document.querySelector('#tabla-novedades tbody');
             tbody.innerHTML = '';
@@ -223,16 +237,17 @@
                 const antiguedad = calcularAntiguedad(emp.fechaIngreso);
                 const vacacionesTotales = diasVacaciones(antiguedad);
 
-                // 🏖️ Vacaciones tomadas
-                const ausenciasMes = ausencias.filter(a => 
-                    a.empleadoLegajo === emp.legajo &&
-                    a.tipo === 'Vacaciones' &&
-                    new Date(a.fechaInicio).getMonth() === month &&
-                    new Date(a.fechaInicio).getFullYear() === year
-                );
+                // 🏖️ Vacaciones tomadas en el mes
+                const ausenciasMes = ausencias.filter(a => {
+                    if (a.empleadoLegajo !== emp.legajo || a.tipo !== 'Vacaciones') return false;
+                    const fechaInicio = parseFecha(a.fechaInicio);
+                    return fechaInicio && fechaInicio.getMonth() === month && fechaInicio.getFullYear() === year;
+                });
+
                 const diasVacacionesTomados = ausenciasMes.reduce((acc, a) => {
-                    const inicio = new Date(a.fechaInicio);
-                    const fin = new Date(a.fechaFin);
+                    const inicio = parseFecha(a.fechaInicio);
+                    const fin = parseFecha(a.fechaFin);
+                    if (!inicio || !fin) return acc;
                     return acc + Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24)) + 1;
                 }, 0);
 
@@ -243,7 +258,6 @@
 
                 if (horarioEmp && horarioEmp.dias) {
                     const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-                    const primerDia = new Date(year, month, 1);
                     const ultimoDia = new Date(year, month + 1, 0);
                     const diasDelMes = ultimoDia.getDate();
 
@@ -254,16 +268,15 @@
 
                         if (horario && !horario.libre) {
                             diasTrabajados++;
-                            // Aquí puedes sumar horas extras si lo tienes en el modelo
-                            horasExtras += 2; // Ejemplo: 2h extras por día
+                            horasExtras += 2; // Ajusta según tu lógica
                         }
                     }
                 }
 
                 // 🎉 Feriados trabajados
                 const feriadosMes = feriados.filter(f => {
-                    const fecha = new Date(f.fecha);
-                    return fecha.getMonth() === month && fecha.getFullYear() === year;
+                    const fecha = parseFecha(f.fecha);
+                    return fecha && fecha.getMonth() === month && fecha.getFullYear() === year;
                 }).length;
 
                 const tr = document.createElement('tr');
