@@ -3,132 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personal Óptimo</title>
-    <!-- ✅ Font Awesome (sin espacios) -->
+    <title>Optimización de Personal</title>
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f4f6f9;
-            color: #333;
-            line-height: 1.6;
-            padding: 20px;
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #f4f6f9; 
+            padding: 20px; 
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
         }
-        h1 {
-            color: #2c3e50;
-            border-bottom: 2px solid #9b59b6;
-            padding-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        h1 { 
+            color: #2c3e50; 
+            border-bottom: 2px solid #27ae60; 
+            padding-bottom: 10px; 
         }
-        .filters {
-            display: flex;
-            gap: 15px;
-            margin: 20px 0;
-            flex-wrap: wrap;
+        .form-group { 
+            margin: 15px 0; 
         }
-        .filters .form-group {
-            flex: 1;
-            min-width: 200px;
-            margin: 0;
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: 600; 
         }
-        .form-group {
-            margin: 15px 0;
+        select { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 6px; 
         }
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #2c3e50;
+        button { 
+            background: #27ae60; 
+            color: white; 
+            border: none; 
+            padding: 10px 15px; 
+            border-radius: 6px; 
+            cursor: pointer; 
         }
-        select, button {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 1rem;
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
         }
-        select {
-            width: 100%;
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: left; 
         }
-        button {
-            background: #9b59b6;
-            color: white;
-            border: none;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
-            border-radius: 6px;
+        th { 
+            background: #ecf0f1; 
+            font-weight: 600; 
         }
-        button:hover {
-            opacity: 0.9;
+        .badge { 
+            padding: 5px 10px; 
+            border-radius: 12px; 
+            font-size: 12px; 
+            color: white; 
         }
-        .btn-warning {
-            background: #f39c12;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: left;
-        }
-        th {
-            background: #ecf0f1;
-            font-weight: 600;
-        }
-        .status-ok {
-            color: #27ae60;
-            font-weight: bold;
-        }
-        .status-falta {
-            color: #e74c3c;
-            font-weight: bold;
-        }
-        .status-sobra {
-            color: #f39c12;
-            font-weight: bold;
-        }
-        .summary {
-            background: #d4edda;
-            padding: 15px;
-            border-radius: 6px;
-            margin: 15px 0;
-            border-left: 4px solid #27ae60;
-        }
-        .summary strong {
-            color: #155724;
-        }
-        .snackbar {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #27ae60;
-            color: white;
-            padding: 14px 20px;
-            border-radius: 6px;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .snackbar.show {
-            opacity: 1;
-        }
-        .error {
-            background: #e74c3c !important;
+        .ok { background: #27ae60; }
+        .falta { background: #e74c3c; }
+        .sobra { background: #f39c12; }
+        .feriado { background: #8e44ad; }
+        .domingo { background: #3498db; }
+        .summary { 
+            background: #d4edda; 
+            padding: 15px; 
+            border-radius: 6px; 
+            margin: 15px 0; 
+            border-left: 4px solid #27ae60; 
         }
     </style>
 </head>
@@ -136,71 +85,89 @@
     <div class="container">
         <h1><i class="fas fa-balance-scale"></i> Optimización de Personal</h1>
 
-        <div class="filters">
-            <div class="form-group">
-                <label>Seleccionar Local</label>
-                <select id="local-select" onchange="optimizarPersonal()">
-                    <option value="">-- Selecciona un local --</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Día de la Semana</label>
-                <select id="dia-select" onchange="optimizarPersonal()">
-                    <option value="lunes">Lunes</option>
-                    <option value="martes">Martes</option>
-                    <option value="miercoles">Miércoles</option>
-                    <option value="jueves">Jueves</option>
-                    <option value="viernes">Viernes</option>
-                    <option value="sabado">Sábado</option>
-                    <option value="domingo">Domingo</option>
-                </select>
-            </div>
+        <div class="form-group">
+            <label>Seleccionar Local</label>
+            <select id="local-select" onchange="calcularOptimizacion()">
+                <option value="">Cargando locales...</option>
+            </select>
         </div>
 
-        <button onclick="optimizarPersonal()">
-            <i class="fas fa-calculator"></i> Calcular Personal Óptimo
-        </button>
+        <div id="resumen-container" style="display:none;">
+            <div class="summary">
+                <strong>Resumen:</strong> 
+                <span id="resumen-texto"></span>
+            </div>
 
-        <h2><i class="fas fa-chart-bar"></i> Resultados de Optimización</h2>
-        <div id="resultados">
-            <p style="text-align: center; color: #7f8c8d; padding: 30px;">
-                Selecciona un local y un día para analizar el personal.
-            </p>
+            <h3>Comparativo por Día y Puesto</h3>
+            <table id="tabla-optimizacion">
+                <thead>
+                    <tr>
+                        <th>Día</th>
+                        <th>Puesto</th>
+                        <th>Necesita</th>
+                        <th>Asignado</th>
+                        <th>Diferencia</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <h3>Domingos y Feriados Trabajados</h3>
+            <table id="tabla-extras">
+                <thead>
+                    <tr>
+                        <th>Empleado</th>
+                        <th>Local</th>
+                        <th>Tipo</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
     </div>
 
-    <!-- Snackbar -->
-    <div id="snackbar" class="snackbar">Acción realizada</div>
-
     <script>
-        function showToast(msg, isError = false) {
-            const sb = document.getElementById('snackbar');
-            sb.textContent = msg;
-            sb.className = 'snackbar show';
-            if (isError) sb.classList.add('error');
-            setTimeout(() => sb.className = 'snackbar', 3000);
+        // URLs de Firebase
+        const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
+        const DB_HORARIOS_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_locales.json';
+        const DB_HORARIOS_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados.json';
+        const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
+        const DB_FERIADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/feriados.json';
+
+        let locales = [];
+        let horariosLocales = [];
+        let horariosEmpleados = [];
+        let empleados = [];
+        let feriados = [];
+
+        // Cargar datos
+        async function cargarDatos() {
+            try {
+                [locales, horariosLocales, horariosEmpleados, empleados, feriados] = await Promise.all([
+                    fetch(DB_LOCALES).then(r => r.json()),
+                    fetch(DB_HORARIOS_LOCALES).then(r => r.json()),
+                    fetch(DB_HORARIOS_EMPLEADOS).then(r => r.json()),
+                    fetch(DB_EMPLEADOS).then(r => r.json()),
+                    fetch(DB_FERIADOS).then(r => r.json())
+                ]);
+
+                locales = Object.values(locales || {});
+                horariosLocales = Object.values(horariosLocales || {});
+                horariosEmpleados = Object.values(horariosEmpleados || {});
+                empleados = Object.values(empleados || {});
+                feriados = Object.values(feriados || {});
+                
+                cargarLocales();
+            } catch (e) {
+                console.error('Error cargando datos:', e);
+            }
         }
 
-        // Cargar locales
         function cargarLocales() {
-            let locales = [];
-            try {
-                locales = JSON.parse(localStorage.getItem('locales') || '[]');
-            } catch (e) {
-                console.error('Error leyendo locales:', e);
-            }
-
             const select = document.getElementById('local-select');
-            select.innerHTML = '<option value="">-- Selecciona un local --</option>';
-
-            if (locales.length === 0) {
-                const opt = document.createElement('option');
-                opt.disabled = true;
-                opt.textContent = 'No hay locales. Crea uno primero.';
-                select.appendChild(opt);
-                return;
-            }
-
+            select.innerHTML = '<option value="">Selecciona un local</option>';
             locales.forEach(loc => {
                 const opt = document.createElement('option');
                 opt.value = loc.nombre;
@@ -209,145 +176,131 @@
             });
         }
 
-        // Optimizar personal
-        function optimizarPersonal() {
+        function calcularOptimizacion() {
             const localNombre = document.getElementById('local-select').value;
-            const dia = document.getElementById('dia-select').value;
+            if (!localNombre) return;
 
-            if (!localNombre) {
-                document.getElementById('resultados').innerHTML = 
-                    '<p style="text-align: center; color: #e74c3c;">Selecciona un local.</p>';
-                return;
-            }
+            const tbody = document.querySelector('#tabla-optimizacion tbody');
+            tbody.innerHTML = '';
 
-            // Cargar datos
-            let horariosLocal = {};
-            try {
-                horariosLocal = JSON.parse(localStorage.getItem('horarios_locales') || '{}');
-            } catch (e) { }
+            const resumen = {
+                falta: 0,
+                sobra: 0,
+                ok: 0
+            };
 
-            let empleados = [];
-            try {
-                empleados = JSON.parse(localStorage.getItem('empleados') || '[]');
-            } catch (e) { }
+            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            const horarioLocal = horariosLocales.find(h => h.local === localNombre);
 
-            const datosLocal = horariosLocal[localNombre]?.[dia];
+            if (!horarioLocal) return;
 
-            if (!datosLocal || !datosLocal.trabaja) {
-                document.getElementById('resultados').innerHTML = 
-                    `<p style="text-align: center; color: #7f8c8d;">El local "${localNombre}" no abre los ${dia}s.</p>`;
-                return;
-            }
+            dias.forEach(dia => {
+                const diaData = horarioLocal[dia];
+                if (!diaData || !diaData.continuo || !diaData.puestos_pico) return;
 
-            // Personal necesario por puesto
-            const necesario = datosLocal.puestos || { 'Cajero': 2, 'Repositor': 3 };
-            const empleadosLocal = empleados.filter(e => e.local === localNombre);
+                diaData.puestos_pico.forEach(puesto => {
+                    const necesita = parseInt(puesto.cantidad);
+                    const asignado = contarEmpleadosAsignados(localNombre, dia, puesto.puesto);
+                    const diferencia = asignado - necesita;
+                    let estado = 'ok';
+                    let estadoTexto = 'Correcto';
 
-            // Horarios de empleados
-            let horariosEmpleados = {};
-            try {
-                horariosEmpleados = JSON.parse(localStorage.getItem('horarios') || '{}');
-            } catch (e) { }
-
-            // Filtrar empleados que trabajan ese día
-            const asignadosPorPuesto = {};
-            Object.keys(necesario).forEach(puesto => {
-                asignadosPorPuesto[puesto] = [];
-            });
-
-            empleadosLocal.forEach(emp => {
-                const horario = horariosEmpleados[emp.dni]?.[dia];
-                if (horario?.work) {
-                    if (asignadosPorPuesto[emp.puesto]) {
-                        asignadosPorPuesto[emp.puesto].push(emp);
+                    if (diferencia < 0) {
+                        estado = 'falta';
+                        estadoTexto = 'Falta personal';
+                        resumen.falta++;
+                    } else if (diferencia > 0) {
+                        estado = 'sobra';
+                        estadoTexto = 'Sobredotación';
+                        resumen.sobra++;
+                    } else {
+                        resumen.ok++;
                     }
-                }
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${dia.charAt(0).toUpperCase() + dia.slice(1)}</td>
+                        <td>${puesto.puestoNombre || puesto.puesto}</td>
+                        <td>${necesita}</td>
+                        <td>${asignado}</td>
+                        <td>${diferencia}</td>
+                        <td><span class="badge ${estado}">${estadoTexto}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
             });
 
-            // Generar tabla
-            let html = `
-            <table id="tabla-optimizacion">
-                <thead>
-                    <tr>
-                        <th>Puesto</th>
-                        <th>Necesario</th>
-                        <th>Asignado</th>
-                        <th>Estado</th>
-                        <th>Empleados Asignados</th>
-                    </tr>
-                </thead>
-                <tbody>`;
+            // Mostrar resumen
+            document.getElementById('resumen-texto').textContent = 
+                `${resumen.ok} correctos, ${resumen.falta} con falta, ${resumen.sobra} con sobra`;
+            document.getElementById('resumen-container').style.display = 'block';
 
-            let totalFaltan = 0, totalSobran = 0;
-
-            Object.keys(necesario).forEach(puesto => {
-                const req = necesario[puesto];
-                const asignados = asignadosPorPuesto[puesto] || [];
-                const diff = asignados.length - req;
-                let estado, clase;
-
-                if (diff === 0) {
-                    estado = '✔️ Cubierto';
-                    clase = 'status-ok';
-                } else if (diff < 0) {
-                    estado = `❌ Faltan ${-diff}`;
-                    clase = 'status-falta';
-                    totalFaltan += -diff;
-                } else {
-                    estado = `⚠️ Sobran ${diff}`;
-                    clase = 'status-sobra';
-                    totalSobran += diff;
-                }
-
-                const nombres = asignados.length > 0 
-                    ? asignados.map(e => `
-                        <span style="display:inline-block; margin:2px 0;">
-                            ${e.nombre}
-                            <button class="btn-warning" onclick="editarEmpleado('${e.dni}')" style="padding:4px 6px; margin-left:5px;">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                        </span>
-                      `).join('<br>') 
-                    : '–';
-
-                html += `
-                <tr>
-                    <td><strong>${puesto}</strong></td>
-                    <td>${req}</td>
-                    <td>${asignados.length}</td>
-                    <td class="${clase}">${estado}</td>
-                    <td>${nombres}</td>
-                </tr>`;
-            });
-
-            html += `</tbody></table>`;
-
-            // Resumen
-            html += `<div class="summary">
-                <strong>Resumen:</strong> 
-                Faltan: ${totalFaltan} empleados | 
-                Sobran: ${totalSobran} empleados
-            </div>`;
-
-            document.getElementById('resultados').innerHTML = html;
+            // Cargar extras
+            cargarExtras(localNombre);
         }
 
-        // Redirigir a edición de empleado
-        function editarEmpleado(dni) {
-            localStorage.setItem('edit_empleado_dni', dni);
-            window.location.href = 'gestion_empleados.html';
+        function contarEmpleadosAsignados(local, dia, puesto) {
+            const empleadosLocal = empleados.filter(e => e.local === local);
+            return empleadosLocal.filter(emp => {
+                const horarioEmp = horariosEmpleados.find(h => h.empleadoKey === emp.key);
+                if (!horarioEmp) return false;
+                const diaEmp = horarioEmp.dias[dia];
+                return !diaEmp?.libre;
+            }).length;
+        }
+
+        function cargarExtras(local) {
+            const tbody = document.querySelector('#tabla-extras tbody');
+            tbody.innerHTML = '';
+
+            const empleadosLocal = empleados.filter(e => e.local === local);
+            const feriadosAbiertos = feriados.filter(f => f.local === local && f.abre === 'si');
+
+            feriadosAbiertos.forEach(feriado => {
+                const fecha = new Date(feriado.fecha).toLocaleDateString();
+                empleadosLocal.forEach(emp => {
+                    const horario = horariosEmpleados.find(h => h.empleadoKey === emp.key);
+                    if (horario && horario.dias[getDiaSemana(feriado.fecha)]?.entrada) {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><strong>${emp.nombre}</strong></td>
+                            <td>${local}</td>
+                            <td><span class="badge feriado">Feriado</span></td>
+                            <td>${fecha}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    }
+                });
+            });
+
+            // Domingos trabajados
+            empleadosLocal.forEach(emp => {
+                const horario = horariosEmpleados.find(h => h.empleadoKey === emp.key);
+                if (horario && horario.dias.domingo && !horario.dias.domingo.libre) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${emp.nombre}</strong></td>
+                        <td>${local}</td>
+                        <td><span class="badge domingo">Domingo</span></td>
+                        <td>Todos los domingos</td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+        }
+
+        function getDiaSemana(fechaStr) {
+            const fecha = new Date(fechaStr);
+            return ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][fecha.getDay()];
         }
 
         // Inicializar
-        window.onload = function () {
-            cargarLocales();
-        };
+        window.onload = cargarDatos;
     </script>
 
-    <!-- ✅ Botón flotante - SIEMPRE VISIBLE Y IGUAL QUE LOS DEMÁS -->
+    <!-- ✅ Botón flotante -->
     <script>
-        // Botón flotante infalible
-        function crearBotonMenu() {
+        document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
             const btn = document.createElement('button');
             btn.id = 'btn-menu-flotante';
@@ -371,23 +324,11 @@
                 display: block !important;
                 transition: all 0.2s ease !important;
             `;
-            btn.onclick = () => window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
+            btn.onclick = () => {
+                window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
+            };
             document.body.appendChild(btn);
-        }
-
-        // Intentar hasta que el body exista
-        let intentos = 0;
-        const maxIntentos = 100;
-        const intervalo = setInterval(() => {
-            if (document.body || intentos >= maxIntentos) {
-                clearInterval(intervalo);
-                setTimeout(crearBotonMenu, 200);
-            }
-            intentos++;
-        }, 100);
-
-        document.addEventListener('DOMContentLoaded', crearBotonMenu);
+        });
     </script>
 </body>
-
 </html>
