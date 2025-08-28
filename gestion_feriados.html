@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feriados por Local</title>
-    <!-- Font Awesome sin espacios -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
@@ -113,6 +113,11 @@
         .error { 
             background: #e74c3c !important; 
         }
+        .info-dia {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -132,6 +137,7 @@
             <div class="form-group">
                 <label>Fecha del Feriado *</label>
                 <input type="date" id="feriado-fecha" required>
+                <div id="dia-semana" class="info-dia" style="display:none;"></div>
             </div>
 
             <div class="form-group">
@@ -149,9 +155,9 @@
 
             <div id="horario-container" style="display:none;">
                 <h3>Horario del Feriado</h3>
-                <p>Modifique si es diferente al horario habitual.</p>
+                <p>Configure el horario para este día especial.</p>
 
-                <div id="dias-container">
+                <div id="dia-container">
                     <!-- Generado por JS -->
                 </div>
             </div>
@@ -170,6 +176,7 @@
                     <th>Local</th>
                     <th>Feriado</th>
                     <th>Fecha</th>
+                    <th>Día</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
@@ -191,6 +198,8 @@
         let horariosLocales = [];
         let categorias = [];
 
+        const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
         function showToast(msg, isError = false) {
             const sb = document.getElementById('snackbar');
             sb.textContent = msg;
@@ -199,7 +208,7 @@
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
-        // Cargar categorías (puestos)
+        // Cargar categorías
         async function cargarCategorias() {
             try {
                 const res = await fetch(DB_CATEGORIAS);
@@ -242,11 +251,11 @@
             }
         }
 
-        // Generar HTML para un día
-        function generarDiaHTML(dia) {
+        // Generar HTML para un solo día
+        function generarDiaHTML() {
             return `
-                <div class="day-group" data-dia="${dia}">
-                    <h3>${dia.charAt(0).toUpperCase() + dia.slice(1)}</h3>
+                <div class="day-group" id="dia-feriado">
+                    <h3 id="titulo-dia">Día del feriado</h3>
 
                     <div class="toggle-row">
                         <label><input type="checkbox" class="chk-continuo"> Horario Continuo</label>
@@ -269,51 +278,31 @@
                             <input type="time" class="pico-inicio">
                             <input type="time" class="pico-fin">
                         </div>
-                        <button type="button" class="btn btn-sm" onclick="agregarPuesto(this.closest('.day-group'), '.puestos-container')">+ Agregar Puesto</button>
+                        <button type="button" class="btn btn-sm" onclick="agregarPuesto('.puestos-container')">+ Agregar Puesto</button>
                         <div class="puestos-container"></div>
-                    </div>
-
-                    <div class="pico-group pico-extra" style="display:none;">
-                        <h4>Segundo Horario Pico (Mayor Venta)</h4>
-                        <div class="time-row">
-                            <input type="time" class="pico-extra-inicio">
-                            <input type="time" class="pico-extra-fin">
-                        </div>
-                        <button type="button" class="btn btn-sm" onclick="agregarPuesto(this.closest('.day-group'), '.puestos-extra-container')">+ Agregar Puesto</button>
-                        <div class="puestos-extra-container"></div>
                     </div>
                 </div>
             `;
         }
 
-        // Inicializar días
-        function inicializarDias() {
-            const container = document.getElementById('dias-container');
-            const dias = ['lunes'];
-            container.innerHTML = '';
-            dias.forEach(dia => {
-                container.innerHTML += generarDiaHTML(dia);
-            });
+        // Inicializar día
+        function inicializarDia() {
+            const container = document.getElementById('dia-container');
+            container.innerHTML = generarDiaHTML();
 
             // Eventos
-            document.querySelectorAll('.chk-continuo').forEach(checkbox => {
-                checkbox.addEventListener('change', function () {
-                    const group = this.closest('.day-group');
-                    group.querySelector('.pico-simple').style.display = this.checked ? 'block' : 'none';
-                });
+            document.querySelector('.chk-continuo').addEventListener('change', function () {
+                document.querySelector('.pico-simple').style.display = this.checked ? 'block' : 'none';
             });
 
-            document.querySelectorAll('.chk-doble').forEach(checkbox => {
-                checkbox.addEventListener('change', function () {
-                    const group = this.closest('.day-group');
-                    group.querySelector('.doble-horario').style.display = this.checked ? 'flex' : 'none';
-                });
+            document.querySelector('.chk-doble').addEventListener('change', function () {
+                document.querySelector('.doble-horario').style.display = this.checked ? 'flex' : 'none';
             });
         }
 
         // ✅ Agregar puesto
-        function agregarPuesto(group, selector) {
-            const container = group.querySelector(selector);
+        function agregarPuesto(selector) {
+            const container = document.querySelector(selector);
             const div = document.createElement('div');
             div.className = 'puesto-item';
             div.innerHTML = `
@@ -329,14 +318,31 @@
             container.appendChild(div);
         }
 
-        // Cargar horario del local seleccionado
-        function cargarHorarioLocal(localNombre) {
-            const horario = horariosLocales.find(h => h.local === localNombre);
-            if (!horario) return;
+        // Mostrar día de la semana
+        document.getElementById('feriado-fecha').addEventListener('change', function () {
+            const fecha = new Date(this.value);
+            const dia = fecha.getDay();
+            const diaNombre = diasSemana[dia];
+            document.getElementById('dia-semana').textContent = `Este feriado cae en: <strong>${diaNombre}</strong>`;
+            document.getElementById('dia-semana').style.display = 'block';
 
-            const dia = document.querySelector('.day-group');
-            const diaData = horario.lunes;
-            if (!diaData) return;
+            // Actualizar título
+            document.getElementById('titulo-dia').textContent = diaNombre;
+
+            // Cargar horario del local para ese día
+            const local = document.getElementById('feriado-local').value;
+            if (local) {
+                cargarHorarioLocal(local, diaNombre.toLowerCase());
+            }
+        });
+
+        // Cargar horario del local para el día del feriado
+        function cargarHorarioLocal(localNombre, diaNombre) {
+            const horario = horariosLocales.find(h => h.local === localNombre);
+            if (!horario || !horario[diaNombre]) return;
+
+            const diaData = horario[diaNombre];
+            const dia = document.getElementById('dia-feriado');
 
             dia.querySelector('.hora-apertura').value = diaData.apertura;
             dia.querySelector('.hora-cierre').value = diaData.cierre;
@@ -345,10 +351,15 @@
             dia.querySelector('.chk-continuo').checked = diaData.continuo;
             dia.querySelector('.pico-simple').style.display = diaData.continuo ? 'block' : 'none';
 
+            if (diaData.continuo && diaData.pico) {
+                dia.querySelector('.pico-inicio').value = diaData.pico.inicio;
+                dia.querySelector('.pico-fin').value = diaData.pico.fin;
+            }
+
             if (diaData.continuo && diaData.puestos_pico) {
                 dia.querySelector('.puestos-container').innerHTML = '';
                 diaData.puestos_pico.forEach(p => {
-                    agregarPuesto(dia, '.puestos-container');
+                    agregarPuesto('.puestos-container');
                     const item = dia.querySelector('.puestos-container .puesto-item:last-child');
                     item.querySelector('select').value = p.puesto;
                     item.querySelector('input').value = p.cantidad;
@@ -356,17 +367,19 @@
             }
         }
 
+        // Cambiar local
+        document.getElementById('feriado-local').addEventListener('change', function () {
+            const fecha = document.getElementById('feriado-fecha').value;
+            if (fecha) {
+                const dia = new Date(fecha).getDay();
+                const diaNombre = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][dia];
+                cargarHorarioLocal(this.value, diaNombre);
+            }
+        });
+
         // Mostrar/ocultar horario según si abre
         document.getElementById('feriado-abre').addEventListener('change', function () {
             document.getElementById('horario-container').style.display = this.value === 'si' ? 'block' : 'none';
-        });
-
-        // Cambiar local
-        document.getElementById('feriado-local').addEventListener('change', function () {
-            const local = this.value;
-            if (local && document.getElementById('feriado-abre').value === 'si') {
-                cargarHorarioLocal(local);
-            }
         });
 
         // Cargar feriados guardados
@@ -380,16 +393,19 @@
                 tbody.innerHTML = '';
 
                 if (feriados.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center">No hay feriados registrados</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center">No hay feriados registrados</td></tr>`;
                     return;
                 }
 
                 feriados.forEach(feriado => {
+                    const fecha = new Date(feriado.fecha);
+                    const diaNombre = diasSemana[fecha.getDay()];
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td><strong>${feriado.local}</strong></td>
                         <td>${feriado.nombre}</td>
-                        <td>${new Date(feriado.fecha).toLocaleDateString()}</td>
+                        <td>${fecha.toLocaleDateString()}</td>
+                        <td>${diaNombre}</td>
                         <td><span style="padding:5px 10px; border-radius:12px; background:${
                             feriado.abre === 'si' ? '#27ae60' : '#e74c3c'
                         }; color:white; font-size:12px;">${feriado.abre === 'si' ? 'Abierto' : 'Cerrado'}</span></td>
@@ -410,9 +426,9 @@
             document.getElementById('form-feriado').reset();
             document.getElementById('edit-key').value = '';
             document.getElementById('btn-texto').textContent = 'Guardar Feriado';
-            document.querySelector('.container h1').innerHTML = '<i class="fas fa-calendar-alt"></i> Gestión de Feriados por Local';
             document.getElementById('horario-container').style.display = 'none';
-            inicializarDias();
+            document.getElementById('dia-semana').style.display = 'none';
+            inicializarDia();
         }
 
         async function editarFeriado(key) {
@@ -428,8 +444,8 @@
                 document.getElementById('horario-container').style.display = feriado.abre === 'si' ? 'block' : 'none';
 
                 if (feriado.abre === 'si' && feriado.horario) {
-                    const dia = document.querySelector('.day-group');
                     const diaData = feriado.horario.lunes;
+                    const dia = document.getElementById('dia-feriado');
 
                     dia.querySelector('.hora-apertura').value = diaData.apertura || '';
                     dia.querySelector('.hora-cierre').value = diaData.cierre || '';
@@ -439,12 +455,14 @@
                     dia.querySelector('.hora-cierre2').value = diaData.cierre2 || '';
                     dia.querySelector('.chk-continuo').checked = diaData.continuo || false;
                     dia.querySelector('.pico-simple').style.display = diaData.continuo ? 'block' : 'none';
+                    dia.querySelector('.pico-inicio').value = diaData.pico?.inicio || '';
+                    dia.querySelector('.pico-fin').value = diaData.pico?.fin || '';
 
                     // Cargar puestos
                     if (diaData.puestos_pico) {
                         dia.querySelector('.puestos-container').innerHTML = '';
                         diaData.puestos_pico.forEach(p => {
-                            agregarPuesto(dia, '.puestos-container');
+                            agregarPuesto('.puestos-container');
                             const item = dia.querySelector('.puestos-container .puesto-item:last-child');
                             item.querySelector('select').value = p.puesto;
                             item.querySelector('input').value = p.cantidad;
@@ -452,9 +470,15 @@
                     }
                 }
 
+                // Mostrar día de la semana
+                const fecha = new Date(feriado.fecha);
+                const diaNombre = diasSemana[fecha.getDay()];
+                document.getElementById('dia-semana').textContent = `Este feriado cae en: <strong>${diaNombre}</strong>`;
+                document.getElementById('dia-semana').style.display = 'block';
+                document.getElementById('titulo-dia').textContent = diaNombre;
+
                 document.getElementById('edit-key').value = key;
                 document.getElementById('btn-texto').textContent = 'Actualizar Feriado';
-                document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Feriado';
             } catch (e) {
                 console.error('Error al editar:', e);
                 showToast('❌ Error al cargar feriado', true);
@@ -482,7 +506,7 @@
             };
 
             if (abre === 'si') {
-                const dia = document.querySelector('.day-group');
+                const dia = document.getElementById('dia-feriado');
                 const apertura = dia.querySelector('.hora-apertura').value;
                 const cierre = dia.querySelector('.hora-cierre').value;
 
@@ -570,14 +594,14 @@
             await cargarCategorias();
             await cargarLocales();
             await cargarHorariosLocales();
-            inicializarDias();
+            inicializarDia();
             await cargarFeriados();
 
             document.getElementById('form-feriado').addEventListener('submit', guardarFeriado);
         };
     </script>
 
-    <!-- ✅ Botón flotante sin espacios -->
+    <!-- ✅ Botón flotante -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
