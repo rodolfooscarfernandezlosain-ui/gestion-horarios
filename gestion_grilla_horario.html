@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grilla de Horarios</title>
@@ -147,7 +148,7 @@
 
         let locales = [];
         let empleados = [];
-        let horarioLocale = [];
+        let horarioLocal = [];
         let horarioEmpleados = [];
 
         function showToast(msg, isError = false) {
@@ -164,14 +165,14 @@
                 const [dataLocales, dataEmpleados, dataHorarioLocal, dataHorarioEmpleados] = await Promise.all([
                     fetch(DB_LOCALES).then(r => r.json()),
                     fetch(DB_EMPLEADOS).then(r => r.json()),
-                    fetch(DB_HORARIOS_LOCALES).then(r => r.json()),
-                    fetch(DB_HORARIOS_EMPLEADOS).then(r => r.json())
+                    fetch(DB_HORARIO_LOCAL).then(r => r.json()),
+                    fetch(DB_HORARIO_EMPLEADOS).then(r => r.json())
                 ]);
 
                 // ✅ Procesar datos correctamente
                 locales = dataLocales ? Object.values(dataLocales) : [];
                 empleados = dataEmpleados ? Object.values(dataEmpleados) : [];
-                horarioLocale = dataHorarioLocale ? Object.values(dataHorarioLocale) : [];
+                horarioLocal = dataHorarioLocal ? Object.values(dataHorarioLocal) : [];
                 horarioEmpleados = dataHorarioEmpleados ? Object.values(dataHorarioEmpleados) : [];
 
                 console.log('✅ Datos cargados:', { locales, empleados, horarioLocal, horarioEmpleados });
@@ -222,7 +223,7 @@
 
             empleadosLocal.forEach(emp => {
                 const tr = document.createElement('tr');
-                const horarioEmp = horarioEmpleado.find(h => h.empleadoKey === emp.key);
+                const horarioEmp = horarioEmpleados.find(h => h.empleadoKey === emp.key);
 
                 if (!horarioEmp) {
                     console.warn(`❌ No hay horario para: ${emp.nombre} (key: ${emp.key})`);
@@ -299,4 +300,5 @@
     </script>
 </body>
 </html>
+
 
