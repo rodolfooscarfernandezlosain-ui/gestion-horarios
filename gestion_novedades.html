@@ -31,10 +31,11 @@
         }
         .form-group label { 
             display: block; 
-            margin-bottom: 5px; 
+            margin-bottom: 8px; 
             font-weight: 600; 
         }
-        input, select, button { 
+        select, input, button { 
+            width: 100%; 
             padding: 10px; 
             border: 1px solid #ddd; 
             border-radius: 4px; 
@@ -82,7 +83,14 @@
         <h1><i class="fas fa-clipboard-list"></i> Gestión de Novedades y Vacaciones</h1>
 
         <div class="form-group">
-            <label>Filtrar por Mes/Año</label>
+            <label>Local</label>
+            <select id="filtro-local" onchange="filtrarNovedades()">
+                <option value="">Todos los locales</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Mes/Año</label>
             <input type="month" id="filtro-mes" onchange="filtrarNovedades()">
         </div>
 
@@ -91,6 +99,7 @@
                 <tr>
                     <th>Legajo</th>
                     <th>Nombre</th>
+                    <th>Local</th>
                     <th>Fecha Ingreso</th>
                     <th>Antigüedad</th>
                     <th>Vacaciones</th>
@@ -108,9 +117,11 @@
     <script>
         // ✅ URLs de Firebase (sin espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
+        const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
         const DB_NOVEDADES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/novedades.json';
 
         let empleados = [];
+        let locales = [];
         let novedades = [];
 
         function showToast(msg, isError = false) {
@@ -149,6 +160,27 @@
             }
         }
 
+        // ✅ Cargar locales
+        async function cargarLocales() {
+            try {
+                const res = await fetch(DB_LOCALES);
+                const data = await res.json();
+                locales = data ? Object.values(data) : [];
+
+                const select = document.getElementById('filtro-local');
+                select.innerHTML = '<option value="">Todos los locales</option>';
+                locales.forEach(loc => {
+                    const opt = document.createElement('option');
+                    opt.value = loc.nombre;
+                    opt.textContent = loc.nombre;
+                    select.appendChild(opt);
+                });
+            } catch (e) {
+                console.error('Error cargando locales:', e);
+                showToast('❌ Error al cargar locales', true);
+            }
+        }
+
         // ✅ Cargar novedades
         async function cargarNovedades() {
             try {
@@ -179,23 +211,31 @@
 
         // ✅ Filtrar y mostrar novedades
         function filtrarNovedades() {
-            const filtro = document.getElementById('filtro-mes').value; // formato "YYYY-MM"
+            const localFiltro = document.getElementById('filtro-local').value;
+            const mesFiltro = document.getElementById('filtro-mes').value; // formato "YYYY-MM"
             const tbody = document.querySelector('#tabla-novedades tbody');
             tbody.innerHTML = '';
 
-            empleados.forEach(emp => {
+            // Filtrar empleados por local
+            const empleadosFiltrados = localFiltro 
+                ? empleados.filter(e => e.local === localFiltro) 
+                : empleados;
+
+            empleadosFiltrados.forEach(emp => {
                 if (!emp.fechaIngreso) return;
 
                 const antiguedad = calcularAntiguedad(emp.fechaIngreso);
                 const diasTotales = diasVacaciones(antiguedad);
 
                 // Filtrar novedades del mes
-                const mesFiltro = filtro ? new Date(filtro + '-01') : null;
+                const mesAnio = mesFiltro ? new Date(mesFiltro + '-01') : null;
                 const novedadesMes = novedades.filter(n => 
                     n.empleadoLegajo === emp.legajo && 
                     n.tipo === 'Vacaciones' &&
-                    (!mesFiltro || new Date(n.fechaInicio).getMonth() === mesFiltro.getMonth() &&
-                     new Date(n.fechaInicio).getFullYear() === mesFiltro.getFullYear())
+                    (!mesAnio || 
+                        (new Date(n.fechaInicio).getMonth() === mesAnio.getMonth() &&
+                         new Date(n.fechaInicio).getFullYear() === mesAnio.getFullYear())
+                    )
                 );
 
                 const diasTomados = novedadesMes.reduce((acc, n) => {
@@ -209,13 +249,14 @@
                 tr.innerHTML = `
                     <td>${emp.legajo}</td>
                     <td>${emp.nombre}</td>
+                    <td><strong>${emp.local}</strong></td>
                     <td>${new Date(emp.fechaIngreso).toLocaleDateString('es-AR')}</td>
                     <td>${antiguedad} año(s)</td>
                     <td>${diasTotales} días</td>
                     <td class="dias-usados">${diasTomados} días</td>
                     <td class="dias-restantes">${diasTotales - diasTomados} días</td>
                     <td>
-                        <button onclick="registrarVacaciones('${emp.legajo}')">➕ Tomar Vacaciones</button>
+                        <button onclick="registrarVacaciones('${emp.legajo}', '${emp.nombre}')">➕ Tomar Vacaciones</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -223,8 +264,8 @@
         }
 
         // ✅ Registrar vacaciones
-        function registrarVacaciones(legajo) {
-            const dias = prompt('¿Cuántos días de vacaciones tomó el empleado?');
+        function registrarVacaciones(legajo, nombre) {
+            const dias = prompt(`¿Cuántos días de vacaciones tomó ${nombre}?`);
             if (!dias || isNaN(dias) || dias <= 0) {
                 showToast('⚠️ Ingresa un número válido', true);
                 return;
@@ -240,6 +281,7 @@
 
             const novedad = {
                 empleadoLegajo: legajo,
+                empleadoNombre: nombre,
                 tipo: 'Vacaciones',
                 dias: parseInt(dias),
                 fechaInicio,
@@ -254,6 +296,7 @@
 
         // Inicializar
         window.onload = async function () {
+            await cargarLocales();
             await cargarEmpleados();
             await cargarNovedades();
             document.getElementById('filtro-mes').value = new Date().toISOString().slice(0, 7);
