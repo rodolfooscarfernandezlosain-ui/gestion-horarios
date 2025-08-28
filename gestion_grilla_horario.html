@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grilla de Horarios</title>
-    <!-- Font Awesome -->
+    <!-- Font Awesome sin espacios -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
@@ -138,7 +138,7 @@
     <div id="snackbar" class="snackbar">Grilla actualizada</div>
 
     <script>
-        // URLs de Firebase
+        // ✅ URLs de Firebase (sin espacios)
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_HORARIOS_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_locales.json';
@@ -160,17 +160,18 @@
         // Cargar datos
         async function cargarDatos() {
             try {
-                [locales, empleados, horariosLocales, horariosEmpleados] = await Promise.all([
+                const [dataLocales, dataEmpleados, dataHorariosLocales, dataHorariosEmpleados] = await Promise.all([
                     fetch(DB_LOCALES).then(r => r.json()),
                     fetch(DB_EMPLEADOS).then(r => r.json()),
                     fetch(DB_HORARIOS_LOCALES).then(r => r.json()),
                     fetch(DB_HORARIOS_EMPLEADOS).then(r => r.json())
                 ]);
 
-                locales = Object.values(locales || {});
-                empleados = Object.values(empleados || {});
-                horariosLocales = Object.values(horariosLocales || {});
-                horariosEmpleados = Object.values(horariosEmpleados || {});
+                // ✅ Procesar datos correctamente
+                locales = dataLocales ? Object.values(dataLocales) : [];
+                empleados = dataEmpleados ? Object.values(dataEmpleados) : [];
+                horariosLocales = dataHorariosLocales ? Object.values(dataHorariosLocales) : [];
+                horariosEmpleados = dataHorariosEmpleados ? Object.values(dataHorariosEmpleados) : [];
 
                 cargarLocales();
             } catch (e) {
@@ -219,12 +220,17 @@
 
             empleadosLocal.forEach(emp => {
                 const tr = document.createElement('tr');
+                
+                // ✅ Buscar horario del empleado por su key
                 const horarioEmp = horariosEmpleados.find(h => h.empleadoKey === emp.key);
+                if (!horarioEmp) {
+                    console.warn(`No hay horario para el empleado: ${emp.nombre}`);
+                }
 
                 let celdas = `<td class="empleado">${emp.nombre}</td>`;
 
                 dias.forEach(dia => {
-                    const diaEmp = horarioEmp?.dias[dia];
+                    const diaEmp = horarioEmp?.dias?.[dia];
                     const diaLocal = horarioLocal?.[dia];
 
                     if (!diaEmp || diaEmp.libre) {
@@ -237,7 +243,7 @@
                         if (diaLocal?.doble && diaEmp.entrada2 && diaEmp.salida2) {
                             turno += `<div class="turno doble">T2: ${diaEmp.entrada2} - ${diaEmp.salida2}</div>`;
                         }
-                        if (diaLocal?.continuo) {
+                        if (diaLocal?.continuo && diaEmp.pico) {
                             turno += `<div class="turno pico">Pico</div>`;
                         }
                         celdas += `<td>${turno}</td>`;
@@ -257,7 +263,7 @@
         };
     </script>
 
-    <!-- ✅ Botón flotante -->
+    <!-- ✅ Botón flotante sin espacios -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
