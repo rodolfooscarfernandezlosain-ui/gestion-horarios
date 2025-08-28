@@ -140,7 +140,6 @@
                 <input type="text" id="empleado-puesto" placeholder="Ej: Cajero" required readonly>
             </div>
 
-            <!-- ✅ Local como select -->
             <div class="form-group">
                 <label>Local *</label>
                 <select id="empleado-local" required>
@@ -158,6 +157,12 @@
                 </select>
             </div>
 
+            <!-- ✅ NUEVO: Fecha de ingreso -->
+            <div class="form-group">
+                <label>Fecha de Ingreso *</label>
+                <input type="date" id="empleado-fecha-ingreso" required>
+            </div>
+
             <button type="submit" class="btn-success">
                 <i class="fas fa-save"></i> <span id="btn-texto">Guardar Empleado</span>
             </button>
@@ -171,6 +176,7 @@
                 <tr>
                     <th>Legajo</th>
                     <th>Nombre</th>
+                    <th>Fecha Ingreso</th>
                     <th>Categoría</th>
                     <th>Puesto</th>
                     <th>Local</th>
@@ -185,7 +191,7 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase (SIN espacios)
+        // ✅ URLs de Firebase (sin espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_CATEGORIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/categorias.json';
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
@@ -255,7 +261,7 @@
                 tbody.innerHTML = '';
 
                 if (empleados.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center">No hay empleados</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center">No hay empleados</td></tr>`;
                     return;
                 }
 
@@ -264,6 +270,7 @@
                     tr.innerHTML = `
                         <td><strong>${emp.legajo}</strong></td>
                         <td>${emp.nombre}</td>
+                        <td>${emp.fechaIngreso || '—'}</td>
                         <td>${emp.categoria}</td>
                         <td>${emp.puesto}</td>
                         <td>${emp.local}</td>
@@ -273,7 +280,7 @@
                             emp.estado === 'Licencia' ? '#3498db' : '#e74c3c'
                         }; color:white; font-size:12px;">${emp.estado}</span></td>
                         <td style="text-align: center;">
-                            <a href="#" class="accion-btn editar" onclick="editarEmpleado('${emp.key || ''}', '${emp.legajo}', '${emp.dni}', '${emp.cuil}', '${emp.nombre}', '${emp.categoria}', '${emp.puesto}', '${emp.local}', '${emp.estado}')">
+                            <a href="#" class="accion-btn editar" onclick="editarEmpleado('${emp.key || ''}', '${emp.legajo}', '${emp.dni}', '${emp.cuil}', '${emp.nombre}', '${emp.categoria}', '${emp.puesto}', '${emp.local}', '${emp.estado}', '${emp.fechaIngreso || ''}')">
                                 <i class="fas fa-edit"></i> Editar
                             </a>
                             <a href="#" class="accion-btn eliminar" onclick="eliminarEmpleado('${emp.key || ''}', '${emp.nombre}')">
@@ -286,7 +293,7 @@
             } catch (e) {
                 console.error('Error cargando empleados:', e);
                 document.querySelector('#tabla-empleados tbody').innerHTML = 
-                    `<tr><td colspan="7" style="text-align:center; color: red;">Error al cargar datos. Revisa la consola.</td></tr>`;
+                    `<tr><td colspan="8" style="text-align:center; color: red;">Error al cargar datos. Revisa la consola.</td></tr>`;
             }
         }
 
@@ -299,7 +306,7 @@
         }
 
         function editarEmpleado(
-            key, legajo, dni, cuil, nombre, categoria, puesto, local, estado
+            key, legajo, dni, cuil, nombre, categoria, puesto, local, estado, fechaIngreso
         ) {
             document.getElementById('empleado-legajo').value = legajo || '';
             document.getElementById('empleado-dni').value = dni;
@@ -309,6 +316,7 @@
             document.getElementById('empleado-puesto').value = puesto;
             document.getElementById('empleado-local').value = local;
             document.getElementById('empleado-estado').value = estado;
+            document.getElementById('empleado-fecha-ingreso').value = fechaIngreso || '';
             document.getElementById('edit-key').value = key;
             document.getElementById('btn-texto').textContent = 'Actualizar Empleado';
             document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Empleado';
@@ -324,15 +332,16 @@
             const puesto = document.getElementById('empleado-puesto').value.trim();
             const local = document.getElementById('empleado-local').value.trim();
             const estado = document.getElementById('empleado-estado').value;
+            const fechaIngreso = document.getElementById('empleado-fecha-ingreso').value; // ✅ Nuevo campo
             const key = document.getElementById('edit-key').value;
 
-            if (!legajo || !dni || !cuil || !nombre || !categoria || !puesto || !local || !estado) {
+            if (!legajo || !dni || !cuil || !nombre || !categoria || !puesto || !local || !estado || !fechaIngreso) {
                 showToast('⚠️ Completa todos los campos obligatorios', true);
                 return;
             }
 
             const empleado = {
-                legajo, dni, cuil, nombre, categoria, puesto, local, estado
+                legajo, dni, cuil, nombre, categoria, puesto, local, estado, fechaIngreso
             };
 
             try {
@@ -401,7 +410,7 @@
         };
     </script>
 
-    <!-- ✅ Botón flotante sin espacios -->
+    <!-- ✅ Botón flotante -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
