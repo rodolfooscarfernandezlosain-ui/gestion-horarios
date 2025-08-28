@@ -371,34 +371,45 @@
             }
         }
 
-        // ✅ Eliminar con confirmación segura
         async function eliminarEmpleado(key, nombre, legajo) {
-            const confirmacion = prompt(`¿Eliminar a "${nombre}" (Legajo: ${legajo})?\nEscribe "ELIMINAR" para confirmar:`);
-            
-            if (confirmacion !== "ELIMINAR") {
-                showToast('❌ Acción cancelada', true);
-                return;
-            }
+    const confirmacion = prompt(`¿Eliminar a "${nombre}" (Legajo: ${legajo})?\nEscribe "ELIMINAR" para confirmar:`);
+    
+    if (confirmacion !== "ELIMINAR") {
+        showToast('❌ Acción cancelada', true);
+        return;
+    }
 
-            if (!key) {
-                showToast('❌ No se puede eliminar: falta clave', true);
-                return;
-            }
+    if (!key) {
+        showToast('❌ No se puede eliminar: falta clave', true);
+        return;
+    }
 
-            try {
-                const res = await fetch(`https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados/${key}.json`, {
-                    method: 'DELETE'
-                });
+    // ✅ Validar que la key no tenga espacios o caracteres extraños
+    const cleanKey = key.trim();
+    if (!cleanKey) {
+        showToast('❌ Clave inválida', true);
+        return;
+    }
 
-                if (!res.ok) throw new Error('Error al eliminar');
+    try {
+        // ✅ URL sin espacios
+        const url = `https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados/${cleanKey}.json`;
 
-                showToast('🗑️ Empleado eliminado');
-                await cargarEmpleados();
-            } catch (err) {
-                console.error('Error:', err);
-                showToast('❌ Error al eliminar', true);
-            }
+        const res = await fetch(url, {
+            method: 'DELETE'
+        });
+
+        if (!res.ok) {
+            throw new Error(`Error ${res.status}: ${res.statusText}`);
         }
+
+        showToast('🗑️ Empleado eliminado');
+        await cargarEmpleados(); // ✅ Recargar la tabla
+    } catch (err) {
+        console.error('Error al eliminar:', err);
+        showToast(`❌ Error al eliminar: ${err.message}`, true);
+    }
+}
 
         // Inicializar
         window.onload = async function () {
@@ -450,3 +461,4 @@
     </script>
 </body>
 </html>
+
