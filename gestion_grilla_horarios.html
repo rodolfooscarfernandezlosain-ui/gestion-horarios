@@ -167,13 +167,13 @@
                     fetch(DB_HORARIOS_EMPLEADOS).then(r => r.json())
                 ]);
 
+                // ✅ Procesar datos correctamente
                 locales = dataLocales ? Object.values(dataLocales) : [];
                 empleados = dataEmpleados ? Object.values(dataEmpleados) : [];
                 horariosLocales = dataHorariosLocales ? Object.values(dataHorariosLocales) : [];
                 horariosEmpleados = dataHorariosEmpleados ? Object.values(dataHorariosEmpleados) : [];
 
                 console.log('✅ Datos cargados:', { locales, empleados, horariosLocales, horariosEmpleados });
-
                 cargarLocales();
             } catch (e) {
                 console.error('❌ Error cargando datos:', e);
@@ -298,4 +298,3 @@
     </script>
 </body>
 </html>
-
