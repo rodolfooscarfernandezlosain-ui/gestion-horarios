@@ -51,9 +51,6 @@
         button.btn-danger { 
             background: #e74c3c; 
         }
-        button.btn-warning { 
-            background: #f39c12; 
-        }
         table { 
             width: 100%; 
             border-collapse: collapse; 
@@ -176,6 +173,7 @@
                 <tr>
                     <th>Legajo</th>
                     <th>Nombre</th>
+                    <th>DNI</th>
                     <th>Fecha Ingreso</th>
                     <th>Categoría</th>
                     <th>Puesto</th>
@@ -197,6 +195,7 @@
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
 
         let categorias = [];
+        let empleados = []; // ✅ Para validación de DNI duplicado
 
         function showToast(msg, isError = false) {
             const sb = document.getElementById('snackbar');
@@ -255,13 +254,13 @@
             try {
                 const res = await fetch(DB_EMPLEADOS);
                 const data = await res.json();
-                const empleados = data ? Object.values(data) : [];
+                empleados = data ? Object.values(data) : [];
 
                 const tbody = document.querySelector('#tabla-empleados tbody');
                 tbody.innerHTML = '';
 
                 if (empleados.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center">No hay empleados</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center">No hay empleados</td></tr>`;
                     return;
                 }
 
@@ -270,6 +269,7 @@
                     tr.innerHTML = `
                         <td><strong>${emp.legajo}</strong></td>
                         <td>${emp.nombre}</td>
+                        <td>${emp.dni}</td>
                         <td>${emp.fechaIngreso ? new Date(emp.fechaIngreso).toLocaleDateString('es-AR') : '—'}</td>
                         <td>${emp.categoria}</td>
                         <td>${emp.puesto}</td>
@@ -293,7 +293,7 @@
             } catch (e) {
                 console.error('Error cargando empleados:', e);
                 document.querySelector('#tabla-empleados tbody').innerHTML = 
-                    `<tr><td colspan="8" style="text-align:center; color: red;">Error al cargar datos. Revisa la consola.</td></tr>`;
+                    `<tr><td colspan="9" style="text-align:center; color: red;">Error al cargar datos. Revisa la consola.</td></tr>`;
             }
         }
 
@@ -340,6 +340,13 @@
                 return;
             }
 
+            // ✅ Validar DNI duplicado (excepto al editar)
+            const existe = empleados.find(emp => emp.dni === dni && emp.key !== key);
+            if (existe) {
+                showToast('❌ Ya existe un empleado con ese DNI', true);
+                return;
+            }
+
             const empleado = {
                 legajo, dni, cuil, nombre, categoria, puesto, local, estado, fechaIngreso
             };
@@ -374,51 +381,32 @@
 
         // ✅ Eliminar con confirmación segura y URL sin espacios
         async function eliminarEmpleado(key, nombre, legajo) {
-    const confirmacion = prompt(`¿Eliminar a "${nombre}" (Legajo: ${legajo})?\nEscribe "ELIMINAR" para confirmar:`);
-    
-    if (confirmacion !== "ELIMINAR") {
-        showToast('❌ Acción cancelada', true);
-        return;
-    }
+            const confirmacion = prompt(`¿Eliminar a "${nombre}" (Legajo: ${legajo})?\nEscribe "ELIMINAR" para confirmar:`);
+            
+            if (confirmacion !== "ELIMINAR") {
+                showToast('❌ Acción cancelada', true);
+                return;
+            }
 
-    if (!legajo) {
-        showToast('❌ No se puede eliminar: falta legajo', true);
-        return;
-    }
+            if (!key) {
+                showToast('❌ No se puede eliminar: falta clave', true);
+                return;
+            }
 
-    try {
-        // ✅ Buscar por legajo en Firebase
-        const url = `https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json?orderBy="legajo"&equalTo="${legajo}"`;
-        const res = await fetch(url);
-        const data = await res.json();
+            try {
+                // ✅ URL corregida: sin espacios
+                const url = `https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados/${key}.json`;
+                const res = await fetch(url, { method: 'DELETE' });
 
-        if (!data || Object.keys(data).length === 0) {
-            showToast('❌ No se encontró el empleado', true);
-            return;
+                if (!res.ok) throw new Error('Error al eliminar');
+
+                showToast('🗑️ Empleado eliminado');
+                await cargarEmpleados();
+            } catch (err) {
+                console.error('Error al eliminar:', err);
+                showToast(`❌ Error: ${err.message}`, true);
+            }
         }
-
-        // ✅ Obtener la key real del empleado
-        const keys = Object.keys(data);
-        const keyReal = keys[0];
-
-        if (!keyReal) {
-            showToast('❌ No se pudo obtener la clave del empleado', true);
-            return;
-        }
-
-        // ✅ Eliminar usando la key
-        const deleteUrl = `https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados/${keyReal}.json`;
-        const deleteRes = await fetch(deleteUrl, { method: 'DELETE' });
-
-        if (!deleteRes.ok) throw new Error('Error al eliminar');
-
-        showToast('🗑️ Empleado eliminado');
-        await cargarEmpleados();
-    } catch (err) {
-        console.error('Error al eliminar:', err);
-        showToast(`❌ Error: ${err.message}`, true);
-    }
-}
 
         // Inicializar
         window.onload = async function () {
@@ -470,4 +458,3 @@
     </script>
 </body>
 </html>
-
