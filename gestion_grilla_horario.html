@@ -138,7 +138,7 @@
     <div id="snackbar" class="snackbar">Grilla actualizada</div>
 
     <script>
-        // ✅ URLs de Firebase (sin espacios)
+        // ✅ URLs de Firebase (SIN espacios)
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_HORARIOS_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_locales.json';
@@ -167,21 +167,17 @@
                     fetch(DB_HORARIOS_EMPLEADOS).then(r => r.json())
                 ]);
 
-                // ✅ Procesar datos correctamente
                 locales = dataLocales ? Object.values(dataLocales) : [];
                 empleados = dataEmpleados ? Object.values(dataEmpleados) : [];
                 horariosLocales = dataHorariosLocales ? Object.values(dataHorariosLocales) : [];
                 horariosEmpleados = dataHorariosEmpleados ? Object.values(dataHorariosEmpleados) : [];
 
-                console.log('Locales:', locales);
-                console.log('Empleados:', empleados);
-                console.log('Horarios Locales:', horariosLocales);
-                console.log('Horarios Empleados:', horariosEmpleados);
+                console.log('✅ Datos cargados:', { locales, empleados, horariosLocales, horariosEmpleados });
 
                 cargarLocales();
             } catch (e) {
-                console.error('Error cargando datos:', e);
-                showToast('❌ Error al cargar datos', true);
+                console.error('❌ Error cargando datos:', e);
+                showToast('No se pudo cargar la base de datos. Revisa la consola.', true);
             }
         }
 
@@ -225,16 +221,17 @@
 
             empleadosLocal.forEach(emp => {
                 const tr = document.createElement('tr');
-                
-                // ✅ Buscar horario del empleado: usar el ID correcto
                 const horarioEmp = horariosEmpleados.find(h => h.empleadoKey === emp.key);
+
                 if (!horarioEmp) {
-                    console.warn(`❌ No hay horario para el empleado: ${emp.nombre}`);
+                    console.warn(`❌ No hay horario para: ${emp.nombre}`);
+                    const celdas = `<td class="empleado">${emp.nombre}</td><td colspan="7">No tiene horario asignado</td>`;
+                    tr.innerHTML = celdas;
+                    tbody.appendChild(tr);
                     return;
                 }
 
                 let celdas = `<td class="empleado">${emp.nombre}</td>`;
-
                 dias.forEach(dia => {
                     const diaEmp = horarioEmp.dias?.[dia];
                     const diaLocal = horarioLocal?.[dia];
@@ -259,14 +256,6 @@
                 tr.innerHTML = celdas;
                 tbody.appendChild(tr);
             });
-
-            if (tbody.innerHTML === '') {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td colspan="8" style="text-align:center">No se encontraron horarios para los empleados</td>`;
-                tbody.appendChild(tr);
-            }
-
-            showToast('✅ Grilla generada');
         }
 
         // Inicializar
@@ -275,7 +264,7 @@
         };
     </script>
 
-    <!-- ✅ Botón flotante sin espacios -->
+    <!-- ✅ Botón flotante -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
