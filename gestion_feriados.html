@@ -320,23 +320,30 @@
         }
 
         // Mostrar día de la semana
-        document.getElementById('feriado-fecha').addEventListener('change', function () {
-            const fecha = new Date(this.value);
-            const dia = fecha.getDay();
-            const diaNombre = diasSemana[dia];
-            const nombreDia = nombresDias[dia];
-            document.getElementById('dia-semana').textContent = `Este feriado cae en: <strong>${diaNombre}</strong>`;
-            document.getElementById('dia-semana').style.display = 'block';
+document.getElementById('feriado-fecha').addEventListener('change', function () {
+    const fechaStr = this.value;
+    if (!fechaStr) return;
 
-            // Actualizar título
-            document.getElementById('titulo-dia').textContent = diaNombre;
+    // Solución: usar fecha en hora local
+    const [año, mes, dia] = fechaStr.split('-').map(Number);
+    const fecha = new Date(año, mes - 1, dia); // Mes empieza en 0
 
-            // Cargar horario del local para ese día
-            const local = document.getElementById('feriado-local').value;
-            if (local) {
-                cargarHorarioLocal(local, nombreDia);
-            }
-        });
+    const diaSemana = fecha.getDay();
+    const diaNombre = diasSemana[diaSemana];
+    const nombreDia = nombresDias[diaSemana];
+
+    document.getElementById('dia-semana').textContent = `Este feriado cae en: <strong>${diaNombre}</strong>`;
+    document.getElementById('dia-semana').style.display = 'block';
+
+    // Actualizar título
+    document.getElementById('titulo-dia').textContent = diaNombre;
+
+    // Cargar horario del local para ese día
+    const local = document.getElementById('feriado-local').value;
+    if (local) {
+        cargarHorarioLocal(local, nombreDia);
+    }
+});
 
         // Cargar horario del local para el día del feriado
         function cargarHorarioLocal(localNombre, diaNombre) {
@@ -643,3 +650,4 @@
     </script>
 </body>
 </html>
+
