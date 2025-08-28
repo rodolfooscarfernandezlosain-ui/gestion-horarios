@@ -2,333 +2,39 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Optimización de Personal</title>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            background: #f4f6f9; 
-            padding: 20px; 
-        }
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            background: white; 
-            padding: 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-        }
-        h1 { 
-            color: #2c3e50; 
-            border-bottom: 2px solid #27ae60; 
-            padding-bottom: 10px; 
-        }
-        .form-group { 
-            margin: 15px 0; 
-        }
-        .form-group label { 
-            display: block; 
-            margin-bottom: 5px; 
-            font-weight: 600; 
-        }
-        select { 
-            width: 100%; 
-            padding: 10px; 
-            border: 1px solid #ddd; 
-            border-radius: 6px; 
-        }
-        button { 
-            background: #27ae60; 
-            color: white; 
-            border: none; 
-            padding: 10px 15px; 
-            border-radius: 6px; 
-            cursor: pointer; 
-        }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 20px; 
-        }
-        th, td { 
-            border: 1px solid #ddd; 
-            padding: 12px; 
-            text-align: left; 
-        }
-        th { 
-            background: #ecf0f1; 
-            font-weight: 600; 
-        }
-        .badge { 
-            padding: 5px 10px; 
-            border-radius: 12px; 
-            font-size: 12px; 
-            color: white; 
-        }
-        .ok { background: #27ae60; }
-        .falta { background: #e74c3c; }
-        .sobra { background: #f39c12; }
-        .feriado { background: #8e44ad; }
-        .domingo { background: #3498db; }
-        .summary { 
-            background: #d4edda; 
-            padding: 15px; 
-            border-radius: 6px; 
-            margin: 15px 0; 
-            border-left: 4px solid #27ae60; 
-        }
-    </style>
+    <title>Prueba de Conexión - Locales</title>
 </head>
 <body>
-    <div class="container">
-        <h1><i class="fas fa-balance-scale"></i> Optimización de Personal</h1>
-
-        <div class="form-group">
-            <label>Seleccionar Local</label>
-            <select id="local-select" onchange="calcularOptimizacion()">
-                <option value="">Cargando locales...</option>
-            </select>
-        </div>
-
-        <div id="resumen-container" style="display:none;">
-            <div class="summary">
-                <strong>Resumen:</strong> 
-                <span id="resumen-texto"></span>
-            </div>
-
-            <h3>Comparativo por Día y Puesto</h3>
-            <table id="tabla-optimizacion">
-                <thead>
-                    <tr>
-                        <th>Día</th>
-                        <th>Puesto</th>
-                        <th>Necesita</th>
-                        <th>Asignado</th>
-                        <th>Diferencia</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-
-            <h3>Domingos y Feriados Trabajados</h3>
-            <table id="tabla-extras">
-                <thead>
-                    <tr>
-                        <th>Empleado</th>
-                        <th>Local</th>
-                        <th>Tipo</th>
-                        <th>Fecha</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
+    <h2>Prueba de conexión con Firebase - Locales</h2>
+    <div id="resultado">Cargando...</div>
 
     <script>
-        // URLs de Firebase
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
-        const DB_HORARIOS_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_locales.json';
-        const DB_HORARIOS_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados.json';
-        const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
-        const DB_FERIADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/feriados.json';
 
-        let locales = [];
-        let horariosLocales = [];
-        let horariosEmpleados = [];
-        let empleados = [];
-        let feriados = [];
-
-        // Cargar datos
-        async function cargarDatos() {
-            try {
-                [locales, horariosLocales, horariosEmpleados, empleados, feriados] = await Promise.all([
-                    fetch(DB_LOCALES).then(r => r.json()),
-                    fetch(DB_HORARIOS_LOCALES).then(r => r.json()),
-                    fetch(DB_HORARIOS_EMPLEADOS).then(r => r.json()),
-                    fetch(DB_EMPLEADOS).then(r => r.json()),
-                    fetch(DB_FERIADOS).then(r => r.json())
-                ]);
-
-                locales = Object.values(locales || {});
-                horariosLocales = Object.values(horariosLocales || {});
-                horariosEmpleados = Object.values(horariosEmpleados || {});
-                empleados = Object.values(empleados || {});
-                feriados = Object.values(feriados || {});
-                
-                cargarLocales();
-            } catch (e) {
-                console.error('Error cargando datos:', e);
-            }
-        }
-
-        function cargarLocales() {
-            const select = document.getElementById('local-select');
-            select.innerHTML = '<option value="">Selecciona un local</option>';
-            locales.forEach(loc => {
-                const opt = document.createElement('option');
-                opt.value = loc.nombre;
-                opt.textContent = loc.nombre;
-                select.appendChild(opt);
-            });
-        }
-
-        function calcularOptimizacion() {
-            const localNombre = document.getElementById('local-select').value;
-            if (!localNombre) return;
-
-            const tbody = document.querySelector('#tabla-optimizacion tbody');
-            tbody.innerHTML = '';
-
-            const resumen = {
-                falta: 0,
-                sobra: 0,
-                ok: 0
-            };
-
-            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-            const horarioLocal = horariosLocales.find(h => h.local === localNombre);
-
-            if (!horarioLocal) return;
-
-            dias.forEach(dia => {
-                const diaData = horarioLocal[dia];
-                if (!diaData || !diaData.continuo || !diaData.puestos_pico) return;
-
-                diaData.puestos_pico.forEach(puesto => {
-                    const necesita = parseInt(puesto.cantidad);
-                    const asignado = contarEmpleadosAsignados(localNombre, dia, puesto.puesto);
-                    const diferencia = asignado - necesita;
-                    let estado = 'ok';
-                    let estadoTexto = 'Correcto';
-
-                    if (diferencia < 0) {
-                        estado = 'falta';
-                        estadoTexto = 'Falta personal';
-                        resumen.falta++;
-                    } else if (diferencia > 0) {
-                        estado = 'sobra';
-                        estadoTexto = 'Sobredotación';
-                        resumen.sobra++;
-                    } else {
-                        resumen.ok++;
-                    }
-
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${dia.charAt(0).toUpperCase() + dia.slice(1)}</td>
-                        <td>${puesto.puestoNombre || puesto.puesto}</td>
-                        <td>${necesita}</td>
-                        <td>${asignado}</td>
-                        <td>${diferencia}</td>
-                        <td><span class="badge ${estado}">${estadoTexto}</span></td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            });
-
-            // Mostrar resumen
-            document.getElementById('resumen-texto').textContent = 
-                `${resumen.ok} correctos, ${resumen.falta} con falta, ${resumen.sobra} con sobra`;
-            document.getElementById('resumen-container').style.display = 'block';
-
-            // Cargar extras
-            cargarExtras(localNombre);
-        }
-
-        function contarEmpleadosAsignados(local, dia, puesto) {
-            const empleadosLocal = empleados.filter(e => e.local === local);
-            return empleadosLocal.filter(emp => {
-                const horarioEmp = horariosEmpleados.find(h => h.empleadoKey === emp.key);
-                if (!horarioEmp) return false;
-                const diaEmp = horarioEmp.dias[dia];
-                return !diaEmp?.libre;
-            }).length;
-        }
-
-        function cargarExtras(local) {
-            const tbody = document.querySelector('#tabla-extras tbody');
-            tbody.innerHTML = '';
-
-            const empleadosLocal = empleados.filter(e => e.local === local);
-            const feriadosAbiertos = feriados.filter(f => f.local === local && f.abre === 'si');
-
-            feriadosAbiertos.forEach(feriado => {
-                const fecha = new Date(feriado.fecha).toLocaleDateString();
-                empleadosLocal.forEach(emp => {
-                    const horario = horariosEmpleados.find(h => h.empleadoKey === emp.key);
-                    if (horario && horario.dias[getDiaSemana(feriado.fecha)]?.entrada) {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td><strong>${emp.nombre}</strong></td>
-                            <td>${local}</td>
-                            <td><span class="badge feriado">Feriado</span></td>
-                            <td>${fecha}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    }
-                });
-            });
-
-            // Domingos trabajados
-            empleadosLocal.forEach(emp => {
-                const horario = horariosEmpleados.find(h => h.empleadoKey === emp.key);
-                if (horario && horario.dias.domingo && !horario.dias.domingo.libre) {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><strong>${emp.nombre}</strong></td>
-                        <td>${local}</td>
-                        <td><span class="badge domingo">Domingo</span></td>
-                        <td>Todos los domingos</td>
-                    `;
-                    tbody.appendChild(tr);
+        fetch(DB_LOCALES)
+            .then(res => {
+                if (!res.ok) throw new Error('Error en red: ' + res.status);
+                return res.json();
+            })
+            .then(data => {
+                const resultado = document.getElementById('resultado');
+                if (!data || Object.keys(data).length === 0) {
+                    resultado.innerHTML = '<p style="color: orange;">⚠️ No hay locales registrados.</p>';
+                } else {
+                    resultado.innerHTML = '<p style="color: green;">✅ Conexión exitosa. Locales encontrados:</p><pre>' + JSON.stringify(data, null, 2) + '</pre>';
                 }
+            })
+            .catch(err => {
+                document.getElementById('resultado').innerHTML = `
+                    <p style="color: red;">❌ Error de conexión:</p>
+                    <p><strong>${err.message}</strong></p>
+                    <ul>
+                        <li>¿Las reglas de Firebase permiten lectura?</li>
+                        <li>¿El URL es correcto?</li>
+                        <li>¿El nodo <strong>locales</strong> existe?</li>
+                    </ul>
+                `;
             });
-        }
-
-        function getDiaSemana(fechaStr) {
-            const fecha = new Date(fechaStr);
-            return ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][fecha.getDay()];
-        }
-
-        // Inicializar
-        window.onload = cargarDatos;
-    </script>
-
-    <!-- ✅ Botón flotante -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            if (document.getElementById('btn-menu-flotante')) return;
-            const btn = document.createElement('button');
-            btn.id = 'btn-menu-flotante';
-            btn.textContent = '☰ Menú';
-            btn.title = 'Volver al menú principal';
-            btn.style.cssText = `
-                position: fixed !important;
-                top: 20px !important;
-                right: 20px !important;
-                z-index: 99999 !important;
-                padding: 12px 16px !important;
-                font-size: 14px !important;
-                font-weight: bold !important;
-                color: white !important;
-                background-color: #2980b9 !important;
-                border: none !important;
-                border-radius: 6px !important;
-                box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
-                cursor: pointer !important;
-                opacity: 1 !important;
-                display: block !important;
-                transition: all 0.2s ease !important;
-            `;
-            btn.onclick = () => {
-                window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
-            };
-            document.body.appendChild(btn);
-        });
     </script>
 </body>
 </html>
