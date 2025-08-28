@@ -4,98 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Empleados</title>
-    <!-- Font Awesome sin espacios -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            background: #f4f6f9; 
-            padding: 20px; 
-        }
-        .container { 
-            max-width: 800px; 
-            margin: 0 auto; 
-            background: white; 
-            padding: 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-        }
-        h1 { 
-            color: #2c3e50; 
-            border-bottom: 2px solid #3498db; 
-            padding-bottom: 10px; 
-        }
-        .form-group { 
-            margin: 15px 0; 
-        }
-        .form-group label { 
-            display: block; 
-            margin-bottom: 5px; 
-            font-weight: 600; 
-        }
-        input, select, textarea { 
-            width: 100%; 
-            padding: 10px; 
-            border: 1px solid #ddd; 
-            border-radius: 4px; 
-            box-sizing: border-box; 
-        }
-        button { 
-            background: #3498db; 
-            color: white; 
-            border: none; 
-            padding: 10px 15px; 
-            border-radius: 4px; 
-            cursor: pointer; 
-        }
-        button.btn-danger { 
-            background: #e74c3c; 
-        }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 20px; 
-        }
-        th, td { 
-            border: 1px solid #ddd; 
-            padding: 12px; 
-            text-align: left; 
-        }
-        th { 
-            background: #ecf0f1; 
-            text-align: center;
-        }
-        .accion-btn {
-            padding: 6px 10px;
-            margin: 0 2px;
-            border-radius: 4px;
-            color: white;
-            text-align: center;
-            font-size: 14px;
-            text-decoration: none;
-            display: inline-block;
-        }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .form-group { margin: 15px 0; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { background: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+        button.btn-danger { background: #e74c3c; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #ecf0f1; text-align: center; }
+        .accion-btn { padding: 6px 10px; margin: 0 2px; border-radius: 4px; color: white; text-align: center; font-size: 14px; text-decoration: none; display: inline-block; }
         .editar { background: #f39c12; }
         .eliminar { background: #e74c3c; }
         .accion-btn i { margin-right: 5px; }
-        .snackbar { 
-            position: fixed; 
-            bottom: 20px; 
-            right: 20px; 
-            background: #27ae60; 
-            color: white; 
-            padding: 12px 20px; 
-            border-radius: 6px; 
-            z-index: 1000; 
-            opacity: 0; 
-            transition: opacity 0.3s; 
-        }
-        .snackbar.show { 
-            opacity: 1; 
-        }
-        .error { 
-            background: #e74c3c !important; 
-        }
+        .snackbar { position: fixed; bottom: 20px; right: 20px; background: #27ae60; color: white; padding: 12px 20px; border-radius: 6px; z-index: 1000; opacity: 0; transition: opacity 0.3s; }
+        .snackbar.show { opacity: 1; }
+        .error { background: #e74c3c !important; }
     </style>
 </head>
 <body>
@@ -154,7 +82,6 @@
                 </select>
             </div>
 
-            <!-- ✅ Fecha de ingreso al trabajo -->
             <div class="form-group">
                 <label>Fecha de Ingreso *</label>
                 <input type="date" id="empleado-fecha-ingreso" required>
@@ -195,7 +122,7 @@
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
 
         let categorias = [];
-        let empleados = []; // ✅ Para validación de DNI duplicado
+        let empleados = [];
 
         function showToast(msg, isError = false) {
             const sb = document.getElementById('snackbar');
@@ -205,16 +132,13 @@
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
-        // ✅ Cargar locales
         async function cargarLocales() {
             try {
                 const res = await fetch(DB_LOCALES);
                 const data = await res.json();
                 const locales = data ? Object.values(data) : [];
-
                 const select = document.getElementById('empleado-local');
                 select.innerHTML = '<option value="">Selecciona un local</option>';
-
                 locales.forEach(loc => {
                     const option = document.createElement('option');
                     option.value = loc.nombre;
@@ -227,16 +151,13 @@
             }
         }
 
-        // ✅ Cargar categorías
         async function cargarCategorias() {
             try {
                 const res = await fetch(DB_CATEGORIAS);
                 const data = await res.json();
                 categorias = data ? Object.values(data) : [];
-
                 const select = document.getElementById('empleado-categoria');
                 select.innerHTML = '<option value="">Selecciona una categoría</option>';
-
                 categorias.forEach(cat => {
                     const option = document.createElement('option');
                     option.value = cat.nombre;
@@ -249,7 +170,6 @@
             }
         }
 
-        // ✅ Cargar empleados
         async function cargarEmpleados() {
             try {
                 const res = await fetch(DB_EMPLEADOS);
@@ -305,9 +225,7 @@
             document.getElementById('empleado-puesto').value = '';
         }
 
-        function editarEmpleado(
-            key, legajo, dni, cuil, nombre, categoria, puesto, local, estado, fechaIngreso
-        ) {
+        function editarEmpleado(key, legajo, dni, cuil, nombre, categoria, puesto, local, estado, fechaIngreso) {
             document.getElementById('empleado-legajo').value = legajo || '';
             document.getElementById('empleado-dni').value = dni;
             document.getElementById('empleado-cuil').value = cuil || '';
@@ -340,16 +258,14 @@
                 return;
             }
 
-            // ✅ Validar DNI duplicado (excepto al editar)
+            // ✅ Validar DNI duplicado (después de recargar empleados)
             const existe = empleados.find(emp => emp.dni === dni && emp.key !== key);
             if (existe) {
                 showToast('❌ Ya existe un empleado con ese DNI', true);
                 return;
             }
 
-            const empleado = {
-                legajo, dni, cuil, nombre, categoria, puesto, local, estado, fechaIngreso
-            };
+            const empleado = { legajo, dni, cuil, nombre, categoria, puesto, local, estado, fechaIngreso };
 
             try {
                 let url = DB_EMPLEADOS;
@@ -357,32 +273,25 @@
                 let body = JSON.stringify(empleado);
 
                 if (key) {
-                    // ✅ URL corregida: sin espacios
                     url = `https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados/${key}.json`;
                     method = 'PUT';
                 }
 
-                const res = await fetch(url, { 
-                    method, 
-                    body, 
-                    headers: { 'Content-Type': 'application/json' } 
-                });
+                const res = await fetch(url, { method, body, headers: { 'Content-Type': 'application/json' } });
 
                 if (!res.ok) throw new Error('Error al guardar');
 
                 showToast('✅ Empleado guardado en Firebase');
                 limpiarFormulario();
-                await cargarEmpleados();
+                await cargarEmpleados(); // ✅ Recarga para actualizar `empleados`
             } catch (err) {
                 console.error('Error:', err);
                 showToast('❌ Error al guardar', true);
             }
         }
 
-        // ✅ Eliminar con confirmación segura y URL sin espacios
         async function eliminarEmpleado(key, nombre, legajo) {
             const confirmacion = prompt(`¿Eliminar a "${nombre}" (Legajo: ${legajo})?\nEscribe "ELIMINAR" para confirmar:`);
-            
             if (confirmacion !== "ELIMINAR") {
                 showToast('❌ Acción cancelada', true);
                 return;
@@ -394,27 +303,24 @@
             }
 
             try {
-                // ✅ URL corregida: sin espacios
                 const url = `https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados/${key}.json`;
                 const res = await fetch(url, { method: 'DELETE' });
 
                 if (!res.ok) throw new Error('Error al eliminar');
 
                 showToast('🗑️ Empleado eliminado');
-                await cargarEmpleados();
+                await cargarEmpleados(); // ✅ Recarga para actualizar `empleados`
             } catch (err) {
                 console.error('Error al eliminar:', err);
                 showToast(`❌ Error: ${err.message}`, true);
             }
         }
 
-        // Inicializar
         window.onload = async function () {
             await cargarCategorias();
             await cargarLocales();
             await cargarEmpleados();
 
-            // Actualizar puesto cuando cambia la categoría
             document.getElementById('empleado-categoria').addEventListener('change', (e) => {
                 const cat = categorias.find(c => c.nombre === e.target.value);
                 document.getElementById('empleado-puesto').value = cat ? cat.puesto : '';
@@ -424,7 +330,6 @@
         };
     </script>
 
-    <!-- ✅ Botón flotante -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
