@@ -374,41 +374,51 @@
 
         // ✅ Eliminar con confirmación segura y URL sin espacios
         async function eliminarEmpleado(key, nombre, legajo) {
-            const confirmacion = prompt(`¿Eliminar a "${nombre}" (Legajo: ${legajo})?\nEscribe "ELIMINAR" para confirmar:`);
-            
-            if (confirmacion !== "ELIMINAR") {
-                showToast('❌ Acción cancelada', true);
-                return;
-            }
+    const confirmacion = prompt(`¿Eliminar a "${nombre}" (Legajo: ${legajo})?\nEscribe "ELIMINAR" para confirmar:`);
+    
+    if (confirmacion !== "ELIMINAR") {
+        showToast('❌ Acción cancelada', true);
+        return;
+    }
 
-            if (!key) {
-                showToast('❌ No se puede eliminar: falta clave', true);
-                return;
-            }
+    if (!legajo) {
+        showToast('❌ No se puede eliminar: falta legajo', true);
+        return;
+    }
 
-            const cleanKey = key.trim();
-            if (!cleanKey) {
-                showToast('❌ Clave inválida', true);
-                return;
-            }
+    try {
+        // ✅ Buscar por legajo en Firebase
+        const url = `https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json?orderBy="legajo"&equalTo="${legajo}"`;
+        const res = await fetch(url);
+        const data = await res.json();
 
-            try {
-                // ✅ URL corregida: sin espacios
-                const url = `https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados/${cleanKey}.json`;
-
-                const res = await fetch(url, { method: 'DELETE' });
-
-                if (!res.ok) {
-                    throw new Error(`Error ${res.status}: ${res.statusText}`);
-                }
-
-                showToast('🗑️ Empleado eliminado');
-                await cargarEmpleados();
-            } catch (err) {
-                console.error('Error al eliminar:', err);
-                showToast(`❌ Error al eliminar: ${err.message}`, true);
-            }
+        if (!data || Object.keys(data).length === 0) {
+            showToast('❌ No se encontró el empleado', true);
+            return;
         }
+
+        // ✅ Obtener la key real del empleado
+        const keys = Object.keys(data);
+        const keyReal = keys[0];
+
+        if (!keyReal) {
+            showToast('❌ No se pudo obtener la clave del empleado', true);
+            return;
+        }
+
+        // ✅ Eliminar usando la key
+        const deleteUrl = `https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados/${keyReal}.json`;
+        const deleteRes = await fetch(deleteUrl, { method: 'DELETE' });
+
+        if (!deleteRes.ok) throw new Error('Error al eliminar');
+
+        showToast('🗑️ Empleado eliminado');
+        await cargarEmpleados();
+    } catch (err) {
+        console.error('Error al eliminar:', err);
+        showToast(`❌ Error: ${err.message}`, true);
+    }
+}
 
         // Inicializar
         window.onload = async function () {
@@ -460,3 +470,4 @@
     </script>
 </body>
 </html>
+
