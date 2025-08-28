@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grilla de Horarios</title>
-    <!-- Font Awesome sin espacios -->
+    <title>Grilla Mensual de Horarios</title>
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
@@ -28,167 +28,140 @@
         }
         .form-group { 
             margin: 15px 0; 
+            display: grid; 
+            grid-template-columns: 1fr 1fr 1fr; 
+            gap: 15px;
         }
         .form-group label { 
             display: block; 
             margin-bottom: 8px; 
             font-weight: 600; 
         }
-        select { 
-            width: 100%; 
+        select, input, button { 
             padding: 10px; 
             border: 1px solid #ddd; 
-            border-radius: 6px; 
+            border-radius: 4px; 
         }
-        button { 
-            background: #3498db; 
-            color: white; 
-            border: none; 
-            padding: 10px 15px; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            margin-top: 10px;
-        }
-        .grilla { 
+        .calendario { 
             width: 100%; 
             border-collapse: collapse; 
             margin-top: 20px; 
             font-size: 0.95rem;
         }
-        .grilla th, .grilla td { 
+        .calendario th, .calendario td { 
             border: 1px solid #ddd; 
             padding: 10px; 
             text-align: center; 
-            min-width: 100px;
+            min-width: 60px;
         }
-        .grilla th { 
+        .calendario th { 
             background: #ecf0f1; 
-            font-weight: 600; 
-            position: sticky; 
-            top: 0; 
-            z-index: 1; 
+            font-weight: 600;
         }
-        .empleado { 
-            text-align: left; 
-            font-weight: 600; 
-            background: #f8f9fa; 
+        .libre { 
+            color: #e74c3c; 
+            font-style: italic; 
         }
         .turno { 
-            padding: 5px 8px; 
-            border-radius: 6px; 
-            font-size: 12px; 
             display: inline-block; 
-            margin: 2px;
+            padding: 4px 6px; 
+            margin: 2px; 
+            border-radius: 4px; 
+            font-size: 0.8rem; 
+            color: white; 
         }
-        .normal { background: #27ae60; color: white; }
-        .doble { background: #f39c12; color: white; }
-        .pico { background: #8e44ad; color: white; }
-        .libre { color: #e74c3c; font-style: italic; }
-        .snackbar {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #27ae60;
-            color: white;
-            padding: 14px 20px;
-            border-radius: 6px;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .snackbar.show {
-            opacity: 1;
+        .normal { background: #27ae60; }
+        .doble { background: #f39c12; }
+        .pico { background: #8e44ad; }
+        .feriado { background: #c0392b; }
+        .btn-export { 
+            background: #27ae60; 
+            color: white; 
+            border: none; 
+            padding: 10px 15px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1><i class="fas fa-th-large"></i> Grilla de Horarios</h1>
+        <h1><i class="fas fa-calendar-alt"></i> Grilla Mensual de Horarios</h1>
 
         <div class="form-group">
-            <label>Seleccionar Local</label>
-            <select id="local-select" onchange="generarGrilla()">
-                <option value="">Cargando locales...</option>
-            </select>
+            <div>
+                <label>Local</label>
+                <select id="filtro-local" onchange="cargarEmpleados()">
+                    <option value="">Cargando locales...</option>
+                </select>
+            </div>
+            <div>
+                <label>Empleado</label>
+                <select id="filtro-empleado">
+                    <option value="">Todos los empleados</option>
+                </select>
+            </div>
+            <div>
+                <label>Mes</label>
+                <input type="month" id="filtro-mes" value="2025-10">
+            </div>
         </div>
 
-        <button onclick="generarGrilla()">
-            <i class="fas fa-sync"></i> Actualizar Grilla
+        <button onclick="generarCalendario()" class="btn-export">
+            <i class="fas fa-sync"></i> Generar Calendario
         </button>
 
-        <div id="grilla-container" style="overflow-x: auto; margin-top: 20px;">
-            <table id="tabla-grilla" class="grilla">
-                <thead>
-                    <tr>
-                        <th>Empleado</th>
-                        <th>Lunes</th>
-                        <th>Martes</th>
-                        <th>Miércoles</th>
-                        <th>Jueves</th>
-                        <th>Viernes</th>
-                        <th>Sábado</th>
-                        <th>Domingo</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+        <button onclick="imprimirCalendario()" class="btn-export" style="background:#2980b9; margin-left:10px;">
+            <i class="fas fa-print"></i> Imprimir
+        </button>
+
+        <div id="contenedor-calendario" style="overflow-x: auto; margin-top: 20px;">
+            <!-- El calendario se generará aquí -->
         </div>
     </div>
 
-    <div id="snackbar" class="snackbar">Grilla actualizada</div>
-
     <script>
-        // ✅ URLs de Firebase (SIN espacios y con nombres correctos)
+        // ✅ URLs de Firebase
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
-        const DB_HORARIOS_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_local.json';
-        const DB_HORARIOS_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_empleados.json';
+        const DB_HORARIOS_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados.json';
+        const DB_HORARIOS_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_locales.json';
+        const DB_FERIADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/feriados.json';
 
         let locales = [];
         let empleados = [];
-        let horarioLocal = [];     // ✅ Nombre correcto
-        let horarioEmpleados = [];   // ✅ Nombre correcto
+        let horariosEmpleados = [];
+        let horariosLocales = [];
+        let feriados = [];
 
-        function showToast(msg, isError = false) {
-            const sb = document.getElementById('snackbar');
-            sb.textContent = msg;
-            sb.className = 'snackbar show';
-            if (isError) sb.classList.add('error');
-            setTimeout(() => sb.className = 'snackbar', 3000);
-        }
-
-        // Cargar datos
+        // Cargar datos iniciales
         async function cargarDatos() {
             try {
-                const [dataLocales, dataEmpleados, dataHorarioLocal, dataHorarioEmpleados] = await Promise.all([
+                const [dataLoc, dataEmp, dataHorEmp, dataHorLoc, dataFer] = await Promise.all([
                     fetch(DB_LOCALES).then(r => r.json()),
                     fetch(DB_EMPLEADOS).then(r => r.json()),
-                    fetch(DB_HORARIOS_LOCALES).then(r => r.json()),        // ✅ Correcto
-                    fetch(DB_HORARIOS_EMPLEADOS).then(r => r.json())       // ✅ Correcto
+                    fetch(DB_HORARIOS_EMPLEADOS).then(r => r.json()),
+                    fetch(DB_HORARIOS_LOCALES).then(r => r.json()),
+                    fetch(DB_FERIADOS).then(r => r.json())
                 ]);
 
-                // ✅ Procesar datos correctamente
-                locales = dataLocales ? Object.values(dataLocales) : [];
-                empleados = dataEmpleados ? Object.values(dataEmpleados) : [];
-                horarioLocal = dataHorarioLocal ? Object.values(dataHorarioLocal) : [];
-                horarioEmpleados = dataHorarioEmpleados ? Object.values(dataHorarioEmpleados) : [];
+                locales = Object.values(dataLoc || {});
+                empleados = Object.values(dataEmp || {});
+                horariosEmpleados = Object.values(dataHorEmp || {});
+                horariosLocales = Object.values(dataHorLoc || {});
+                feriados = Object.values(dataFer || {});
 
-                console.log('✅ Datos cargados:', { locales, empleados, horarioLocal, horarioEmpleados });
                 cargarLocales();
             } catch (e) {
-                console.error('❌ Error cargando datos:', e);
-                showToast('No se pudo cargar la base de datos. Revisa la consola.', true);
+                console.error('Error cargando datos:', e);
+                alert('No se pudieron cargar los datos. Verifica la conexión.');
             }
         }
 
-        // Cargar locales
         function cargarLocales() {
-            const select = document.getElementById('local-select');
-            select.innerHTML = '<option value="">Selecciona un local</option>';
-            if (locales.length === 0) {
-                select.innerHTML = '<option value="">No hay locales</option>';
-                return;
-            }
+            const select = document.getElementById('filtro-local');
+            select.innerHTML = '<option value="">Todos los locales</option>';
             locales.forEach(loc => {
                 const opt = document.createElement('option');
                 opt.value = loc.nombre;
@@ -197,65 +170,118 @@
             });
         }
 
-        // Generar grilla
-        function generarGrilla() {
-            const localNombre = document.getElementById('local-select').value;
-            if (!localNombre) {
-                showToast('⚠️ Selecciona un local', true);
-                return;
-            }
+        function cargarEmpleados() {
+            const local = document.getElementById('filtro-local').value;
+            const select = document.getElementById('filtro-empleado');
+            select.innerHTML = '<option value="">Todos los empleados</option>';
 
-            const tbody = document.querySelector('#tabla-grilla tbody');
-            tbody.innerHTML = '';
+            const empleadosFiltrados = local 
+                ? empleados.filter(e => e.local === local) 
+                : empleados;
 
-            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-            const empleadosLocal = empleados.filter(e => e.local === localNombre);
-            const horarioLocal = horarioLocal.find(h => h.local === localNombre);  // ✅ horarioLocal
-
-            if (empleadosLocal.length === 0) {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td colspan="8" style="text-align:center">No hay empleados en este local</td>`;
-                tbody.appendChild(tr);
-                return;
-            }
-
-            empleadosLocal.forEach(emp => {
-                const tr = document.createElement('tr');
-                const horarioEmp = horarioEmpleados.find(h => h.empleadoKey === emp.key);  // ✅ horarioEmpleados
-
-                if (!horarioEmp) {
-                    console.warn(`❌ No hay horario para: ${emp.nombre} (key: ${emp.key})`);
-                    const celdas = `<td class="empleado">${emp.nombre}</td><td colspan="7">No tiene horario asignado</td>`;
-                    tr.innerHTML = celdas;
-                    tbody.appendChild(tr);
-                    return;
-                }
-
-                let celdas = `<td class="empleado">${emp.nombre}</td>`;
-                dias.forEach(dia => {
-                    const diaEmp = horarioEmp.dias?.[dia];
-                    const diaLocal = horarioLocal?.[dia];
-
-                    if (!diaEmp || diaEmp.libre) {
-                        celdas += `<td><span class="libre">Libre</span></td>`;
-                    } else {
-                        let turno = '';
-                        if (diaEmp.entrada && diaEmp.salida) {
-                            turno += `<div class="turno normal">${diaEmp.entrada} - ${diaEmp.salida}</div>`;
-                        }
-                        if (diaLocal?.doble && diaEmp.entrada2 && diaEmp.salida2) {
-                            turno += `<div class="turno doble">T2: ${diaEmp.entrada2} - ${diaEmp.salida2}</div>`;
-                        }
-                        if (diaLocal?.continuo && diaEmp.pico) {
-                            turno += `<div class="turno pico">Pico</div>`;
-                        }
-                        celdas += `<td>${turno}</td>`;
-                    }
-                });
-
-                tr.innerHTML = celdas;
-                tbody.appendChild(tr);
+            empleadosFiltrados.forEach(emp => {
+                const opt = document.createElement('option');
+                opt.value = emp.key;
+                opt.textContent = emp.nombre;
+                select.appendChild(opt);
             });
+        }
+
+        function generarCalendario() {
+            const local = document.getElementById('filtro-local').value;
+            const empleadoKey = document.getElementById('filtro-empleado').value;
+            const mesAnio = document.getElementById('filtro-mes').value;
+            const [year, month] = mesAnio.split('-').map(Number);
+
+            if (!local && !empleadoKey) {
+                alert('Selecciona un local o un empleado');
+                return;
+            }
+
+            const contenedor = document.getElementById('contenedor-calendario');
+            const fecha = new Date(year, month, 1);
+            const diasDelMes = new Date(year, month + 1, 0).getDate();
+            const primerDiaSemana = fecha.getDay(); // 0 = domingo
+
+            // Obtener datos del empleado
+            const emp = empleados.find(e => e.key === empleadoKey) || 
+                        empleados.find(e => e.local === local);
+
+            if (!emp) {
+                contenedor.innerHTML = '<p>No hay empleados para este local</p>';
+                return;
+            }
+
+            const horarioEmp = horariosEmpleados.find(h => h.empleadoKey === emp.key);
+            const horarioLocal = horariosLocales.find(h => h.local === local);
+            const feriadosMes = feriados.filter(f => {
+                const fDate = new Date(f.fecha);
+                return fDate.getMonth() === month && fDate.getFullYear() === year;
+            });
+
+            // Días de la semana
+            const dias = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+
+            // Generar calendario
+            let html = `
+                <h3>Horarios - ${emp.nombre} (${local}) - ${new Date(year, month).toLocaleString('es-ES', { month: 'long', year: 'numeric' })}</h3>
+                <table class="calendario">
+                    <thead>
+                        <tr>
+                            <th>Domingo</th>
+                            <th>Lunes</th>
+                            <th>Martes</th>
+                            <th>Miércoles</th>
+                            <th>Jueves</th>
+                            <th>Viernes</th>
+                            <th>Sábado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            let diaActual = 1;
+            for (let semana = 0; semana < 6 && diaActual <= diasDelMes; semana++) {
+                html += '<tr>';
+                for (let i = 0; i < 7; i++) {
+                    if ((semana === 0 && i < primerDiaSemana) || diaActual > diasDelMes) {
+                        html += '<td></td>';
+                    } else {
+                        const fechaStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(diaActual).padStart(2, '0')}`;
+                        const diaSemana = dias[i];
+                        const horario = horarioEmp?.dias?.[diaSemana];
+                        const esFeriado = feriadosMes.some(f => f.fecha.startsWith(fechaStr));
+
+                        let celda = '';
+                        if (!horario || horario.libre) {
+                            celda = '<span class="libre">Libre</span>';
+                        } else {
+                            if (esFeriado) {
+                                celda += '<div class="turno feriado">Feriado</div>';
+                            }
+                            if (horario.entrada && horario.salida) {
+                                celda += `<div class="turno normal">${horario.entrada} - ${horario.salida}</div>`;
+                            }
+                            if (horarioLocal?.doble && horario.entrada2 && horario.salida2) {
+                                celda += `<div class="turno doble">T2: ${horario.entrada2} - ${horario.salida2}</div>`;
+                            }
+                            if (horarioLocal?.continuo && horario.pico) {
+                                celda += `<div class="turno pico">Pico</div>`;
+                            }
+                        }
+                        html += `<td>${diaActual}<br>${celda}</td>`;
+                        diaActual++;
+                    }
+                }
+                html += '</tr>';
+            }
+
+            html += '</tbody></table>';
+            contenedor.innerHTML = html;
+        }
+
+        function imprimirCalendario() {
+            window.print();
         }
 
         // Inicializar
@@ -264,7 +290,7 @@
         };
     </script>
 
-    <!-- ✅ Botón flotante -->
+    <!-- Botón flotante -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
@@ -298,6 +324,3 @@
     </script>
 </body>
 </html>
-
-
-
