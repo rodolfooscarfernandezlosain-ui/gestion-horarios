@@ -173,6 +173,7 @@
                     <label><input type="checkbox" id="empleado-feriados"> Trabaja feriados</label>
                     <label><input type="checkbox" id="empleado-domingos"> Trabaja domingos</label>
                     <label><input type="checkbox" id="empleado-rota"> Rota puestos</label>
+                    <label><input type="checkbox" id="empleado-horas-extras"> Hace horas extras</label>
                 </div>
             </div>
 
@@ -203,6 +204,7 @@
                     <th>Feriados</th>
                     <th>Domingos</th>
                     <th>Rota</th>
+                    <th>Horas Extras</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -213,7 +215,7 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase
+        // ✅ URLs de Firebase (SIN espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_CATEGORIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/categorias.json';
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
@@ -293,7 +295,7 @@
                 tbody.innerHTML = '';
 
                 if (empleados.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center">No hay empleados</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center">No hay empleados</td></tr>`;
                     return;
                 }
 
@@ -312,8 +314,9 @@
                         <td>${emp.feriados ? '✅' : '❌'}</td>
                         <td>${emp.domingos ? '✅' : '❌'}</td>
                         <td>${emp.rota ? '✅' : '❌'}</td>
+                        <td>${emp.horasExtras ? '✅' : '❌'}</td>
                         <td style="text-align: center;">
-                            <a href="#" class="accion-btn editar" onclick="editarEmpleado('${emp.key || ''}', '${emp.legajo}', '${emp.dni}', '${emp.cuil}', '${emp.nombre}', '${emp.categoria}', '${emp.puesto}', '${emp.local}', '${emp.estado}', '${emp.fechaIngreso || ''}', ${emp.feriados || false}, ${emp.domingos || false}, ${emp.rota || false}, ${JSON.stringify(emp.reemplaza || [])})">
+                            <a href="#" class="accion-btn editar" onclick="editarEmpleado('${emp.key || ''}', '${emp.legajo}', '${emp.dni}', '${emp.cuil}', '${emp.nombre}', '${emp.categoria}', '${emp.puesto}', '${emp.local}', '${emp.estado}', '${emp.fechaIngreso || ''}', ${emp.feriados || false}, ${emp.domingos || false}, ${emp.rota || false}, ${emp.horasExtras || false}, ${JSON.stringify(emp.reemplaza || [])})">
                                 <i class="fas fa-edit"></i> Editar
                             </a>
                             <a href="#" class="accion-btn eliminar" onclick="eliminarEmpleado('${emp.key || ''}', '${emp.nombre}', '${emp.legajo}')">
@@ -326,7 +329,7 @@
             } catch (e) {
                 console.error('Error cargando empleados:', e);
                 document.querySelector('#tabla-empleados tbody').innerHTML = 
-                    `<tr><td colspan="9" style="text-align:center; color: red;">Error al cargar datos. Revisa la consola.</td></tr>`;
+                    `<tr><td colspan="10" style="text-align:center; color: red;">Error al cargar datos. Revisa la consola.</td></tr>`;
             }
         }
 
@@ -339,7 +342,7 @@
 
         function editarEmpleado(
             key, legajo, dni, cuil, nombre, categoria, puesto, local, estado, fechaIngreso,
-            feriados, domingos, rota, reemplaza
+            feriados, domingos, rota, horasExtras, reemplaza
         ) {
             document.getElementById('empleado-legajo').value = legajo || '';
             document.getElementById('empleado-dni').value = dni;
@@ -353,6 +356,7 @@
             document.getElementById('empleado-feriados').checked = feriados;
             document.getElementById('empleado-domingos').checked = domingos;
             document.getElementById('empleado-rota').checked = rota;
+            document.getElementById('empleado-horas-extras').checked = horasExtras;
 
             const reemplazaSelect = document.getElementById('empleado-reemplaza');
             Array.from(reemplazaSelect.options).forEach(opt => {
@@ -378,6 +382,7 @@
             const feriados = document.getElementById('empleado-feriados').checked;
             const domingos = document.getElementById('empleado-domingos').checked;
             const rota = document.getElementById('empleado-rota').checked;
+            const horasExtras = document.getElementById('empleado-horas-extras').checked;
             const reemplaza = Array.from(document.getElementById('empleado-reemplaza').selectedOptions).map(o => o.value);
             const key = document.getElementById('edit-key').value;
 
@@ -388,7 +393,7 @@
 
             const empleado = {
                 legajo, dni, cuil, nombre, categoria, puesto, local, estado, fechaIngreso,
-                feriados, domingos, rota, reemplaza
+                feriados, domingos, rota, horasExtras, reemplaza
             };
 
             try {
@@ -409,62 +414,4 @@
 
                 if (!res.ok) throw new Error('Error al guardar');
 
-                showToast('✅ Empleado guardado en Firebase');
-                limpiarFormulario();
-                await cargarEmpleados();
-            } catch (err) {
-                console.error('Error:', err);
-                showToast('❌ Error al guardar', true);
-            }
-        }
-
-        // Inicializar
-        window.onload = async function () {
-            await cargarCategorias();
-            await cargarLocales();
-            await cargarEmpleados();
-
-            // Actualizar puesto cuando cambia la categoría
-            document.getElementById('empleado-categoria').addEventListener('change', (e) => {
-                const cat = categorias.find(c => c.nombre === e.target.value);
-                document.getElementById('empleado-puesto').value = cat ? cat.puesto : '';
-            });
-
-            document.getElementById('form-empleado').addEventListener('submit', guardarEmpleado);
-        };
-    </script>
-
-    <!-- ✅ Botón flotante -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            if (document.getElementById('btn-menu-flotante')) return;
-            const btn = document.createElement('button');
-            btn.id = 'btn-menu-flotante';
-            btn.textContent = '☰ Menú';
-            btn.title = 'Volver al menú principal';
-            btn.style.cssText = `
-                position: fixed !important;
-                top: 20px !important;
-                right: 20px !important;
-                z-index: 99999 !important;
-                padding: 12px 16px !important;
-                font-size: 14px !important;
-                font-weight: bold !important;
-                color: white !important;
-                background-color: #2980b9 !important;
-                border: none !important;
-                border-radius: 6px !important;
-                box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
-                cursor: pointer !important;
-                opacity: 1 !important;
-                display: block !important;
-                transition: all 0.2s ease !important;
-            `;
-            btn.onclick = () => {
-                window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
-            };
-            document.body.appendChild(btn);
-        });
-    </script>
-</body>
-</html>
+                showToast
