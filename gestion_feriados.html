@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feriados por Local</title>
-    <!-- Font Awesome sin espacios -->
+    <title>Gestión de Feriados</title>
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
             font-family: 'Segoe UI', sans-serif; 
             background: #f4f6f9; 
             padding: 20px; 
+            margin: 0;
         }
         .container { 
-            max-width: 900px; 
+            max-width: 800px; 
             margin: 0 auto; 
             background: white; 
             padding: 20px; 
@@ -35,40 +36,12 @@
         }
         input, select { 
             width: 100%; 
-            padding: 8px; 
+            padding: 10px; 
             border: 1px solid #ddd; 
             border-radius: 4px; 
             box-sizing: border-box; 
         }
-        .day-group {
-            margin: 15px 0;
-            padding: 15px;
-            background: #f9f9f9;
-            border-radius: 6px;
-            border: 1px solid #eee;
-        }
-        .toggle-row {
-            display: flex;
-            gap: 10px;
-            margin: 5px 0;
-        }
-        .time-row {
-            display: flex;
-            gap: 10px;
-            margin: 5px 0;
-            align-items: center;
-        }
-        .time-row input, .time-row select {
-            flex: 1;
-        }
-        .pico-group {
-            margin: 10px 0;
-            padding: 10px;
-            background: #e8f4fc;
-            border-radius: 6px;
-            border: 1px dashed #3498db;
-        }
-        .btn { 
+        button { 
             background: #3498db; 
             color: white; 
             border: none; 
@@ -76,11 +49,8 @@
             border-radius: 4px; 
             cursor: pointer; 
         }
-        .btn-danger { 
+        button.btn-danger { 
             background: #e74c3c; 
-        }
-        .btn-warning { 
-            background: #f39c12; 
         }
         table { 
             width: 100%; 
@@ -94,7 +64,21 @@
         }
         th { 
             background: #ecf0f1; 
+            text-align: center;
         }
+        .accion-btn {
+            padding: 6px 10px;
+            margin: 0 2px;
+            border-radius: 4px;
+            color: white;
+            text-align: center;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .editar { background: #f39c12; }
+        .eliminar { background: #e74c3c; }
+        .accion-btn i { margin-right: 5px; }
         .snackbar { 
             position: fixed; 
             bottom: 20px; 
@@ -113,19 +97,24 @@
         .error { 
             background: #e74c3c !important; 
         }
-        .info-dia {
-            font-size: 14px;
-            color: #7f8c8d;
-            margin-top: 5px;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1><i class="fas fa-calendar-alt"></i> Gestión de Feriados por Local</h1>
+        <h1><i class="fas fa-calendar-day"></i> Gestión de Feriados</h1>
 
         <form id="form-feriado">
             <input type="hidden" id="edit-key" value="">
+
+            <div class="form-group">
+                <label>Fecha *</label>
+                <input type="date" id="feriado-fecha" required>
+            </div>
+
+            <div class="form-group">
+                <label>Nombre *</label>
+                <input type="text" id="feriado-nombre" placeholder="Ej: Día de la Independencia" required>
+            </div>
 
             <div class="form-group">
                 <label>Local *</label>
@@ -134,35 +123,7 @@
                 </select>
             </div>
 
-            <div class="form-group">
-                <label>Fecha del Feriado *</label>
-                <input type="date" id="feriado-fecha" required>
-                <div id="dia-semana" class="info-dia" style="display:none;"></div>
-            </div>
-
-            <div class="form-group">
-                <label>Nombre del Feriado *</label>
-                <input type="text" id="feriado-nombre" placeholder="Ej: Día del Trabajador" required>
-            </div>
-
-            <div class="form-group">
-                <label>¿Abre el local en este feriado?</label>
-                <select id="feriado-abre" required>
-                    <option value="si">Sí, abre</option>
-                    <option value="no">No abre</option>
-                </select>
-            </div>
-
-            <div id="horario-container" style="display:none;">
-                <h3>Horario del Feriado</h3>
-                <p>Configure el horario para este día especial.</p>
-
-                <div id="dia-container">
-                    <!-- Generado por JS -->
-                </div>
-            </div>
-
-            <button type="submit" class="btn">
+            <button type="submit">
                 <i class="fas fa-save"></i> <span id="btn-texto">Guardar Feriado</span>
             </button>
             <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6; margin-left:10px;">
@@ -173,11 +134,9 @@
         <table id="tabla-feriados">
             <thead>
                 <tr>
-                    <th>Local</th>
-                    <th>Feriado</th>
                     <th>Fecha</th>
-                    <th>Día</th>
-                    <th>Estado</th>
+                    <th>Nombre</th>
+                    <th>Local</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -188,18 +147,11 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase (sin espacios)
-        const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
-        const DB_HORARIOS_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_locales.json';
-        const DB_CATEGORIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/categorias.json';
+        // ✅ URLs de Firebase (SIN espacios)
         const DB_FERIADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/feriados.json';
+        const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
 
         let locales = [];
-        let horariosLocales = [];
-        let categorias = [];
-
-        const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-        const nombresDias = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'];
 
         function showToast(msg, isError = false) {
             const sb = document.getElementById('snackbar');
@@ -209,26 +161,16 @@
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
-        // Cargar categorías
-        async function cargarCategorias() {
-            try {
-                const res = await fetch(DB_CATEGORIAS);
-                const data = await res.json();
-                categorias = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
-            } catch (e) {
-                console.error('Error cargando categorías:', e);
-                showToast('⚠️ No se cargaron los puestos', true);
-            }
-        }
-
-        // Cargar locales
+        // ✅ Cargar locales
         async function cargarLocales() {
             try {
                 const res = await fetch(DB_LOCALES);
                 const data = await res.json();
-                locales = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+                locales = data ? Object.values(data) : [];
+
                 const select = document.getElementById('feriado-local');
                 select.innerHTML = '<option value="">Selecciona un local</option>';
+
                 locales.forEach(loc => {
                     const option = document.createElement('option');
                     option.value = loc.nombre;
@@ -241,193 +183,42 @@
             }
         }
 
-        // Cargar horarios de locales
-        async function cargarHorariosLocales() {
-            try {
-                const res = await fetch(DB_HORARIOS_LOCALES);
-                const data = await res.json();
-                horariosLocales = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
-            } catch (e) {
-                console.error('Error cargando horarios de locales:', e);
-            }
-        }
-
-        // Generar HTML para un solo día
-        function generarDiaHTML() {
-            return `
-                <div class="day-group" id="dia-feriado">
-                    <h3 id="titulo-dia">Día del feriado</h3>
-
-                    <div class="toggle-row">
-                        <label><input type="checkbox" class="chk-continuo"> Horario Continuo</label>
-                        <label><input type="checkbox" class="chk-doble"> Turno Doble</label>
-                    </div>
-
-                    <div class="time-row">
-                        <input type="time" class="hora-apertura" required>
-                        <input type="time" class="hora-cierre" required>
-                    </div>
-
-                    <div class="time-row doble-horario" style="display:none;">
-                        <input type="time" class="hora-apertura2">
-                        <input type="time" class="hora-cierre2">
-                    </div>
-
-                    <div class="pico-group pico-simple" style="display:none;">
-                        <h4>Horario Pico (Mayor Venta)</h4>
-                        <div class="time-row">
-                            <input type="time" class="pico-inicio">
-                            <input type="time" class="pico-fin">
-                        </div>
-                        <button type="button" class="btn btn-sm" onclick="agregarPuesto()">+ Agregar Puesto</button>
-                        <div class="puestos-container"></div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Inicializar día
-        function inicializarDia() {
-            const container = document.getElementById('dia-container');
-            container.innerHTML = generarDiaHTML();
-
-            // Eventos
-            document.querySelector('.chk-continuo').addEventListener('change', function () {
-                document.querySelector('.pico-simple').style.display = this.checked ? 'block' : 'none';
-            });
-
-            document.querySelector('.chk-doble').addEventListener('change', function () {
-                document.querySelector('.doble-horario').style.display = this.checked ? 'flex' : 'none';
-            });
-        }
-
-        // ✅ Agregar puesto
-        function agregarPuesto() {
-            const container = document.querySelector('.puestos-container');
-            const div = document.createElement('div');
-            div.className = 'puesto-item';
-            div.innerHTML = `
-                <div style="display:flex; gap:10px; margin:5px 0;">
-                    <select style="flex:2;" required>
-                        <option value="">Selecciona un puesto</option>
-                        ${categorias.map(cat => `<option value="${cat.nombre}">${cat.puesto}</option>`).join('')}
-                    </select>
-                    <input type="number" placeholder="Cantidad" min="1" style="flex:1;" value="1" required>
-                    <button type="button" class="btn-danger btn-sm" onclick="this.closest('.puesto-item').remove()">✖</button>
-                </div>
-            `;
-            container.appendChild(div);
-        }
-
-        // Mostrar día de la semana
-document.getElementById('feriado-fecha').addEventListener('change', function () {
-    const fechaStr = this.value;
-    if (!fechaStr) return;
-
-    // Solución: usar fecha en hora local
-    const [año, mes, dia] = fechaStr.split('-').map(Number);
-    const fecha = new Date(año, mes - 1, dia); // Mes empieza en 0
-
-    const diaSemana = fecha.getDay();
-    const diaNombre = diasSemana[diaSemana];
-    const nombreDia = nombresDias[diaSemana];
-
-    document.getElementById('dia-semana').textContent = `Este feriado cae en: <strong>${diaNombre}</strong>`;
-    document.getElementById('dia-semana').style.display = 'block';
-
-    // Actualizar título
-    document.getElementById('titulo-dia').textContent = diaNombre;
-
-    // Cargar horario del local para ese día
-    const local = document.getElementById('feriado-local').value;
-    if (local) {
-        cargarHorarioLocal(local, nombreDia);
-    }
-});
-
-        // Cargar horario del local para el día del feriado
-        function cargarHorarioLocal(localNombre, diaNombre) {
-            const horario = horariosLocales.find(h => h.local === localNombre);
-            if (!horario || !horario[diaNombre]) return;
-
-            const diaData = horario[diaNombre];
-            const dia = document.getElementById('dia-feriado');
-
-            dia.querySelector('.hora-apertura').value = diaData.apertura || '';
-            dia.querySelector('.hora-cierre').value = diaData.cierre || '';
-            dia.querySelector('.chk-doble').checked = diaData.doble || false;
-            dia.querySelector('.doble-horario').style.display = diaData.doble ? 'flex' : 'none';
-            dia.querySelector('.chk-continuo').checked = diaData.continuo || false;
-            dia.querySelector('.pico-simple').style.display = diaData.continuo ? 'block' : 'none';
-
-            if (diaData.continuo && diaData.pico) {
-                dia.querySelector('.pico-inicio').value = diaData.pico.inicio || '';
-                dia.querySelector('.pico-fin').value = diaData.pico.fin || '';
-            }
-
-            if (diaData.continuo && diaData.puestos_pico) {
-                dia.querySelector('.puestos-container').innerHTML = '';
-                diaData.puestos_pico.forEach(p => {
-                    agregarPuesto();
-                    const item = dia.querySelector('.puestos-container .puesto-item:last-child');
-                    item.querySelector('select').value = p.puesto;
-                    item.querySelector('input').value = p.cantidad;
-                });
-            }
-        }
-
-        // Cambiar local
-        document.getElementById('feriado-local').addEventListener('change', function () {
-            const fecha = document.getElementById('feriado-fecha').value;
-            if (fecha) {
-                const dia = new Date(fecha).getDay();
-                const diaNombre = nombresDias[dia];
-                cargarHorarioLocal(this.value, diaNombre);
-            }
-        });
-
-        // Mostrar/ocultar horario según si abre
-        document.getElementById('feriado-abre').addEventListener('change', function () {
-            document.getElementById('horario-container').style.display = this.value === 'si' ? 'block' : 'none';
-        });
-
-        // Cargar feriados guardados
+        // ✅ Cargar feriados
         async function cargarFeriados() {
             try {
                 const res = await fetch(DB_FERIADOS);
                 const data = await res.json();
-                const feriados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+                const feriados = data ? Object.values(data) : [];
 
                 const tbody = document.querySelector('#tabla-feriados tbody');
                 tbody.innerHTML = '';
 
                 if (feriados.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center">No hay feriados registrados</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center">No hay feriados</td></tr>`;
                     return;
                 }
 
-                feriados.forEach(feriado => {
-                    const fecha = new Date(feriado.fecha);
-                    const diaNombre = diasSemana[fecha.getDay()];
+                feriados.forEach(fer => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td><strong>${feriado.local}</strong></td>
-                        <td>${feriado.nombre}</td>
-                        <td>${fecha.toLocaleDateString()}</td>
-                        <td>${diaNombre}</td>
-                        <td><span style="padding:5px 10px; border-radius:12px; background:${
-                            feriado.abre === 'si' ? '#27ae60' : '#e74c3c'
-                        }; color:white; font-size:12px;">${feriado.abre === 'si' ? 'Abierto' : 'Cerrado'}</span></td>
-                        <td style="text-align:center;">
-                            <button class="btn-warning" onclick="editarFeriado('${feriado.key}')">Editar</button>
-                            <button class="btn-danger" onclick="eliminarFeriado('${feriado.key}', '${feriado.nombre}')">Eliminar</button>
+                        <td><strong>${new Date(fer.fecha).toLocaleDateString('es-AR')}</strong></td>
+                        <td>${fer.nombre}</td>
+                        <td>${fer.local}</td>
+                        <td style="text-align: center;">
+                            <a href="#" class="accion-btn editar" onclick="editarFeriado('${fer.key || ''}', '${fer.fecha}', '${fer.nombre}', '${fer.local}')">
+                                <i class="fas fa-edit"></i> Editar
+                            </a>
+                            <a href="#" class="accion-btn eliminar" onclick="eliminarFeriado('${fer.key || ''}', '${fer.nombre}')">
+                                <i class="fas fa-trash"></i> Eliminar
+                            </a>
                         </td>
                     `;
                     tbody.appendChild(tr);
                 });
             } catch (e) {
                 console.error('Error cargando feriados:', e);
-                showToast('❌ Error al cargar', true);
+                document.querySelector('#tabla-feriados tbody').innerHTML = 
+                    `<tr><td colspan="4" style="text-align:center; color: red;">Error al cargar datos. Revisa la consola.</td></tr>`;
             }
         }
 
@@ -435,129 +226,29 @@ document.getElementById('feriado-fecha').addEventListener('change', function () 
             document.getElementById('form-feriado').reset();
             document.getElementById('edit-key').value = '';
             document.getElementById('btn-texto').textContent = 'Guardar Feriado';
-            document.getElementById('horario-container').style.display = 'none';
-            document.getElementById('dia-semana').style.display = 'none';
-            inicializarDia();
         }
 
-        async function editarFeriado(key) {
-            try {
-                const res = await fetch(`${DB_FERIADOS.replace('.json', `/${key}.json`)}`);
-                const feriado = await res.json();
-                limpiarFormulario();
-
-                document.getElementById('feriado-local').value = feriado.local;
-                document.getElementById('feriado-fecha').value = feriado.fecha;
-                document.getElementById('feriado-nombre').value = feriado.nombre;
-                document.getElementById('feriado-abre').value = feriado.abre;
-                document.getElementById('horario-container').style.display = feriado.abre === 'si' ? 'block' : 'none';
-
-                if (feriado.abre === 'si' && feriado.horario) {
-                    // Detectar qué día es la fecha del feriado
-                    const fecha = new Date(feriado.fecha);
-                    const diaSemana = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][fecha.getDay()];
-                    const diaData = feriado.horario[diaSemana] || feriado.horario.lunes;
-
-                    const dia = document.getElementById('dia-feriado');
-                    dia.querySelector('.hora-apertura').value = diaData.apertura || '';
-                    dia.querySelector('.hora-cierre').value = diaData.cierre || '';
-                    dia.querySelector('.chk-doble').checked = diaData.doble || false;
-                    dia.querySelector('.doble-horario').style.display = diaData.doble ? 'flex' : 'none';
-                    dia.querySelector('.hora-apertura2').value = diaData.apertura2 || '';
-                    dia.querySelector('.hora-cierre2').value = diaData.cierre2 || '';
-                    dia.querySelector('.chk-continuo').checked = diaData.continuo || false;
-                    dia.querySelector('.pico-simple').style.display = diaData.continuo ? 'block' : 'none';
-                    dia.querySelector('.pico-inicio').value = diaData.pico?.inicio || '';
-                    dia.querySelector('.pico-fin').value = diaData.pico?.fin || '';
-
-                    if (diaData.puestos_pico) {
-                        dia.querySelector('.puestos-container').innerHTML = '';
-                        diaData.puestos_pico.forEach(p => {
-                            agregarPuesto();
-                            const item = dia.querySelector('.puestos-container .puesto-item:last-child');
-                            item.querySelector('select').value = p.puesto;
-                            item.querySelector('input').value = p.cantidad;
-                        });
-                    }
-                }
-
-                // Mostrar día de la semana
-                const fecha = new Date(feriado.fecha);
-                const diaNombre = diasSemana[fecha.getDay()];
-                document.getElementById('dia-semana').textContent = `Este feriado cae en: <strong>${diaNombre}</strong>`;
-                document.getElementById('dia-semana').style.display = 'block';
-                document.getElementById('titulo-dia').textContent = diaNombre;
-
-                document.getElementById('edit-key').value = key;
-                document.getElementById('btn-texto').textContent = 'Actualizar Feriado';
-            } catch (e) {
-                console.error('Error al editar:', e);
-                showToast('❌ Error al cargar feriado', true);
-            }
+        function editarFeriado(key, fecha, nombre, local) {
+            document.getElementById('feriado-fecha').value = fecha;
+            document.getElementById('feriado-nombre').value = nombre;
+            document.getElementById('feriado-local').value = local;
+            document.getElementById('edit-key').value = key;
+            document.getElementById('btn-texto').textContent = 'Actualizar Feriado';
         }
 
         async function guardarFeriado(e) {
             e.preventDefault();
-            const local = document.getElementById('feriado-local').value;
             const fecha = document.getElementById('feriado-fecha').value;
             const nombre = document.getElementById('feriado-nombre').value.trim();
-            const abre = document.getElementById('feriado-abre').value;
+            const local = document.getElementById('feriado-local').value;
             const key = document.getElementById('edit-key').value;
 
-            if (!local || !fecha || !nombre) {
+            if (!fecha || !nombre || !local) {
                 showToast('⚠️ Completa todos los campos obligatorios', true);
                 return;
             }
 
-            const feriado = {
-                local,
-                fecha,
-                nombre,
-                abre
-            };
-
-            if (abre === 'si') {
-                const dia = document.getElementById('dia-feriado');
-                const apertura = dia.querySelector('.hora-apertura').value;
-                const cierre = dia.querySelector('.hora-cierre').value;
-
-                if (!apertura || !cierre) {
-                    showToast('⚠️ Completa el horario', true);
-                    return;
-                }
-
-                // Obtener el día de la semana real del feriado
-                const fechaObj = new Date(fecha);
-                const diaNombre = nombresDias[fechaObj.getDay()];
-
-                feriado.horario = {
-                    [diaNombre]: {
-                        apertura,
-                        cierre,
-                        doble: dia.querySelector('.chk-doble').checked,
-                        continuo: dia.querySelector('.chk-continuo').checked
-                    }
-                };
-
-                // Guardar puestos del pico
-                const puestosCont = dia.querySelector('.puestos-container');
-                if (puestosCont && feriado.horario[diaNombre].continuo) {
-                    const puestos = [];
-                    puestosCont.querySelectorAll('.puesto-item').forEach(item => {
-                        const select = item.querySelector('select');
-                        const input = item.querySelector('input');
-                        if (select.value && input.value) {
-                            const categoria = categorias.find(c => c.nombre === select.value);
-                            puestos.push({
-                                puesto: select.value,
-                                puestoNombre: categoria ? categoria.puesto : select.value,
-                                cantidad: input.value
-                            });
-                        }
-                    });
-                    feriado.horario[diaNombre].puestos_pico = puestos;
-                }
-            }
+            const feriado = { fecha, nombre, local };
 
             try {
                 let url = DB_FERIADOS;
@@ -577,7 +268,7 @@ document.getElementById('feriado-fecha').addEventListener('change', function () 
 
                 if (!res.ok) throw new Error('Error al guardar');
 
-                showToast('✅ Feriado guardado');
+                showToast('✅ Feriado guardado en Firebase');
                 limpiarFormulario();
                 await cargarFeriados();
             } catch (err) {
@@ -588,6 +279,11 @@ document.getElementById('feriado-fecha').addEventListener('change', function () 
 
         async function eliminarFeriado(key, nombre) {
             if (!confirm(`¿Eliminar el feriado "${nombre}"?`)) return;
+
+            if (!key) {
+                showToast('❌ No se puede eliminar: falta clave', true);
+                return;
+            }
 
             try {
                 const res = await fetch(`${DB_FERIADOS.replace('.json', `/${key}.json`)}`, {
@@ -606,17 +302,13 @@ document.getElementById('feriado-fecha').addEventListener('change', function () 
 
         // Inicializar
         window.onload = async function () {
-            await cargarCategorias();
             await cargarLocales();
-            await cargarHorariosLocales();
-            inicializarDia();
             await cargarFeriados();
-
             document.getElementById('form-feriado').addEventListener('submit', guardarFeriado);
         };
     </script>
 
-    <!-- ✅ Botón flotante sin espacios -->
+    <!-- ✅ Botón flotante -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (document.getElementById('btn-menu-flotante')) return;
@@ -650,4 +342,3 @@ document.getElementById('feriado-fecha').addEventListener('change', function () 
     </script>
 </body>
 </html>
-
