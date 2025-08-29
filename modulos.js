@@ -88,7 +88,7 @@ function cargarModulo(nombre) {
         case 'locales': initLocales(); break;
         case 'empleados': initEmpleados(); break;
         case 'horarios-empleados': initHorariosEmpleados(); break;
-        case 'horarios-local': initHorariosLocal(); break;
+        case 'horarios-locales': initHorariosLocales(); break;
         case 'feriados': initFeriados(); break;
         case 'ausencias': initAusencias(); break;
         case 'novedades': initNovedades(); break;
@@ -113,7 +113,7 @@ window.onload = () => cargarModulo('locales');
 function initLocales() { cargarLocales(); }
 function initEmpleados() { actualizarSelectoresLocales(); cargarEmpleados(); }
 function initHorariosEmpleados() { actualizarSelectoresEmpleados(); cargarHorarioEmpleado(); }
-function initHorariosLocal() { actualizarSelectoresLocales(); cargarHorarioLocal(); }
+function initHorariosLocales() { actualizarSelectoresLocales(); cargarHorariosLocales(); }
 function initFeriados() { actualizarSelectoresLocales(); cargarFeriados(); }
 function initAusencias() { actualizarSelectoresEmpleados(); cargarAusencias(); }
 function initNovedades() { actualizarSelectoresLocales(); mostrarNovedades(); }
@@ -297,7 +297,7 @@ function agregarEmpleado() {
 
 // === INICIALIZADORES (vacíos por ahora) ===
 function initHorariosEmpleados() {}
-function initHorariosLocal() {}
+function initHorariosLocales() {}
 function initFeriados() {}
 function initAusencias() {}
 function initNovedades() {}
@@ -307,8 +307,8 @@ function initGrilla() {}
 // === Funciones vacías (para evitar errores) - Las completarás después
 function cargarHorarioEmpleado() {}
 function guardarHorarioEmpleado() {}
-function cargarHorarioLocal() {}
-function guardarHorarioLocal() {}
+function cargarHorariosLocales() {}
+function guardarHorariosLocales() {}
 function cargarFeriados() {}
 function agregarFeriado() {}
 function cargarAusencias() {}
@@ -331,4 +331,5 @@ window.recuperarContrasena = window.recuperarContrasena || function() {};
 window.cerrarSesion = window.cerrarSesion || function() {};
 window.cargarModulo = cargarModulo;
 window.initLocales = initLocales;
+
 window.initEmpleados = initEmpleados;
