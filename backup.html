@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backup del Sistema</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; }
+        .btn { 
+            display: block; 
+            width: 100%; 
+            padding: 15px; 
+            margin: 20px 0; 
+            background: #3498db; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 18px; 
+            cursor: pointer; 
+            text-align: center; 
+        }
+        .btn:hover { background: #2980b9; }
+        .btn-danger { background: #e74c3c; }
+        .btn-danger:hover { background: #c0392b; }
+        .snackbar { 
+            position: fixed; bottom: 20px; right: 20px; 
+            background: #27ae60; color: white; padding: 15px 20px; 
+            border-radius: 6px; z-index: 1000; opacity: 0; 
+            transition: opacity 0.3s; 
+        }
+        .snackbar.show { opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-cloud-download-alt"></i> Backup del Sistema</h1>
+
+        <button onclick="descargarBackupCompleto()" class="btn">
+            <i class="fas fa-download"></i> Descargar Copia Completa del Sistema
+        </button>
+
+        <button onclick="limpiarBackups()" class="btn btn-danger">
+            <i class="fas fa-trash"></i> Limpiar Historial de Backups
+        </button>
+    </div>
+
+    <div id="snackbar" class="snackbar">Acción realizada</div>
+
+    <script>
+        const DB_URL = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/.json';
+        const BACKUP_URL = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/backups.json';
+
+        function showToast(msg, isError = false) {
+            const sb = document.getElementById('snackbar');
+            sb.textContent = msg;
+            sb.className = 'snackbar show';
+            if (isError) sb.classList.add('error');
+            setTimeout(() => sb.className = 'snackbar', 3000);
+        }
+
+        // ✅ Descargar backup completo
+        async function descargarBackupCompleto() {
+            try {
+                const res = await fetch(DB_URL);
+                const data = await res.json();
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `backup_gestion_personal_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('✅ Backup descargado');
+            } catch (err) {
+                console.error('Error:', err);
+                showToast('❌ Error al generar backup', true);
+            }
+        }
+
+        // ✅ Limpiar historial de backups
+        async function limpiarBackups() {
+            if (!confirm('¿Eliminar todo el historial de backups? Esta acción no se puede deshacer.')) return;
+
+            try {
+                await fetch(BACKUP_URL, { method: 'DELETE' });
+                showToast('🗑️ Historial de backups eliminado');
+            } catch (err) {
+                showToast('❌ Error al limpiar', true);
+            }
+        }
+    </script>
+</body>
+</html>
