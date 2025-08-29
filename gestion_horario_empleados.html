@@ -157,6 +157,13 @@
             <input type="hidden" id="edit-key" value="">
 
             <div class="form-group">
+                <label>Local</label>
+                <select id="filtro-local" onchange="filtrarEmpleados()">
+                    <option value="">Todos los locales</option>
+                </select>
+            </div>
+
+            <div class="form-group">
                 <label>Empleado *</label>
                 <div class="autocomplete-container">
                     <input type="text" id="empleado-search" placeholder="Buscar empleado..." autocomplete="off">
@@ -208,11 +215,12 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase
+        // ✅ URLs de Firebase (SIN espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_HORARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_empleados.json';
 
         let empleados = [];
+        let locales = [];
 
         function showToast(msg, isError = false) {
             const sb = document.getElementById('snackbar');
@@ -222,30 +230,73 @@
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
-        // ✅ Cargar empleados
-        async function cargarEmpleados() {
+        // ✅ Cargar empleados y locales
+        async function cargarDatos() {
             try {
                 const res = await fetch(DB_EMPLEADOS);
                 const data = await res.json();
                 empleados = data ? Object.values(data) : [];
+
+                // Extraer locales únicos
+                locales = [...new Set(empleados.map(e => e.local).filter(Boolean))];
+                const select = document.getElementById('filtro-local');
+                select.innerHTML = '<option value="">Todos los locales</option>';
+                locales.forEach(loc => {
+                    const opt = document.createElement('option');
+                    opt.value = loc;
+                    opt.textContent = loc;
+                    select.appendChild(opt);
+                });
+
+                // Inicializar autocompletado
+                mostrarTodosEmpleados();
             } catch (e) {
                 console.error('Error cargando empleados:', e);
                 showToast('❌ Error al cargar empleados', true);
             }
         }
 
-        // ✅ Mostrar lista de empleados según búsqueda
-        function mostrarAutocompletado(val) {
+        // ✅ Mostrar todos los empleados al hacer clic en el input
+        function mostrarTodosEmpleados() {
+            const searchInput = document.getElementById('empleado-search');
             const list = document.getElementById('empleado-list');
+            const localFiltro = document.getElementById('filtro-local').value;
+
             list.innerHTML = '';
             list.style.display = 'none';
 
-            if (!val) return;
+            searchInput.addEventListener('focus', () => {
+                const filtrados = localFiltro 
+                    ? empleados.filter(e => e.local === localFiltro)
+                    : empleados;
 
-            const filtrados = empleados.filter(emp => 
-                emp.nombre.toLowerCase().includes(val.toLowerCase()) ||
-                emp.legajo.includes(val)
-            );
+                if (filtrados.length === 0) return;
+
+                list.style.display = 'block';
+                filtrados.forEach(emp => {
+                    const div = document.createElement('div');
+                    div.className = 'autocomplete-item';
+                    div.innerHTML = `<strong>${emp.nombre}</strong> <small>(${emp.local})</small>`;
+                    div.onclick = () => {
+                        document.getElementById('empleado-search').value = emp.nombre;
+                        document.getElementById('empleado-key').value = emp.key;
+                        list.style.display = 'none';
+                        mostrarInfoEmpleado(emp.key);
+                    };
+                    list.appendChild(div);
+                });
+            });
+        }
+
+        // ✅ Filtrar empleados por local
+        function filtrarEmpleados() {
+            const local = document.getElementById('filtro-local').value;
+            const list = document.getElementById('empleado-list');
+            list.innerHTML = '';
+
+            const filtrados = local 
+                ? empleados.filter(e => e.local === local)
+                : empleados;
 
             if (filtrados.length === 0) return;
 
@@ -511,22 +562,18 @@
 
         // Inicializar
         window.onload = async function () {
-            await cargarEmpleados();
+            await cargarDatos();
             generarDias();
             await cargarHorarios();
 
             document.getElementById('form-horario-empleado').addEventListener('submit', guardarHorario);
 
-            // Búsqueda
-            const searchInput = document.getElementById('empleado-search');
-            searchInput.addEventListener('input', (e) => {
-                mostrarAutocompletado(e.target.value);
-            });
-
             // Ocultar lista al hacer clic fuera
             document.addEventListener('click', (e) => {
-                if (!searchInput.contains(e.target) && !document.getElementById('empleado-list').contains(e.target)) {
-                    document.getElementById('empleado-list').style.display = 'none';
+                const searchInput = document.getElementById('empleado-search');
+                const list = document.getElementById('empleado-list');
+                if (!searchInput.contains(e.target) && !list.contains(e.target)) {
+                    list.style.display = 'none';
                 }
             });
         };
