@@ -277,11 +277,13 @@
             }
         }
 
+        // ✅ Eliminar sin mensaje de "falta clave"
         async function eliminarFeriado(key, nombre) {
             if (!confirm(`¿Eliminar el feriado "${nombre}"?`)) return;
 
+            // ✅ Si no hay key, no se puede eliminar, pero sin mensaje agresivo
             if (!key) {
-                showToast('❌ No se puede eliminar: falta clave', true);
+                showToast('⚠️ No se puede eliminar este registro', true);
                 return;
             }
 
