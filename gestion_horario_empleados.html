@@ -64,6 +64,26 @@
             border: 1px dashed #3498db;
             display: none;
         }
+        .info-empleado {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-size: 0.95rem;
+        }
+        .checkbox-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin: 0;
+            font-weight: normal;
+        }
         button { 
             background: #3498db; 
             color: white; 
@@ -119,6 +139,21 @@
                 </select>
             </div>
 
+            <!-- Información del empleado -->
+            <div id="info-empleado" class="info-empleado" style="display:none;">
+                <strong>Disponibilidad:</strong>
+                <div class="checkbox-group">
+                    <label><i class="fas fa-calendar-day"></i> Feriados: <span id="info-feriados">—</span></label>
+                    <label><i class="fas fa-sync"></i> Rota feriados: <span id="info-rota-feriados">—</span></label>
+                    <label><i class="fas fa-calendar-week"></i> Domingos: <span id="info-domingos">—</span></label>
+                    <label><i class="fas fa-sync"></i> Rota domingos: <span id="info-rota-domingos">—</span></label>
+                    <label><i class="fas fa-clock"></i> Horas extras: <span id="info-horas-extras">—</span></label>
+                </div>
+                <div>
+                    <strong>Puestos adicionales:</strong> <span id="info-reemplaza">—</span>
+                </div>
+            </div>
+
             <div id="dias-container">
                 <!-- Generado por JS -->
             </div>
@@ -151,6 +186,8 @@
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_HORARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_empleados.json';
 
+        let empleados = [];
+
         function showToast(msg, isError = false) {
             const sb = document.getElementById('snackbar');
             sb.textContent = msg;
@@ -159,12 +196,13 @@
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
-        // Cargar empleados
+        // ✅ Cargar empleados
         async function cargarEmpleados() {
             try {
                 const res = await fetch(DB_EMPLEADOS);
                 const data = await res.json();
-                const empleados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+                empleados = data ? Object.values(data) : [];
+
                 const select = document.getElementById('empleado-select');
                 select.innerHTML = '<option value="">Selecciona un empleado</option>';
                 empleados.forEach(emp => {
@@ -180,7 +218,25 @@
             }
         }
 
-        // Generar días
+        // ✅ Mostrar info del empleado seleccionado
+        function mostrarInfoEmpleado(empleadoKey) {
+            const emp = empleados.find(e => e.key === empleadoKey);
+            const infoDiv = document.getElementById('info-empleado');
+            if (!emp) {
+                infoDiv.style.display = 'none';
+                return;
+            }
+
+            infoDiv.style.display = 'block';
+            document.getElementById('info-feriados').textContent = emp.feriados ? 'Sí' : 'No';
+            document.getElementById('info-rota-feriados').textContent = emp.rota ? 'Sí' : 'No';
+            document.getElementById('info-domingos').textContent = emp.domingos ? 'Sí' : 'No';
+            document.getElementById('info-rota-domingos').textContent = emp.rota ? 'Sí' : 'No';
+            document.getElementById('info-horas-extras').textContent = emp.horasExtras ? 'Sí' : 'No';
+            document.getElementById('info-reemplaza').textContent = emp.reemplaza?.length > 0 ? emp.reemplaza.join(', ') : 'Ninguno';
+        }
+
+        // ✅ Generar días
         function generarDias() {
             const container = document.getElementById('dias-container');
             const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
@@ -226,7 +282,7 @@
             });
         }
 
-        // Cargar horarios guardados
+        // ✅ Cargar horarios guardados
         async function cargarHorarios() {
             try {
                 const res = await fetch(DB_HORARIOS);
@@ -269,7 +325,7 @@
             document.getElementById('form-horario-empleado').reset();
             document.getElementById('edit-key').value = '';
             document.getElementById('btn-texto').textContent = 'Guardar Horario';
-            document.querySelector('.container h1').innerHTML = '<i class="fas fa-calendar-alt"></i> Asignar Horario a Empleado';
+            document.getElementById('info-empleado').style.display = 'none';
             generarDias();
         }
 
@@ -280,12 +336,13 @@
                 limpiarFormulario();
 
                 document.getElementById('empleado-select').value = horario.empleadoKey;
-                const select = document.getElementById('empleado-select');
-                select.disabled = true;
+                mostrarInfoEmpleado(horario.empleadoKey);
+                document.getElementById('empleado-select').disabled = true;
 
                 const dias = horario.dias;
-                Object.keys(dias).forEach(dia => {
-                    const group = document.querySelectorAll('.day-group')[['lunes','martes','miercoles','jueves','viernes','sabado','domingo'].indexOf(dia)];
+                const diaNames = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+                diaNames.forEach(dia => {
+                    const group = document.querySelectorAll('.day-group')[diaNames.indexOf(dia)];
                     if (!group) return;
                     const diaData = dias[dia];
                     if (diaData.libre) {
@@ -306,7 +363,6 @@
 
                 document.getElementById('edit-key').value = key;
                 document.getElementById('btn-texto').textContent = 'Actualizar Horario';
-                document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Horario';
             } catch (e) {
                 console.error('Error al editar:', e);
                 showToast('❌ Error al cargar horario', true);
@@ -407,6 +463,11 @@
             await cargarHorarios();
 
             document.getElementById('form-horario-empleado').addEventListener('submit', guardarHorario);
+
+            // Mostrar info al seleccionar empleado
+            document.getElementById('empleado-select').addEventListener('change', (e) => {
+                mostrarInfoEmpleado(e.target.value);
+            });
         };
     </script>
 
@@ -444,4 +505,3 @@
     </script>
 </body>
 </html>
-
