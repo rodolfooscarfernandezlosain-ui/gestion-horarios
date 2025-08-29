@@ -166,7 +166,7 @@
                 <input type="date" id="empleado-fecha-ingreso" required>
             </div>
 
-            <!-- ✅ Nuevos campos para optimización -->
+            <!-- ✅ Disponibilidad avanzada -->
             <div class="form-group">
                 <label>Disponibilidad</label>
                 <div class="checkbox-group">
@@ -414,4 +414,62 @@
 
                 if (!res.ok) throw new Error('Error al guardar');
 
-                showToast
+                showToast('✅ Empleado guardado en Firebase');
+                limpiarFormulario();
+                await cargarEmpleados();
+            } catch (err) {
+                console.error('Error:', err);
+                showToast('❌ Error al guardar', true);
+            }
+        }
+
+        // Inicializar
+        window.onload = async function () {
+            await cargarCategorias();
+            await cargarLocales();
+            await cargarEmpleados();
+
+            // Actualizar puesto cuando cambia la categoría
+            document.getElementById('empleado-categoria').addEventListener('change', (e) => {
+                const cat = categorias.find(c => c.nombre === e.target.value);
+                document.getElementById('empleado-puesto').value = cat ? cat.puesto : '';
+            });
+
+            document.getElementById('form-empleado').addEventListener('submit', guardarEmpleado);
+        };
+    </script>
+
+    <!-- ✅ Botón flotante -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (document.getElementById('btn-menu-flotante')) return;
+            const btn = document.createElement('button');
+            btn.id = 'btn-menu-flotante';
+            btn.textContent = '☰ Menú';
+            btn.title = 'Volver al menú principal';
+            btn.style.cssText = `
+                position: fixed !important;
+                top: 20px !important;
+                right: 20px !important;
+                z-index: 99999 !important;
+                padding: 12px 16px !important;
+                font-size: 14px !important;
+                font-weight: bold !important;
+                color: white !important;
+                background-color: #2980b9 !important;
+                border: none !important;
+                border-radius: 6px !important;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
+                cursor: pointer !important;
+                opacity: 1 !important;
+                display: block !important;
+                transition: all 0.2s ease !important;
+            `;
+            btn.onclick = () => {
+                window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
+            };
+            document.body.appendChild(btn);
+        });
+    </script>
+</body>
+</html>
