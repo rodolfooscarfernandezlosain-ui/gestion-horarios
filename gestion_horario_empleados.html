@@ -40,6 +40,30 @@
             border-radius: 4px; 
             box-sizing: border-box; 
         }
+        .autocomplete-container {
+            position: relative;
+        }
+        .autocomplete-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            border-radius: 0 0 4px 4px;
+        }
+        .autocomplete-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .autocomplete-item:hover {
+            background: #f1f1f1;
+        }
         .day-group {
             margin: 15px 0;
             padding: 15px;
@@ -134,9 +158,11 @@
 
             <div class="form-group">
                 <label>Empleado *</label>
-                <select id="empleado-select" required>
-                    <option value="">Selecciona un empleado</option>
-                </select>
+                <div class="autocomplete-container">
+                    <input type="text" id="empleado-search" placeholder="Buscar empleado..." autocomplete="off">
+                    <div id="empleado-list" class="autocomplete-list" style="display:none;"></div>
+                </div>
+                <input type="hidden" id="empleado-key" required>
             </div>
 
             <!-- Información del empleado -->
@@ -202,20 +228,40 @@
                 const res = await fetch(DB_EMPLEADOS);
                 const data = await res.json();
                 empleados = data ? Object.values(data) : [];
-
-                const select = document.getElementById('empleado-select');
-                select.innerHTML = '<option value="">Selecciona un empleado</option>';
-                empleados.forEach(emp => {
-                    const option = document.createElement('option');
-                    option.value = emp.key;
-                    option.textContent = `${emp.nombre} (${emp.local})`;
-                    option.dataset.local = emp.local;
-                    select.appendChild(option);
-                });
             } catch (e) {
                 console.error('Error cargando empleados:', e);
                 showToast('❌ Error al cargar empleados', true);
             }
+        }
+
+        // ✅ Mostrar lista de empleados según búsqueda
+        function mostrarAutocompletado(val) {
+            const list = document.getElementById('empleado-list');
+            list.innerHTML = '';
+            list.style.display = 'none';
+
+            if (!val) return;
+
+            const filtrados = empleados.filter(emp => 
+                emp.nombre.toLowerCase().includes(val.toLowerCase()) ||
+                emp.legajo.includes(val)
+            );
+
+            if (filtrados.length === 0) return;
+
+            list.style.display = 'block';
+            filtrados.forEach(emp => {
+                const div = document.createElement('div');
+                div.className = 'autocomplete-item';
+                div.innerHTML = `<strong>${emp.nombre}</strong> <small>(${emp.local})</small>`;
+                div.onclick = () => {
+                    document.getElementById('empleado-search').value = emp.nombre;
+                    document.getElementById('empleado-key').value = emp.key;
+                    list.style.display = 'none';
+                    mostrarInfoEmpleado(emp.key);
+                };
+                list.appendChild(div);
+            });
         }
 
         // ✅ Mostrar info del empleado seleccionado
@@ -326,6 +372,7 @@
             document.getElementById('edit-key').value = '';
             document.getElementById('btn-texto').textContent = 'Guardar Horario';
             document.getElementById('info-empleado').style.display = 'none';
+            document.getElementById('empleado-list').style.display = 'none';
             generarDias();
         }
 
@@ -335,9 +382,10 @@
                 const horario = await res.json();
                 limpiarFormulario();
 
-                document.getElementById('empleado-select').value = horario.empleadoKey;
+                document.getElementById('empleado-search').value = horario.empleadoNombre;
+                document.getElementById('empleado-key').value = horario.empleadoKey;
                 mostrarInfoEmpleado(horario.empleadoKey);
-                document.getElementById('empleado-select').disabled = true;
+                document.getElementById('empleado-search').disabled = true;
 
                 const dias = horario.dias;
                 const diaNames = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
@@ -371,9 +419,14 @@
 
         async function guardarHorario(e) {
             e.preventDefault();
-            const empleadoKey = document.getElementById('empleado-select').value;
-            const empleadoNombre = document.getElementById('empleado-select').options[document.getElementById('empleado-select').selectedIndex].text.split(' (')[0];
-            const local = document.getElementById('empleado-select').options[document.getElementById('empleado-select').selectedIndex].dataset.local;
+            const empleadoKey = document.getElementById('empleado-key').value;
+            const empleadoNombre = document.getElementById('empleado-search').value.trim();
+            const emp = empleados.find(e => e.key === empleadoKey);
+            if (!emp) {
+                showToast('⚠️ Selecciona un empleado válido', true);
+                return;
+            }
+            const local = emp.local;
             const key = document.getElementById('edit-key').value;
 
             const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
@@ -430,7 +483,7 @@
 
                 showToast('✅ Horario asignado');
                 limpiarFormulario();
-                document.getElementById('empleado-select').disabled = false;
+                document.getElementById('empleado-search').disabled = false;
                 await cargarHorarios();
             } catch (err) {
                 console.error('Error:', err);
@@ -464,9 +517,17 @@
 
             document.getElementById('form-horario-empleado').addEventListener('submit', guardarHorario);
 
-            // Mostrar info al seleccionar empleado
-            document.getElementById('empleado-select').addEventListener('change', (e) => {
-                mostrarInfoEmpleado(e.target.value);
+            // Búsqueda
+            const searchInput = document.getElementById('empleado-search');
+            searchInput.addEventListener('input', (e) => {
+                mostrarAutocompletado(e.target.value);
+            });
+
+            // Ocultar lista al hacer clic fuera
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !document.getElementById('empleado-list').contains(e.target)) {
+                    document.getElementById('empleado-list').style.display = 'none';
+                }
             });
         };
     </script>
