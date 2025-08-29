@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Empleados</title>
-    <!-- Font Awesome sin espacios -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
@@ -13,7 +13,7 @@
             padding: 20px; 
         }
         .container { 
-            max-width: 800px; 
+            max-width: 900px; 
             margin: 0 auto; 
             background: white; 
             padding: 20px; 
@@ -39,6 +39,19 @@
             border: 1px solid #ddd; 
             border-radius: 4px; 
             box-sizing: border-box; 
+        }
+        .checkbox-group { 
+            display: flex; 
+            gap: 15px; 
+            margin: 10px 0; 
+            flex-wrap: wrap; 
+        }
+        .checkbox-group label { 
+            display: flex; 
+            align-items: center; 
+            gap: 5px; 
+            margin: 0; 
+            font-weight: normal; 
         }
         button { 
             background: #3498db; 
@@ -73,6 +86,8 @@
             display: inline-block;
         }
         .editar { background: #f39c12; }
+        .eliminar { background: #e74c3c; }
+        .accion-btn i { margin-right: 5px; }
         .snackbar { 
             position: fixed; 
             bottom: 20px; 
@@ -92,7 +107,7 @@
 </head>
 <body>
     <div class="container">
-        <h1><i class="fas fa-user-plus"></i> Alta y Edición de Empleados</h1>
+        <h1><i class="fas fa-user-plus"></i> Alta de Empleados</h1>
 
         <form id="form-empleado">
             <input type="hidden" id="edit-key" value="">
@@ -146,10 +161,27 @@
                 </select>
             </div>
 
-            <!-- ✅ Fecha de ingreso al trabajo -->
             <div class="form-group">
                 <label>Fecha de Ingreso *</label>
                 <input type="date" id="empleado-fecha-ingreso" required>
+            </div>
+
+            <!-- ✅ Nuevos campos para optimización -->
+            <div class="form-group">
+                <label>Disponibilidad</label>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="empleado-feriados"> Trabaja feriados</label>
+                    <label><input type="checkbox" id="empleado-domingos"> Trabaja domingos</label>
+                    <label><input type="checkbox" id="empleado-rota"> Rota puestos</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Reemplaza otros puestos</label>
+                <select id="empleado-reemplaza" multiple style="height: 100px;">
+                    <option value="">Cargando puestos...</option>
+                </select>
+                <small>Presiona Ctrl (o Cmd en Mac) para seleccionar varios</small>
             </div>
 
             <button type="submit">
@@ -165,12 +197,12 @@
                 <tr>
                     <th>Legajo</th>
                     <th>Nombre</th>
-                    <th>DNI</th>
-                    <th>Fecha Ingreso</th>
-                    <th>Categoría</th>
                     <th>Puesto</th>
                     <th>Local</th>
                     <th>Estado</th>
+                    <th>Feriados</th>
+                    <th>Domingos</th>
+                    <th>Rota</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -181,12 +213,13 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase (SIN espacios)
+        // ✅ URLs de Firebase
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_CATEGORIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/categorias.json';
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
 
         let categorias = [];
+        let puestos = [];
 
         function showToast(msg, isError = false) {
             const sb = document.getElementById('snackbar');
@@ -194,28 +227,6 @@
             sb.className = 'snackbar show';
             if (isError) sb.classList.add('error');
             setTimeout(() => sb.className = 'snackbar', 3000);
-        }
-
-        // ✅ Cargar locales
-        async function cargarLocales() {
-            try {
-                const res = await fetch(DB_LOCALES);
-                const data = await res.json();
-                const locales = data ? Object.values(data) : [];
-
-                const select = document.getElementById('empleado-local');
-                select.innerHTML = '<option value="">Selecciona un local</option>';
-
-                locales.forEach(loc => {
-                    const option = document.createElement('option');
-                    option.value = loc.nombre;
-                    option.textContent = loc.nombre;
-                    select.appendChild(option);
-                });
-            } catch (e) {
-                console.error('Error cargando locales:', e);
-                showToast('❌ Error al cargar locales', true);
-            }
         }
 
         // ✅ Cargar categorías
@@ -227,16 +238,47 @@
 
                 const select = document.getElementById('empleado-categoria');
                 select.innerHTML = '<option value="">Selecciona una categoría</option>';
-
                 categorias.forEach(cat => {
                     const option = document.createElement('option');
                     option.value = cat.nombre;
                     option.textContent = cat.nombre;
                     select.appendChild(option);
                 });
+
+                // Extraer puestos únicos
+                puestos = [...new Set(categorias.map(c => c.puesto))];
+                const reemplazaSelect = document.getElementById('empleado-reemplaza');
+                reemplazaSelect.innerHTML = '';
+                puestos.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p;
+                    option.textContent = p;
+                    reemplazaSelect.appendChild(option);
+                });
             } catch (e) {
                 console.error('Error cargando categorías:', e);
                 showToast('❌ Error al cargar categorías', true);
+            }
+        }
+
+        // ✅ Cargar locales
+        async function cargarLocales() {
+            try {
+                const res = await fetch(DB_LOCALES);
+                const data = await res.json();
+                const locales = data ? Object.values(data) : [];
+
+                const select = document.getElementById('empleado-local');
+                select.innerHTML = '<option value="">Selecciona un local</option>';
+                locales.forEach(loc => {
+                    const option = document.createElement('option');
+                    option.value = loc.nombre;
+                    option.textContent = loc.nombre;
+                    select.appendChild(option);
+                });
+            } catch (e) {
+                console.error('Error cargando locales:', e);
+                showToast('❌ Error al cargar locales', true);
             }
         }
 
@@ -260,9 +302,6 @@
                     tr.innerHTML = `
                         <td><strong>${emp.legajo}</strong></td>
                         <td>${emp.nombre}</td>
-                        <td>${emp.dni}</td>
-                        <td>${emp.fechaIngreso ? new Date(emp.fechaIngreso).toLocaleDateString('es-AR') : '—'}</td>
-                        <td>${emp.categoria}</td>
                         <td>${emp.puesto}</td>
                         <td>${emp.local}</td>
                         <td><span style="padding:5px 10px; border-radius:12px; background:${
@@ -270,9 +309,15 @@
                             emp.estado === 'Vacaciones' ? '#f39c12' :
                             emp.estado === 'Licencia' ? '#3498db' : '#e74c3c'
                         }; color:white; font-size:12px;">${emp.estado}</span></td>
+                        <td>${emp.feriados ? '✅' : '❌'}</td>
+                        <td>${emp.domingos ? '✅' : '❌'}</td>
+                        <td>${emp.rota ? '✅' : '❌'}</td>
                         <td style="text-align: center;">
-                            <a href="#" class="accion-btn editar" onclick="editarEmpleado('${emp.key || ''}', '${emp.legajo}', '${emp.dni}', '${emp.cuil}', '${emp.nombre}', '${emp.categoria}', '${emp.puesto}', '${emp.local}', '${emp.estado}', '${emp.fechaIngreso || ''}')">
+                            <a href="#" class="accion-btn editar" onclick="editarEmpleado('${emp.key || ''}', '${emp.legajo}', '${emp.dni}', '${emp.cuil}', '${emp.nombre}', '${emp.categoria}', '${emp.puesto}', '${emp.local}', '${emp.estado}', '${emp.fechaIngreso || ''}', ${emp.feriados || false}, ${emp.domingos || false}, ${emp.rota || false}, ${JSON.stringify(emp.reemplaza || [])})">
                                 <i class="fas fa-edit"></i> Editar
+                            </a>
+                            <a href="#" class="accion-btn eliminar" onclick="eliminarEmpleado('${emp.key || ''}', '${emp.nombre}', '${emp.legajo}')">
+                                <i class="fas fa-trash"></i> Eliminar
                             </a>
                         </td>
                     `;
@@ -290,11 +335,11 @@
             document.getElementById('edit-key').value = '';
             document.getElementById('btn-texto').textContent = 'Guardar Empleado';
             document.querySelector('.container h1').innerHTML = '<i class="fas fa-user-plus"></i> Alta de Empleados';
-            document.getElementById('empleado-puesto').value = '';
         }
 
         function editarEmpleado(
-            key, legajo, dni, cuil, nombre, categoria, puesto, local, estado, fechaIngreso
+            key, legajo, dni, cuil, nombre, categoria, puesto, local, estado, fechaIngreso,
+            feriados, domingos, rota, reemplaza
         ) {
             document.getElementById('empleado-legajo').value = legajo || '';
             document.getElementById('empleado-dni').value = dni;
@@ -305,6 +350,15 @@
             document.getElementById('empleado-local').value = local;
             document.getElementById('empleado-estado').value = estado;
             document.getElementById('empleado-fecha-ingreso').value = fechaIngreso || '';
+            document.getElementById('empleado-feriados').checked = feriados;
+            document.getElementById('empleado-domingos').checked = domingos;
+            document.getElementById('empleado-rota').checked = rota;
+
+            const reemplazaSelect = document.getElementById('empleado-reemplaza');
+            Array.from(reemplazaSelect.options).forEach(opt => {
+                opt.selected = reemplaza.includes(opt.value);
+            });
+
             document.getElementById('edit-key').value = key;
             document.getElementById('btn-texto').textContent = 'Actualizar Empleado';
             document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Empleado';
@@ -321,6 +375,10 @@
             const local = document.getElementById('empleado-local').value.trim();
             const estado = document.getElementById('empleado-estado').value;
             const fechaIngreso = document.getElementById('empleado-fecha-ingreso').value;
+            const feriados = document.getElementById('empleado-feriados').checked;
+            const domingos = document.getElementById('empleado-domingos').checked;
+            const rota = document.getElementById('empleado-rota').checked;
+            const reemplaza = Array.from(document.getElementById('empleado-reemplaza').selectedOptions).map(o => o.value);
             const key = document.getElementById('edit-key').value;
 
             if (!legajo || !dni || !cuil || !nombre || !categoria || !puesto || !local || !estado || !fechaIngreso) {
@@ -329,7 +387,8 @@
             }
 
             const empleado = {
-                legajo, dni, cuil, nombre, categoria, puesto, local, estado, fechaIngreso
+                legajo, dni, cuil, nombre, categoria, puesto, local, estado, fechaIngreso,
+                feriados, domingos, rota, reemplaza
             };
 
             try {
@@ -338,8 +397,7 @@
                 let body = JSON.stringify(empleado);
 
                 if (key) {
-                    // ✅ URL corregida: sin espacios
-                    url = `https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados/${key}.json`;
+                    url = `${DB_EMPLEADOS.replace('.json', `/${key}.json`)}`;
                     method = 'PUT';
                 }
 
