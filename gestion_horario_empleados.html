@@ -262,10 +262,10 @@
             const list = document.getElementById('empleado-list');
             const localFiltro = document.getElementById('filtro-local').value;
 
-            list.innerHTML = '';
-            list.style.display = 'none';
-
             searchInput.addEventListener('focus', () => {
+                list.innerHTML = ''; // ✅ Limpia la lista antes de agregar
+                list.style.display = 'none';
+
                 const filtrados = localFiltro 
                     ? empleados.filter(e => e.local === localFiltro)
                     : empleados;
@@ -292,7 +292,7 @@
         function filtrarEmpleados() {
             const local = document.getElementById('filtro-local').value;
             const list = document.getElementById('empleado-list');
-            list.innerHTML = '';
+            list.innerHTML = ''; // ✅ Limpia la lista
 
             const filtrados = local 
                 ? empleados.filter(e => e.local === local)
@@ -611,31 +611,35 @@
             document.body.appendChild(btn);
         });
     </script>
-    // ✅ Función de backup automático
-async function backupData(collection, data, action = 'created') {
-    const backupUrl = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/backups.json';
-    const timestamp = new Date().toISOString();
-    const key = `${collection}_${Date.now()}`;
 
-    const entry = {
-        collection,
-        action, // 'created', 'updated', 'deleted'
-        data,
-        timestamp,
-        key
-    };
+    <!-- ✅ Función de backup automático -->
+    <script>
+        async function backupData(collection, data, action = 'created') {
+            const backupUrl = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/backups.json';
+            const timestamp = new Date().toISOString();
+            const key = `${collection}_${Date.now()}`;
 
-    try {
-        await fetch(backupUrl, {
-            method: 'POST',
-            body: JSON.stringify(entry),
-            headers: { 'Content-Type': 'application/json' }
-        });
-        console.log('✅ Backup automático guardado:', collection);
-    } catch (err) {
-        console.warn('⚠️ No se pudo guardar el backup', err);
-    }
-}
+            const entry = {
+                collection,
+                action,
+                data,
+                timestamp,
+                key
+            };
+
+            try {
+                const res = await fetch(backupUrl, {
+                    method: 'POST',
+                    body: JSON.stringify(entry),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                console.log('✅ Backup automático guardado:', collection);
+            } catch (err) {
+                console.warn('⚠️ No se pudo guardar el backup', err);
+            }
+        }
+    </script>
 </body>
 </html>
-
