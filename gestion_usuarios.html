@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -91,6 +90,15 @@
     <div class="container">
         <h1><i class="fas fa-users-cog"></i> Gestión de Usuarios</h1>
 
+        <!-- ✅ Botón para volver al menú principal -->
+        <div style="margin: 10px 0; text-align: right;">
+            <a href="index.html">
+                <button style="background: #95a5a6; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">
+                    ← Volver al menú principal
+                </button>
+            </a>
+        </div>
+
         <form id="form-usuario">
             <input type="hidden" id="edit-key" value="">
 
@@ -156,14 +164,14 @@
             const usuario = sessionStorage.getItem('usuario');
             if (!usuario) {
                 alert('❌ Acceso denegado. Debe iniciar sesión.');
-                window.location.href = '../index.html';
+                window.location.href = 'index.html';
                 return false;
             }
 
             const user = JSON.parse(usuario);
             if (user.rol !== 'admin') {
                 alert('❌ Acceso denegado. Solo el administrador puede gestionar usuarios.');
-                window.location.href = '../index.html';
+                window.location.href = 'index.html';
                 return false;
             }
             return true;
@@ -401,7 +409,7 @@
                 transition: all 0.2s ease !important;
             `;
             btn.onclick = () => {
-                window.location.href = '../index.html';
+                window.location.href = 'index.html';
             };
             document.body.appendChild(btn);
         });
