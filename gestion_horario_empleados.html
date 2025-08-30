@@ -599,6 +599,21 @@
             });
         };
     </script>
+    
+    // ✅ Verificar acceso
+    function verificarAcceso() {
+        const usuario = sessionStorage.getItem('usuario');
+        if (!usuario) {
+            alert('❌ Acceso denegado. Debe iniciar sesión.');
+            window.location.href = 'index.html';
+            return null;
+        }
+
+        const user = JSON.parse(usuario);
+        return user; // Devuelve el usuario
+    }
+
+    const usuarioGlobal = verificarAcceso();
 
     <!-- ✅ Botón flotante -->
     <script>
@@ -702,4 +717,5 @@
 </script>
 </body>
 </html>
+
 
