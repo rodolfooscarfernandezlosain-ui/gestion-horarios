@@ -174,43 +174,39 @@
             infoDiv.className = `user-info ${user.rol}`;
         }
 
-        // ✅ Filtrar módulos por rol
         function aplicarPermisos(usuario) {
-            const menuContainer = document.getElementById('menu-container');
-            menuContainer.innerHTML = '';
+    const menuContainer = document.getElementById('menu-container');
+    menuContainer.innerHTML = '';
 
-            // Definir módulos disponibles
-            const modulos = [
-                { nombre: 'Alta de Empleados', href: 'gestion_empleados.html', rol: 'admin' },
-                { nombre: 'Horarios de Empleados', href: 'gestion_horario_empleados.html', rol: 'admin' },
-                { nombre: 'Horarios por Local', href: 'gestion_horarios_locales.html', rol: 'admin' },
-                { nombre: 'Feriados', href: 'gestion_feriados.html', rol: 'admin' },
-                { nombre: 'Ausencias', href: 'gestion_ausencias.html', rol: 'admin' },
-                { nombre: 'Novedades', href: 'gestion_novedades.html', rol: 'todos' },
-                { nombre: 'Personal Óptimo', href: 'gestion_optimizar.html', rol: 'admin' },
-                { nombre: 'Grilla de Horarios', href: 'gestion_grilla_mensual.html', rol: 'todos' },
-                { nombre: 'Gestión de Usuarios', href: 'gestion_usuarios.html', rol: 'admin' }
-            ];
+    const modulos = [
+        { nombre: 'Alta de Empleados', href: 'gestion_empleados.html', rol: 'todos' },
+        { nombre: 'Horarios de Empleados', href: 'gestion_horario_empleados.html', rol: 'todos' },
+        { nombre: 'Horarios por Local', href: 'gestion_horarios_locales.html', rol: 'todos' },
+        { nombre: 'Feriados', href: 'gestion_feriados.html', rol: 'admin' },
+        { nombre: 'Ausencias', href: 'gestion_ausencias.html', rol: 'todos' },
+        { nombre: 'Novedades', href: 'gestion_novedades.html', rol: 'todos' },
+        { nombre: 'Personal Óptimo', href: 'gestion_optimizar.html', rol: 'todos' },
+        { nombre: 'Grilla de Horarios', href: 'gestion_grilla_mensual.html', rol: 'todos' },
+        { nombre: 'Gestión de Usuarios', href: 'gestion_usuarios.html', rol: 'admin' }
+    ];
 
-            modulos.forEach(modulo => {
-                // El admin ve todos los módulos, el encargado solo los marcados como 'todos'
-                if (usuario.rol === 'admin' || modulo.rol === 'todos') {
-                    const item = document.createElement('div');
-                    item.className = 'menu-item';
-                    item.innerHTML = `
-                        <i class="fas fa-${getIcono(modulo.nombre)}"></i>
-                        <h3>${modulo.nombre}</h3>
-                        <p>${getDescripcion(modulo.nombre)}</p>
-                    `;
-                    item.onclick = () => {
-                        // Guardar usuario en sessionStorage para que otros módulos lo usen
-                        sessionStorage.setItem('usuario', JSON.stringify(usuario));
-                        window.location.href = modulo.href;
-                    };
-                    menuContainer.appendChild(item);
-                }
-            });
+    modulos.forEach(modulo => {
+        if (usuario.rol === 'admin' || modulo.rol === 'todos') {
+            const item = document.createElement('div');
+            item.className = 'menu-item';
+            item.innerHTML = `
+                <i class="fas fa-${getIcono(modulo.nombre)}"></i>
+                <h3>${modulo.nombre}</h3>
+                <p>${getDescripcion(modulo.nombre)}</p>
+            `;
+            item.onclick = () => {
+                sessionStorage.setItem('usuario', JSON.stringify(usuario));
+                window.location.href = modulo.href;
+            };
+            menuContainer.appendChild(item);
         }
+    });
+}
 
         // ✅ Asignar íconos
         function getIcono(nombre) {
@@ -291,5 +287,6 @@
     </script>
 </body>
 </html>
+
 
 
