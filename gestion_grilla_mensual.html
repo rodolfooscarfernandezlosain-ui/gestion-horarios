@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grilla Mensual de Horarios</title>
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
@@ -124,6 +125,7 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
+        // ✅ URLs de Firebase (SIN espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_HORARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_empleados.json';
         const DB_FERIADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/feriados.json';
@@ -163,6 +165,7 @@
 
                 locales = [...new Set(empleados.map(e => e.local).filter(Boolean))];
                 const select = document.getElementById('filtro-local');
+                select.innerHTML = '<option value="">Todos los locales</option>';
                 locales.forEach(loc => {
                     const opt = document.createElement('option');
                     opt.value = loc;
@@ -214,7 +217,11 @@
                     
                     // Buscar horario del empleado
                     const horarioEmpleado = horarios.find(h => h.empleadoKey === emp.key);
-                    const turno = horarioEmpleado?.dias?.[diaSemana];
+                    let turno = null;
+
+                    if (horarioEmpleado && horarioEmpleado.dias && horarioEmpleado.dias[diaSemana]) {
+                        turno = horarioEmpleado.dias[diaSemana];
+                    }
 
                     let celda = '<td class="libre"><div class="turno libre">Libre</div></td>';
                     
