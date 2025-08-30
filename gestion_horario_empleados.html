@@ -235,8 +235,8 @@
             try {
                 const res = await fetch(DB_EMPLEADOS);
                 const data = await res.json();
-                
-                // ✅ Asegurarse de que cada empleado tenga un .key
+
+                // ✅ Asegurar que cada empleado tenga .key
                 empleados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
 
                 // Extraer locales únicos
@@ -250,7 +250,7 @@
                     select.appendChild(opt);
                 });
 
-                // Inicializar autocompletado
+                // Iniciar búsqueda
                 iniciarBusquedaEmpleado();
             } catch (e) {
                 console.error('Error cargando empleados:', e);
@@ -258,12 +258,11 @@
             }
         }
 
-        // ✅ Búsqueda dinámica con filtro por local y nombre
+        // ✅ Búsqueda dinámica con filtro por nombre y local
         function iniciarBusquedaEmpleado() {
             const searchInput = document.getElementById('empleado-search');
             const list = document.getElementById('empleado-list');
 
-            // ✅ Evento de entrada para búsqueda
             searchInput.addEventListener('input', () => {
                 const query = searchInput.value.toLowerCase();
                 const localFiltro = document.getElementById('filtro-local').value;
@@ -459,8 +458,7 @@
             e.preventDefault();
             const empleadoKey = document.getElementById('empleado-key').value;
             const empleadoNombre = document.getElementById('empleado-search').value.trim();
-            
-            // ✅ Validar que haya empleado seleccionado
+
             if (!empleadoKey || !empleadoNombre) {
                 showToast('⚠️ Selecciona un empleado válido', true);
                 return;
@@ -468,7 +466,7 @@
 
             const emp = empleados.find(e => e.key === empleadoKey);
             if (!emp) {
-                showToast('⚠️ Empleado no encontrado en la lista', true);
+                showToast('⚠️ Empleado no encontrado en la base de datos', true);
                 return;
             }
 
@@ -529,7 +527,6 @@
 
                 showToast('✅ Horario asignado');
                 limpiarFormulario();
-                document.getElementById('empleado-search').disabled = false;
                 await cargarHorarios();
             } catch (err) {
                 console.error('Error:', err);
