@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Feriados</title>
+    <title>Gestión de Empleados</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -11,10 +11,9 @@
             font-family: 'Segoe UI', sans-serif; 
             background: #f4f6f9; 
             padding: 20px; 
-            margin: 0;
         }
         .container { 
-            max-width: 800px; 
+            max-width: 900px; 
             margin: 0 auto; 
             background: white; 
             padding: 20px; 
@@ -34,12 +33,25 @@
             margin-bottom: 5px; 
             font-weight: 600; 
         }
-        input, select { 
+        input, select, textarea { 
             width: 100%; 
             padding: 10px; 
             border: 1px solid #ddd; 
             border-radius: 4px; 
             box-sizing: border-box; 
+        }
+        .checkbox-group { 
+            display: flex; 
+            gap: 15px; 
+            margin: 10px 0; 
+            flex-wrap: wrap; 
+        }
+        .checkbox-group label { 
+            display: flex; 
+            align-items: center; 
+            gap: 5px; 
+            margin: 0; 
+            font-weight: normal; 
         }
         button { 
             background: #3498db; 
@@ -48,9 +60,6 @@
             padding: 10px 15px; 
             border-radius: 4px; 
             cursor: pointer; 
-        }
-        button.btn-danger { 
-            background: #e74c3c; 
         }
         table { 
             width: 100%; 
@@ -94,49 +103,166 @@
         .snackbar.show { 
             opacity: 1; 
         }
-        .error { 
-            background: #e74c3c !important; 
-        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1><i class="fas fa-calendar-day"></i> Gestión de Feriados</h1>
 
-        <form id="form-feriado">
+    <!-- ✅ 1. VERIFICAR ACCESO Y PERMISOS -->
+    <script>
+        // Verificar login
+        async function verificarLogin() {
+            const usuario = sessionStorage.getItem('usuario');
+            if (usuario) return JSON.parse(usuario);
+
+            const inputUsuario = prompt('🔐 Usuario:');
+            if (!inputUsuario) return location.reload();
+
+            const inputClave = prompt('🔐 Contraseña:');
+            if (!inputClave) return location.reload();
+
+            try {
+                const res = await fetch('https://gestion-personal-c9edd-default-rtdb.firebaseio.com/usuarios.json');
+                if (!res.ok) throw new Error('Error en conexión');
+
+                const usuarios = await res.json();
+                const user = Object.values(usuarios).find(u => 
+                    u.usuario === inputUsuario && u.clave === inputClave
+                );
+
+                if (user) {
+                    sessionStorage.setItem('usuario', JSON.stringify(user));
+                    return user;
+                } else {
+                    alert('❌ Usuario o clave incorrectos');
+                    location.reload();
+                    return null;
+                }
+            } catch (error) {
+                alert('❌ Error al conectar con la base de datos');
+                console.error(error);
+                return null;
+            }
+        }
+
+        // Verificar acceso
+        function verificarAcceso() {
+            const usuario = sessionStorage.getItem('usuario');
+            if (!usuario) {
+                alert('❌ Acceso denegado. Debe iniciar sesión.');
+                window.location.href = 'index.html';
+                return null;
+            }
+            return JSON.parse(usuario);
+        }
+
+        const usuarioGlobal = verificarAcceso();
+
+        // Filtrar empleados por local del usuario
+        function filtrarPorLocal(empleados) {
+            if (usuarioGlobal.rol === 'admin') return empleados;
+            return empleados.filter(e => usuarioGlobal.locales.includes(e.local));
+        }
+    </script>
+
+    <div class="container">
+        <h1><i class="fas fa-user-plus"></i> Alta de Empleados</h1>
+
+        <form id="form-empleado">
             <input type="hidden" id="edit-key" value="">
 
             <div class="form-group">
-                <label>Fecha *</label>
-                <input type="date" id="feriado-fecha" required>
+                <label>Legajo *</label>
+                <input type="text" id="empleado-legajo" placeholder="Ej: 00123" required>
             </div>
 
             <div class="form-group">
-                <label>Nombre *</label>
-                <input type="text" id="feriado-nombre" placeholder="Ej: Día de la Independencia" required>
+                <label>DNI *</label>
+                <input type="text" id="empleado-dni" placeholder="Ej: 12345678" required>
+            </div>
+
+            <div class="form-group">
+                <label>CUIL *</label>
+                <input type="text" id="empleado-cuil" placeholder="Ej: 20-12345678-9" required>
+            </div>
+
+            <div class="form-group">
+                <label>Nombre y Apellido *</label>
+                <input type="text" id="empleado-nombre" placeholder="Ej: Juan Pérez" required>
+            </div>
+
+            <div class="form-group">
+                <label>Categoría *</label>
+                <select id="empleado-categoria" required>
+                    <option value="">Selecciona una categoría</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Puesto *</label>
+                <input type="text" id="empleado-puesto" placeholder="Ej: Cajero" required readonly>
             </div>
 
             <div class="form-group">
                 <label>Local *</label>
-                <select id="feriado-local" required>
+                <select id="empleado-local" required>
                     <option value="">Cargando locales...</option>
                 </select>
             </div>
 
+            <div class="form-group">
+                <label>Estado *</label>
+                <select id="empleado-estado" required>
+                    <option value="Activo">Activo</option>
+                    <option value="Inactivo">Inactivo</option>
+                    <option value="Vacaciones">Vacaciones</option>
+                    <option value="Licencia">Licencia</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Fecha de Ingreso *</label>
+                <input type="date" id="empleado-fecha-ingreso" required>
+            </div>
+
+            <!-- Disponibilidad avanzada -->
+            <div class="form-group">
+                <label>Disponibilidad</label>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="empleado-feriados"> Trabaja feriados</label>
+                    <label><input type="checkbox" id="empleado-domingos"> Trabaja domingos</label>
+                    <label><input type="checkbox" id="empleado-rota"> Rota puestos</label>
+                    <label><input type="checkbox" id="empleado-horas-extras"> Hace horas extras</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Reemplaza otros puestos</label>
+                <select id="empleado-reemplaza" multiple style="height: 100px;">
+                    <option value="">Cargando puestos...</option>
+                </select>
+                <small>Presiona Ctrl (o Cmd en Mac) para seleccionar varios</small>
+            </div>
+
             <button type="submit">
-                <i class="fas fa-save"></i> <span id="btn-texto">Guardar Feriado</span>
+                <i class="fas fa-save"></i> <span id="btn-texto">Guardar Empleado</span>
             </button>
             <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6; margin-left:10px;">
                 Cancelar
             </button>
         </form>
 
-        <table id="tabla-feriados">
+        <table id="tabla-empleados">
             <thead>
                 <tr>
-                    <th>Fecha</th>
+                    <th>Legajo</th>
                     <th>Nombre</th>
+                    <th>Puesto</th>
                     <th>Local</th>
+                    <th>Estado</th>
+                    <th>Feriados</th>
+                    <th>Domingos</th>
+                    <th>Rota</th>
+                    <th>Horas Extras</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -147,11 +273,13 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase (SIN espacios)
-        const DB_FERIADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/feriados.json';
+        // ✅ URLs de Firebase (sin espacios)
+        const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
+        const DB_CATEGORIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/categorias.json';
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
 
-        let locales = [];
+        let categorias = [];
+        let puestos = [];
 
         function showToast(msg, isError = false) {
             const sb = document.getElementById('snackbar');
@@ -161,15 +289,58 @@
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
+        // ✅ Cargar categorías
+        async function cargarCategorias() {
+            try {
+                const res = await fetch(DB_CATEGORIAS);
+                if (!res.ok) throw new Error('Error en respuesta');
+                const data = await res.json();
+                categorias = data ? Object.values(data) : [];
+
+                const select = document.getElementById('empleado-categoria');
+                select.innerHTML = '<option value="">Selecciona una categoría</option>';
+                categorias.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.nombre;
+                    option.textContent = cat.nombre;
+                    select.appendChild(option);
+                });
+
+                puestos = [...new Set(categorias.map(c => c.puesto))];
+                const reemplazaSelect = document.getElementById('empleado-reemplaza');
+                reemplazaSelect.innerHTML = '';
+                puestos.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p;
+                    option.textContent = p;
+                    reemplazaSelect.appendChild(option);
+                });
+            } catch (e) {
+                console.error('Error cargando categorías:', e);
+                showToast('❌ Error al cargar categorías', true);
+            }
+        }
+
         // ✅ Cargar locales
         async function cargarLocales() {
             try {
                 const res = await fetch(DB_LOCALES);
+                if (!res.ok) throw new Error('Error en respuesta');
                 const data = await res.json();
-                locales = data ? Object.values(data) : [];
+                const todosLosLocales = data ? Object.values(data) : [];
 
-                const select = document.getElementById('feriado-local');
+                const select = document.getElementById('empleado-local');
                 select.innerHTML = '<option value="">Selecciona un local</option>';
+
+                // ✅ Filtrar locales por usuario
+                const locales = usuarioGlobal.rol === 'admin' 
+                    ? todosLosLocales 
+                    : todosLosLocales.filter(loc => usuarioGlobal.locales.includes(loc.nombre));
+
+                if (locales.length === 0) {
+                    select.innerHTML = '<option value="">No tienes acceso a locales</option>';
+                    return;
+                }
 
                 locales.forEach(loc => {
                     const option = document.createElement('option');
@@ -183,32 +354,46 @@
             }
         }
 
-        // ✅ Cargar feriados
-        async function cargarFeriados() {
+        // ✅ Cargar empleados
+        async function cargarEmpleados() {
             try {
-                const res = await fetch(DB_FERIADOS);
+                const res = await fetch(DB_EMPLEADOS);
+                if (!res.ok) throw new Error('Error en respuesta');
                 const data = await res.json();
-                const feriados = data ? Object.values(data) : [];
+                const todosEmpleados = data ? Object.values(data) : [];
 
-                const tbody = document.querySelector('#tabla-feriados tbody');
+                // ✅ Filtrar empleados por local del usuario
+                const empleados = filtrarPorLocal(todosEmpleados);
+
+                const tbody = document.querySelector('#tabla-empleados tbody');
                 tbody.innerHTML = '';
 
-                if (feriados.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center">No hay feriados</td></tr>`;
+                if (empleados.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center">No hay empleados en tu local</td></tr>`;
                     return;
                 }
 
-                feriados.forEach(fer => {
+                empleados.forEach(emp => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td><strong>${new Date(fer.fecha).toLocaleDateString('es-AR')}</strong></td>
-                        <td>${fer.nombre}</td>
-                        <td>${fer.local}</td>
+                        <td><strong>${emp.legajo}</strong></td>
+                        <td>${emp.nombre}</td>
+                        <td>${emp.puesto}</td>
+                        <td>${emp.local}</td>
+                        <td><span style="padding:5px 10px; border-radius:12px; background:${
+                            emp.estado === 'Activo' ? '#27ae60' :
+                            emp.estado === 'Vacaciones' ? '#f39c12' :
+                            emp.estado === 'Licencia' ? '#3498db' : '#e74c3c'
+                        }; color:white; font-size:12px;">${emp.estado}</span></td>
+                        <td>${emp.feriados ? '✅' : '❌'}</td>
+                        <td>${emp.domingos ? '✅' : '❌'}</td>
+                        <td>${emp.rota ? '✅' : '❌'}</td>
+                        <td>${emp.horasExtras ? '✅' : '❌'}</td>
                         <td style="text-align: center;">
-                            <a href="#" class="accion-btn editar" onclick="editarFeriado('${fer.key || ''}', '${fer.fecha}', '${fer.nombre}', '${fer.local}')">
+                            <a href="#" class="accion-btn editar" onclick="editarEmpleado('${emp.key || ''}', '${emp.legajo}', '${emp.dni}', '${emp.cuil}', '${emp.nombre}', '${emp.categoria}', '${emp.puesto}', '${emp.local}', '${emp.estado}', '${emp.fechaIngreso || ''}', ${emp.feriados || false}, ${emp.domingos || false}, ${emp.rota || false}, ${emp.horasExtras || false}, ${JSON.stringify(emp.reemplaza || [])})">
                                 <i class="fas fa-edit"></i> Editar
                             </a>
-                            <a href="#" class="accion-btn eliminar" onclick="eliminarFeriado('${fer.key || ''}', '${fer.nombre}')">
+                            <a href="#" class="accion-btn eliminar" onclick="eliminarEmpleado('${emp.key || ''}', '${emp.nombre}', '${emp.legajo}')">
                                 <i class="fas fa-trash"></i> Eliminar
                             </a>
                         </td>
@@ -216,47 +401,88 @@
                     tbody.appendChild(tr);
                 });
             } catch (e) {
-                console.error('Error cargando feriados:', e);
-                document.querySelector('#tabla-feriados tbody').innerHTML = 
-                    `<tr><td colspan="4" style="text-align:center; color: red;">Error al cargar datos. Revisa la consola.</td></tr>`;
+                console.error('Error cargando empleados:', e);
+                document.querySelector('#tabla-empleados tbody').innerHTML = 
+                    `<tr><td colspan="10" style="text-align:center; color: red;">Error al cargar datos.</td></tr>`;
             }
         }
 
         function limpiarFormulario() {
-            document.getElementById('form-feriado').reset();
+            document.getElementById('form-empleado').reset();
             document.getElementById('edit-key').value = '';
-            document.getElementById('btn-texto').textContent = 'Guardar Feriado';
+            document.getElementById('btn-texto').textContent = 'Guardar Empleado';
+            document.querySelector('.container h1').innerHTML = '<i class="fas fa-user-plus"></i> Alta de Empleados';
         }
 
-        function editarFeriado(key, fecha, nombre, local) {
-            document.getElementById('feriado-fecha').value = fecha;
-            document.getElementById('feriado-nombre').value = nombre;
-            document.getElementById('feriado-local').value = local;
+        function editarEmpleado(
+            key, legajo, dni, cuil, nombre, categoria, puesto, local, estado, fechaIngreso,
+            feriados, domingos, rota, horasExtras, reemplaza
+        ) {
+            document.getElementById('empleado-legajo').value = legajo || '';
+            document.getElementById('empleado-dni').value = dni;
+            document.getElementById('empleado-cuil').value = cuil || '';
+            document.getElementById('empleado-nombre').value = nombre;
+            document.getElementById('empleado-categoria').value = categoria;
+            document.getElementById('empleado-puesto').value = puesto;
+            document.getElementById('empleado-local').value = local;
+            document.getElementById('empleado-estado').value = estado;
+            document.getElementById('empleado-fecha-ingreso').value = fechaIngreso || '';
+            document.getElementById('empleado-feriados').checked = feriados;
+            document.getElementById('empleado-domingos').checked = domingos;
+            document.getElementById('empleado-rota').checked = rota;
+            document.getElementById('empleado-horas-extras').checked = horasExtras;
+
+            const reemplazaSelect = document.getElementById('empleado-reemplaza');
+            Array.from(reemplazaSelect.options).forEach(opt => {
+                opt.selected = reemplaza.includes(opt.value);
+            });
+
             document.getElementById('edit-key').value = key;
-            document.getElementById('btn-texto').textContent = 'Actualizar Feriado';
+            document.getElementById('btn-texto').textContent = 'Actualizar Empleado';
+            document.querySelector('.container h1').innerHTML = '<i class="fas fa-edit"></i> Editar Empleado';
         }
 
-        async function guardarFeriado(e) {
+        async function guardarEmpleado(e) {
             e.preventDefault();
-            const fecha = document.getElementById('feriado-fecha').value;
-            const nombre = document.getElementById('feriado-nombre').value.trim();
-            const local = document.getElementById('feriado-local').value;
+            const legajo = document.getElementById('empleado-legajo').value.trim();
+            const dni = document.getElementById('empleado-dni').value.trim();
+            const cuil = document.getElementById('empleado-cuil').value.trim();
+            const nombre = document.getElementById('empleado-nombre').value.trim();
+            const categoria = document.getElementById('empleado-categoria').value;
+            const puesto = document.getElementById('empleado-puesto').value.trim();
+            const local = document.getElementById('empleado-local').value.trim();
+            const estado = document.getElementById('empleado-estado').value;
+            const fechaIngreso = document.getElementById('empleado-fecha-ingreso').value;
+            const feriados = document.getElementById('empleado-feriados').checked;
+            const domingos = document.getElementById('empleado-domingos').checked;
+            const rota = document.getElementById('empleado-rota').checked;
+            const horasExtras = document.getElementById('empleado-horas-extras').checked;
+            const reemplaza = Array.from(document.getElementById('empleado-reemplaza').selectedOptions).map(o => o.value);
             const key = document.getElementById('edit-key').value;
 
-            if (!fecha || !nombre || !local) {
+            if (!legajo || !dni || !cuil || !nombre || !categoria || !puesto || !local || !estado || !fechaIngreso) {
                 showToast('⚠️ Completa todos los campos obligatorios', true);
                 return;
             }
 
-            const feriado = { fecha, nombre, local };
+            // ✅ Verificar que el local pertenece al usuario
+            if (usuarioGlobal.rol !== 'admin' && !usuarioGlobal.locales.includes(local)) {
+                showToast('❌ No puedes asignar empleados a un local que no te pertenece', true);
+                return;
+            }
+
+            const empleado = {
+                legajo, dni, cuil, nombre, categoria, puesto, local, estado, fechaIngreso,
+                feriados, domingos, rota, horasExtras, reemplaza
+            };
 
             try {
-                let url = DB_FERIADOS;
+                let url = DB_EMPLEADOS;
                 let method = 'POST';
-                let body = JSON.stringify(feriado);
+                let body = JSON.stringify(empleado);
 
                 if (key) {
-                    url = `${DB_FERIADOS.replace('.json', `/${key}.json`)}`;
+                    url = `${DB_EMPLEADOS.replace('.json', `/${key}.json`)}`;
                     method = 'PUT';
                 }
 
@@ -268,81 +494,30 @@
 
                 if (!res.ok) throw new Error('Error al guardar');
 
-                showToast('✅ Feriado guardado en Firebase');
+                showToast('✅ Empleado guardado en Firebase');
                 limpiarFormulario();
-                await cargarFeriados();
+                await cargarEmpleados();
             } catch (err) {
                 console.error('Error:', err);
                 showToast('❌ Error al guardar', true);
             }
         }
 
-        // ✅ Eliminar sin mensaje de "falta clave"
-        async function eliminarFeriado(key, nombre) {
-            if (!confirm(`¿Eliminar el feriado "${nombre}"?`)) return;
-
-            // ✅ Si no hay key, no se puede eliminar, pero sin mensaje agresivo
-            if (!key) {
-                showToast('⚠️ No se puede eliminar este registro', true);
-                return;
-            }
-
-            try {
-                const res = await fetch(`${DB_FERIADOS.replace('.json', `/${key}.json`)}`, {
-                    method: 'DELETE'
-                });
-
-                if (!res.ok) throw new Error('Error al eliminar');
-
-                showToast('🗑️ Feriado eliminado');
-                await cargarFeriados();
-            } catch (err) {
-                console.error('Error:', err);
-                showToast('❌ Error al eliminar', true);
-            }
-        }
-
         // Inicializar
         window.onload = async function () {
+            await cargarCategorias();
             await cargarLocales();
-            await cargarFeriados();
-            document.getElementById('form-feriado').addEventListener('submit', guardarFeriado);
+            await cargarEmpleados();
+
+            // Actualizar puesto cuando cambia la categoría
+            document.getElementById('empleado-categoria').addEventListener('change', (e) => {
+                const cat = categorias.find(c => c.nombre === e.target.value);
+                document.getElementById('empleado-puesto').value = cat ? cat.puesto : '';
+            });
+
+            document.getElementById('form-empleado').addEventListener('submit', guardarEmpleado);
         };
-    <script>
-    // ✅ Verificar acceso
-    function verificarAcceso() {
-        const usuario = sessionStorage.getItem('usuario');
-        if (!usuario) {
-            alert('❌ Acceso denegado. Debe iniciar sesión.');
-            window.location.href = 'index.html';
-            return null;
-        }
-        return JSON.parse(usuario);
-    }
-
-    const usuarioGlobal = verificarAcceso();
-
-    // ✅ Filtrar empleados por local del usuario
-    function filtrarPorLocal(empleados) {
-        if (usuarioGlobal.rol === 'admin') return empleados;
-        return empleados.filter(e => usuarioGlobal.locales.includes(e.local));
-    }
-</script>
-    <script>
-    // ✅ Verificar acceso
-    function verificarAcceso() {
-        const usuario = sessionStorage.getItem('usuario');
-        if (!usuario) {
-            alert('❌ Acceso denegado. Debe iniciar sesión.');
-            window.location.href = 'index.html';
-            return null;
-        }
-
-        const user = JSON.parse(usuario);
-        return user; // Devuelve el usuario
-    }
-
-    const usuarioGlobal = verificarAcceso();
+    </script>
 
     <!-- ✅ Botón flotante -->
     <script>
@@ -371,77 +546,10 @@
                 transition: all 0.2s ease !important;
             `;
             btn.onclick = () => {
-                window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
+                window.location.href = 'index.html';
             };
             document.body.appendChild(btn);
         });
     </script>
-    // ✅ Función de backup automático
-async function backupData(collection, data, action = 'created') {
-    const backupUrl = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/backups.json';
-    const timestamp = new Date().toISOString();
-    const key = `${collection}_${Date.now()}`;
-
-    const entry = {
-        collection,
-        action, // 'created', 'updated', 'deleted'
-        data,
-        timestamp,
-        key
-    };
-
-    try {
-        await fetch(backupUrl, {
-            method: 'POST',
-            body: JSON.stringify(entry),
-            headers: { 'Content-Type': 'application/json' }
-        });
-        console.log('✅ Backup automático guardado:', collection);
-    } catch (err) {
-        console.warn('⚠️ No se pudo guardar el backup', err);
-    }
-}
-    <script>
-    const DB_USUARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/usuarios.json';
-
-    async function verificarLogin() {
-        // Si ya está logueado, no pide clave de nuevo
-        const usuario = sessionStorage.getItem('usuario');
-        if (usuario) return;
-
-        // Pedir usuario y clave
-        const inputUsuario = prompt('🔐 Usuario:');
-        const inputClave = prompt('🔐 Contraseña:');
-
-        try {
-            const res = await fetch(DB_USUARIOS);
-            const usuarios = await res.json();
-
-            // Buscar si existe el usuario y clave
-            const user = Object.values(usuarios).find(u => 
-                u.usuario === inputUsuario && u.clave === inputClave
-            );
-
-            if (user) {
-                // Guardar en sesión
-                sessionStorage.setItem('usuario', JSON.stringify(user));
-                alert(`✅ Bienvenido, ${user.nombre}`);
-            } else {
-                alert('❌ Usuario o clave incorrectos');
-                location.reload(); // Vuelve a pedir login
-            }
-        } catch (error) {
-            alert('❌ Error al conectar con la base de datos');
-            console.error(error);
-        }
-    }
-
-    // Ejecutar al cargar la página
-    verificarLogin();
-</script>
 </body>
 </html>
-
-
-
-
