@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grilla Mensual de Horarios</title>
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
@@ -19,6 +18,7 @@
             padding: 20px; 
             border-radius: 8px; 
             box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            overflow-x: auto;
         }
         h1 { 
             color: #2c3e50; 
@@ -41,27 +41,39 @@
             border-collapse: collapse; 
             margin-top: 20px; 
             font-size: 14px;
+            table-layout: fixed;
         }
         th, td { 
             border: 1px solid #ddd; 
             padding: 8px; 
             text-align: center; 
-            min-width: 80px;
+            min-width: 100px;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         th { 
             background: #ecf0f1; 
             position: sticky;
             top: 0;
             z-index: 10;
+            white-space: normal;
+            height: 60px;
         }
-        td { cursor: pointer; }
+        .dia-header {
+            font-weight: bold;
+            font-size: 14px;
+        }
         .turno { 
             display: inline-block;
             width: 100%;
-            padding: 4px;
+            padding: 4px 2px;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 500;
+            white-space: normal;
+            line-height: 1.2;
         }
         .mañana { background: #d6eaf8; color: #2c3e50; }
         .tarde { background: #d5f4e6; color: #2c3e50; }
@@ -86,10 +98,10 @@
 </head>
 <body>
     <div class="container">
-        <h1><i class="fas fa-th-large"></i> Grilla Mensual de Horarios</h1>
+        <h1><i class="fas fa-th-large"></i> Grilla Mensual de Horarios (Días en filas)</h1>
 
         <div class="controls">
-            <select id="filtro-local">
+            <select id="filtro-local" onchange="generarGrilla()">
                 <option value="">Todos los locales</option>
             </select>
             <select id="mes" onchange="generarGrilla()">
@@ -114,9 +126,7 @@
 
         <div style="overflow-x: auto;">
             <table id="grilla-horarios">
-                <thead>
-                    <tr id="header-dias"></tr>
-                </thead>
+                <thead id="header-grilla"></thead>
                 <tbody id="cuerpo-grilla"></tbody>
             </table>
         </div>
@@ -125,7 +135,6 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase (SIN espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_HORARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_empleados.json';
         const DB_FERIADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/feriados.json';
@@ -165,7 +174,6 @@
 
                 locales = [...new Set(empleados.map(e => e.local).filter(Boolean))];
                 const select = document.getElementById('filtro-local');
-                select.innerHTML = '<option value="">Todos los locales</option>';
                 locales.forEach(loc => {
                     const opt = document.createElement('option');
                     opt.value = loc;
@@ -185,45 +193,58 @@
             const anio = parseInt(document.getElementById('anio').value);
             const local = document.getElementById('filtro-local').value;
 
-            const primerDia = new Date(anio, mes, 1);
-            const ultimoDia = new Date(anio, mes + 1, 0);
-            const diasDelMes = ultimoDia.getDate();
-
-            // Cabecera de días
-            const header = document.getElementById('header-dias');
-            header.innerHTML = '<th>Empleado</th>';
-            for (let i = 1; i <= diasDelMes; i++) {
-                const fecha = new Date(anio, mes, i);
-                const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fecha.getDay()];
-                header.innerHTML += `<th title="${fecha.toISOString().split('T')[0]}">${i} <small>${diaSemana}</small></th>`;
-            }
-
             // Filtrar empleados por local
             const empleadosFiltrados = local 
                 ? empleados.filter(e => e.local === local) 
                 : empleados;
 
-            // Cuerpo de la tabla
+            const primerDia = new Date(anio, mes, 1);
+            const ultimoDia = new Date(anio, mes + 1, 0);
+            const diasDelMes = ultimoDia.getDate();
+
+            // Cabecera
+            const header = document.getElementById('header-grilla');
+            header.innerHTML = `<tr><th style="position: sticky; left: 0; background: white; z-index: 10;">Día</th></tr>`;
+
+            // Cuerpo
             const cuerpo = document.getElementById('cuerpo-grilla');
             cuerpo.innerHTML = '';
 
+            // Llenar encabezados (empleados)
+            const headerRow = document.querySelector('#header-grilla tr');
             empleadosFiltrados.forEach(emp => {
+                const th = document.createElement('th');
+                th.textContent = emp.nombre.split(' ')[0]; // Solo primer nombre
+                th.title = emp.nombre;
+                headerRow.appendChild(th);
+            });
+
+            // Generar una fila por día
+            for (let dia = 1; dia <= diasDelMes; dia++) {
+                const fecha = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+                const fechaObj = new Date(fecha);
+                const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fechaObj.getDay()];
+                const nombreDiaSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'][fechaObj.getDay()];
+
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td style="text-align:left; font-weight:bold;">${emp.nombre}</td>`;
-                
-                for (let dia = 1; dia <= diasDelMes; dia++) {
-                    const fecha = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-                    const diaSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'][new Date(fecha).getDay()];
-                    
+
+                // Celda del día (siempre visible)
+                const th = document.createElement('th');
+                th.style.cssText = 'position: sticky !important; left: 0 !important; background: white !important; z-index: 9 !important; font-weight: bold;';
+                th.innerHTML = `<div class="dia-header">${dia}<br><small>${diaSemana}</small></div>`;
+                tr.appendChild(th);
+
+                // Una celda por empleado
+                empleadosFiltrados.forEach(emp => {
                     // Buscar horario del empleado
                     const horarioEmpleado = horarios.find(h => h.empleadoKey === emp.key);
                     let turno = null;
 
-                    if (horarioEmpleado && horarioEmpleado.dias && horarioEmpleado.dias[diaSemana]) {
-                        turno = horarioEmpleado.dias[diaSemana];
+                    if (horarioEmpleado && horarioEmpleado.dias && horarioEmpleado.dias[nombreDiaSemana]) {
+                        turno = horarioEmpleado.dias[nombreDiaSemana];
                     }
 
-                    let celda = '<td class="libre"><div class="turno libre">Libre</div></td>';
+                    let celda = '<td><div class="turno libre">Libre</div></td>';
                     
                     if (turno && !turno.libre) {
                         const clase = turno.doble ? 'doble' : (turno.entrada < '12:00' ? 'mañana' : 'tarde');
@@ -233,38 +254,51 @@
                         celda = `<td><div class="turno ${clase}">${texto}</div></td>`;
                     }
 
-                    // Verificar feriados
+                    // Feriados
                     if (feriados.some(f => f.fecha === fecha && f.local === emp.local)) {
                         celda = `<td><div class="turno feriado">Feriado</div></td>`;
                     }
 
-                    // Verificar ausencias
+                    // Ausencias
                     if (ausencias.some(a => a.empleadoKey === emp.key && a.fechaInicio <= fecha && a.fechaFin >= fecha)) {
                         const ausencia = ausencias.find(a => a.empleadoKey === emp.key && a.fechaInicio <= fecha && a.fechaFin >= fecha);
                         celda = `<td><div class="turno ausencia">${ausencia.tipo}</div></td>`;
                     }
 
                     tr.innerHTML += celda;
-                }
+                });
                 cuerpo.appendChild(tr);
-            });
+            }
         }
 
         function exportarCSV() {
-            const table = document.getElementById('grilla-horarios');
+            const headerRow = document.querySelector('#header-grilla tr');
+            const rows = document.querySelectorAll('#cuerpo-grilla tr');
             let csv = [];
-            let rows = table.querySelectorAll('tr');
 
-            for (let row of rows) {
+            // Encabezado
+            let headerCols = ['Día'];
+            headerRow.querySelectorAll('th').forEach((th, i) => {
+                if (i > 0) headerCols.push(th.textContent.trim());
+            });
+            csv.push(headerCols.join(','));
+
+            // Filas
+            rows.forEach(row => {
                 let cols = row.querySelectorAll('td, th');
                 let csvRow = [];
-                for (let col of cols) {
-                    let text = col.querySelector('.turno')?.innerHTML || col.textContent;
-                    text = text.replace(/<br>/g, ' | ').replace(/<[^>]*>/g, '');
-                    csvRow.push(`"${text}"`);
-                }
+                cols.forEach((col, i) => {
+                    if (i === 0) {
+                        // Primera celda (día)
+                        csvRow.push(`"${col.textContent.trim()}"`);
+                    } else {
+                        let text = col.querySelector('.turno')?.innerHTML || col.textContent;
+                        text = text.replace(/<br>/g, ' | ').replace(/<[^>]*>/g, '');
+                        csvRow.push(`"${text}"`);
+                    }
+                });
                 csv.push(csvRow.join(','));
-            }
+            });
 
             const csvContent = 'data:text/csv;charset=utf-8,' + csv.join('\n');
             const encodedUri = encodeURI(csvContent);
