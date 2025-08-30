@@ -66,7 +66,7 @@
             font-size: 0.9em; 
         }
 
-        /* ✅ Estilo para mostrar usuario logueado */
+        /* ✅ Mostrar usuario logueado */
         .user-info {
             position: fixed;
             top: 10px;
@@ -104,52 +104,8 @@
         <h1><i class="fas fa-users-cog"></i> Sistema de Gestión de Personal</h1>
         <p>Administración de empleados, horarios y recursos humanos</p>
 
-        <div class="menu-grid">
-            <a href="gestion_empleados.html" class="menu-item">
-                <i class="fas fa-user-plus"></i>
-                <h3>Alta de Empleados</h3>
-                <p>Registrar, editar y eliminar empleados</p>
-            </a>
-            <a href="gestion_horario_empleados.html" class="menu-item">
-                <i class="fas fa-clock"></i>
-                <h3>Horarios de Empleados</h3>
-                <p>Asignar horarios semanales por empleado</p>
-            </a>
-            <a href="gestion_horarios_locales.html" class="menu-item">
-                <i class="fas fa-store"></i>
-                <h3>Horarios por Local</h3>
-                <p>Configurar apertura, cierre y personal</p>
-            </a>
-            <a href="gestion_feriados.html" class="menu-item">
-                <i class="fas fa-calendar-alt"></i>
-                <h3>Feriados</h3>
-                <p>Registrar días feriados por local</p>
-            </a>
-            <a href="gestion_ausencias.html" class="menu-item">
-                <i class="fas fa-bed"></i>
-                <h3>Ausencias</h3>
-                <p>Vacaciones, licencias y enfermedades</p>
-            </a>
-            <a href="gestion_novedades.html" class="menu-item">
-                <i class="fas fa-bell"></i>
-                <h3>Novedades</h3>
-                <p>Resumen mensual de asistencias y ausencias</p>
-            </a>
-            <a href="gestion_optimizar.html" class="menu-item">
-                <i class="fas fa-balance-scale"></i>
-                <h3>Personal Óptimo</h3>
-                <p>Comparar necesidad vs. asignación</p>
-            </a>
-            <a href="gestion_grilla_mensual.html" class="menu-item">
-                <i class="fas fa-th-large"></i>
-                <h3>Grilla de Horarios</h3>
-                <p>Vista semanal de todos los horarios</p>
-            </a>
-            <a href="gestion_usuarios.html" class="menu-item">
-                <i class="fas fa-users-cog"></i>
-                <h3>Gestión de Usuarios</h3>
-                <p>Administrar accesos y permisos</p>
-            </a>
+        <div class="menu-grid" id="menu-container">
+            <!-- Módulos serán cargados aquí -->
         </div>
     </div>
 
@@ -159,12 +115,11 @@
     <!-- ✅ Snackbar -->
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
-    <!-- ✅ LOGIN BÁSICO CON VERIFICACIÓN EN FIREBASE -->
+    <!-- ✅ LOGIN BÁSICO -->
     <script>
-        // ✅ URL de usuarios en Firebase
         const DB_USUARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/usuarios.json';
 
-        // ✅ Verificar login al cargar
+        // Verificar acceso
         async function verificarLogin() {
             // Si ya está logueado, cargar info
             const usuario = sessionStorage.getItem('usuario');
@@ -182,20 +137,15 @@
 
             try {
                 const res = await fetch(DB_USUARIOS);
-                
-                // ✅ Verificar si la respuesta es válida
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 
                 const data = await res.json();
-                
-                // ✅ Verificar que haya datos
                 if (!data) {
                     alert('❌ Error: No se encontraron usuarios en la base de datos');
                     location.reload();
                     return;
                 }
 
-                // ✅ Buscar usuario y clave
                 const usuariosArray = Object.values(data);
                 const user = usuariosArray.find(u => 
                     u.usuario === inputUsuario && u.clave === inputClave
@@ -224,15 +174,36 @@
             infoDiv.className = `user-info ${user.rol}`;
         }
 
-        // ✅ Ocultar módulos según rol
+        // ✅ Filtrar módulos por rol
         function aplicarPermisos(usuario) {
-            const gestionUsuariosLink = Array.from(document.querySelectorAll('a')).find(a => 
-                a.href.includes('gestion_usuarios.html')
-            );
-            
-            if (gestionUsuariosLink && usuario.rol !== 'admin') {
-                gestionUsuariosLink.parentElement.style.display = 'none';
-            }
+            const menuContainer = document.getElementById('menu-container');
+            menuContainer.innerHTML = '';
+
+            const modulos = [
+                { nombre: 'Alta de Empleados', href: 'gestion_empleados.html', rol: 'admin' },
+                { nombre: 'Horarios de Empleados', href: 'horarios_empleados.html', rol: 'admin' },
+                { nombre: 'Horarios por Local', href: 'horarios_locales.html', rol: 'admin' },
+                { nombre: 'Feriados', href: 'feriados.html', rol: 'admin' },
+                { nombre: 'Ausencias', href: 'ausencias.html', rol: 'admin' },
+                { nombre: 'Novedades', href: 'novedades.html', rol: 'admin' },
+                { nombre: 'Personal Óptimo', href: 'personal_optimo.html', rol: 'admin' },
+                { nombre: 'Grilla de Horarios', href: 'grilla_horarios.html', rol: 'admin' },
+                { nombre: 'Gestión de Usuarios', href: 'gestion_usuarios.html', rol: 'admin' }
+            ];
+
+            modulos.forEach(modulo => {
+                if (modulo.rol === 'admin' || usuario.rol === 'admin') {
+                    const item = document.createElement('div');
+                    item.className = 'menu-item';
+                    item.innerHTML = `
+                        <i class="fas fa-${modulo.icono || 'user'}"></i>
+                        <h3>${modulo.nombre}</h3>
+                        <p>${modulo.descripcion || modulo.nombre.toLowerCase()}</p>
+                    `;
+                    item.onclick = () => window.location.href = modulo.href;
+                    menuContainer.appendChild(item);
+                }
+            });
         }
 
         // ✅ Ejecutar al cargar
@@ -249,4 +220,3 @@
     </script>
 </body>
 </html>
-
