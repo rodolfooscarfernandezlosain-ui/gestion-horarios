@@ -239,7 +239,16 @@
                 if (!resEmpleados.ok) throw new Error(`HTTP ${resEmpleados.status}`);
                 
                 const dataEmpleados = await resEmpleados.json();
-                empleados = dataEmpleados ? Object.entries(dataEmpleados).map(([key, value]) => ({ key, ...value })) : [];
+                
+                if (!dataEmpleados) {
+                    console.warn('⚠️ No hay empleados registrados');
+                    empleados = [];
+                    return;
+                }
+
+                // ✅ Asegurar que cada empleado tenga .key
+                empleados = Object.entries(dataEmpleados).map(([key, value]) => ({ key, ...value }));
+                console.log('✅ Empleados cargados:', empleados);
 
                 // Cargar locales
                 await cargarLocales();
@@ -247,8 +256,8 @@
                 // Iniciar búsqueda
                 iniciarBusquedaEmpleado();
             } catch (e) {
-                console.error('Error cargando datos:', e);
-                showToast('❌ Error al cargar empleados', true);
+                console.error('❌ Error cargando datos:', e);
+                showToast('Error al cargar empleados', true);
             }
         }
 
@@ -261,7 +270,6 @@
                 const data = await res.json();
                 if (!data) return;
 
-                // Obtener nombres de locales
                 const localesData = Object.values(data);
                 locales = localesData.map(loc => loc.nombre);
 
@@ -275,7 +283,7 @@
                 });
             } catch (e) {
                 console.error('Error cargando locales:', e);
-                showToast('❌ Error al cargar locales', true);
+                showToast('Error al cargar locales', true);
             }
         }
 
@@ -285,7 +293,7 @@
             const list = document.getElementById('empleado-list');
 
             searchInput.addEventListener('input', () => {
-                const query = searchInput.value.toLowerCase();
+                const query = searchInput.value.toLowerCase().trim();
                 const localFiltro = document.getElementById('filtro-local').value;
 
                 list.innerHTML = '';
