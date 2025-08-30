@@ -218,6 +218,7 @@
         // ✅ URLs de Firebase (SIN espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_HORARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_empleados.json';
+        const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
 
         let empleados = [];
         let locales = [];
@@ -230,17 +231,40 @@
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
-        // ✅ Cargar empleados
+        // ✅ Cargar empleados y locales
         async function cargarDatos() {
             try {
-                const res = await fetch(DB_EMPLEADOS);
+                // Cargar empleados
+                const resEmpleados = await fetch(DB_EMPLEADOS);
+                if (!resEmpleados.ok) throw new Error(`HTTP ${resEmpleados.status}`);
+                
+                const dataEmpleados = await resEmpleados.json();
+                empleados = dataEmpleados ? Object.entries(dataEmpleados).map(([key, value]) => ({ key, ...value })) : [];
+
+                // Cargar locales
+                await cargarLocales();
+
+                // Iniciar búsqueda
+                iniciarBusquedaEmpleado();
+            } catch (e) {
+                console.error('Error cargando datos:', e);
+                showToast('❌ Error al cargar empleados', true);
+            }
+        }
+
+        // ✅ Cargar locales desde Firebase
+        async function cargarLocales() {
+            try {
+                const res = await fetch(DB_LOCALES);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 
                 const data = await res.json();
-                empleados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+                if (!data) return;
 
-                // Extraer locales únicos
-                locales = [...new Set(empleados.map(e => e.local).filter(Boolean))];
+                // Obtener nombres de locales
+                const localesData = Object.values(data);
+                locales = localesData.map(loc => loc.nombre);
+
                 const select = document.getElementById('filtro-local');
                 select.innerHTML = '<option value="">Todos los locales</option>';
                 locales.forEach(loc => {
@@ -249,12 +273,9 @@
                     opt.textContent = loc;
                     select.appendChild(opt);
                 });
-
-                // Iniciar búsqueda
-                iniciarBusquedaEmpleado();
             } catch (e) {
-                console.error('Error cargando empleados:', e);
-                showToast('❌ Error al cargar empleados', true);
+                console.error('Error cargando locales:', e);
+                showToast('❌ Error al cargar locales', true);
             }
         }
 
@@ -301,7 +322,7 @@
             });
         }
 
-        // ✅ Mostrar info del empleado
+        // ✅ Mostrar info del empleado seleccionado
         function mostrarInfoEmpleado(empleadoKey) {
             const emp = empleados.find(e => e.key === empleadoKey);
             const infoDiv = document.getElementById('info-empleado');
