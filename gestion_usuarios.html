@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+x|<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -83,7 +83,9 @@
         .snackbar.show { 
             opacity: 1; 
         }
-        .error { background: #e74c3c; }
+        .error { 
+            background: #e74c3c; 
+        }
     </style>
 </head>
 <body>
@@ -198,6 +200,8 @@
         async function cargarLocales() {
             try {
                 const res = await fetch('https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                
                 const data = await res.json();
                 if (!data) return;
 
@@ -205,6 +209,7 @@
                 actualizarLocales();
             } catch (e) {
                 console.error('Error cargando locales:', e);
+                showToast('⚠️ No se pudieron cargar los locales', true);
             }
         }
 
@@ -237,6 +242,8 @@
         async function cargarUsuarios() {
             try {
                 const res = await fetch(DB_USUARIOS);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                
                 const data = await res.json();
                 usuarios = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
 
@@ -264,7 +271,7 @@
                     tbody.appendChild(tr);
                 });
             } catch (e) {
-                console.error('Error:', e);
+                console.error('Error cargando usuarios:', e);
                 showToast('❌ Error al cargar usuarios', true);
             }
         }
@@ -303,14 +310,17 @@
             if (!confirm(`¿Eliminar al usuario "${nombre}"?`)) return;
 
             try {
-                await fetch(`${DB_USUARIOS.replace('.json', `/${key}.json`)}`, {
+                const res = await fetch(`${DB_USUARIOS.replace('.json', `/${key}.json`)}`, {
                     method: 'DELETE'
                 });
+
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                
                 showToast('🗑️ Usuario eliminado');
                 await cargarUsuarios();
             } catch (err) {
-                console.error('Error:', err);
-                showToast('❌ Error al eliminar', true);
+                console.error('Error al eliminar:', err);
+                showToast('❌ Error al eliminar usuario', true);
             }
         }
 
@@ -356,20 +366,41 @@
                     method = 'PUT';
                 }
 
+                console.log('Enviando a:', url);
+                console.log('Método:', method);
+                console.log('Datos:', userData);
+
                 const res = await fetch(url, { 
                     method, 
                     body, 
                     headers: { 'Content-Type': 'application/json' } 
                 });
 
-                if (!res.ok) throw new Error('Error al guardar');
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    console.error('Error de respuesta:', res.status, errorText);
+                    
+                    if (res.status === 401) {
+                        showToast('❌ Acceso denegado. Revisa tus permisos.', true);
+                    } else if (res.status === 400) {
+                        showToast('❌ Solicitud inválida. Revisa los datos.', true);
+                    } else {
+                        showToast(`❌ Error ${res.status}: No se pudo guardar`, true);
+                    }
+                    return;
+                }
 
                 showToast('✅ Usuario guardado');
                 limpiarFormulario();
                 await cargarUsuarios();
             } catch (err) {
-                console.error('Error:', err);
-                showToast('❌ Error al guardar', true);
+                console.error('Error de conexión:', err);
+                
+                if (err.name === 'TypeError') {
+                    showToast('❌ Error de conexión. Revisa tu internet o la URL de Firebase.', true);
+                } else {
+                    showToast('❌ Error inesperado al guardar', true);
+                }
             }
         }
 
