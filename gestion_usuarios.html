@@ -1,1 +1,410 @@
 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Usuarios</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #f4f6f9; 
+            padding: 20px; 
+        }
+        .container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        h1 { 
+            color: #2c3e50; 
+            border-bottom: 2px solid #3498db; 
+            padding-bottom: 10px; 
+        }
+        .form-group { 
+            margin: 15px 0; 
+        }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: 600; 
+        }
+        input, select { 
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+        }
+        button { 
+            background: #3498db; 
+            color: white; 
+            border: none; 
+            padding: 10px 15px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin-right: 10px;
+        }
+        button.btn-danger { 
+            background: #e74c3c; 
+        }
+        button.btn-success { 
+            background: #27ae60; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: left; 
+        }
+        th { 
+            background: #ecf0f1; 
+        }
+        .snackbar { 
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px; 
+            background: #27ae60; 
+            color: white; 
+            padding: 12px 20px; 
+            border-radius: 6px; 
+            z-index: 1000; 
+            opacity: 0; 
+            transition: opacity 0.3s; 
+        }
+        .snackbar.show { 
+            opacity: 1; 
+        }
+        .error { background: #e74c3c; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-users-cog"></i> Gestión de Usuarios</h1>
+
+        <form id="form-usuario">
+            <input type="hidden" id="edit-key" value="">
+
+            <div class="form-group">
+                <label>Nombre Completo *</label>
+                <input type="text" id="nombre" required>
+            </div>
+
+            <div class="form-group">
+                <label>Usuario (login) *</label>
+                <input type="text" id="usuario" required>
+            </div>
+
+            <div class="form-group">
+                <label>Clave *</label>
+                <input type="password" id="clave" required>
+            </div>
+
+            <div class="form-group">
+                <label>Rol *</label>
+                <select id="rol" required onchange="actualizarLocales()">
+                    <option value="">Seleccionar rol</option>
+                    <option value="admin">Administrador General</option>
+                    <option value="encargado">Encargado de Local</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="grupo-locales" style="display:none;">
+                <label>Local(es) asignado(s) *</label>
+                <div id="locales-container"></div>
+            </div>
+
+            <button type="submit" class="btn-success">
+                <i class="fas fa-save"></i> <span id="btn-texto">Guardar Usuario</span>
+            </button>
+            <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6;">
+                Cancelar
+            </button>
+        </form>
+
+        <table id="tabla-usuarios">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Usuario</th>
+                    <th>Rol</th>
+                    <th>Locales</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="snackbar" class="snackbar">Acción realizada</div>
+
+    <!-- ✅ LOGIN BÁSICO -->
+    <script>
+        const DB_USUARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/usuarios.json';
+
+        // Verificar acceso
+        function verificarAcceso() {
+            const usuario = sessionStorage.getItem('usuario');
+            if (!usuario) {
+                alert('❌ Acceso denegado. Debe iniciar sesión.');
+                window.location.href = '../index.html';
+                return false;
+            }
+
+            const user = JSON.parse(usuario);
+            if (user.rol !== 'admin') {
+                alert('❌ Acceso denegado. Solo el administrador puede gestionar usuarios.');
+                window.location.href = '../index.html';
+                return false;
+            }
+            return true;
+        }
+
+        if (!verificarAcceso()) {
+            throw new Error('Acceso denegado');
+        }
+    </script>
+
+    <script>
+        let usuarios = [];
+        let locales = [];
+
+        function showToast(msg, isError = false) {
+            const sb = document.getElementById('snackbar');
+            sb.textContent = msg;
+            sb.className = 'snackbar show';
+            if (isError) sb.classList.add('error');
+            setTimeout(() => sb.className = 'snackbar', 3000);
+        }
+
+        // Cargar locales desde Firebase
+        async function cargarLocales() {
+            try {
+                const res = await fetch('https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json');
+                const data = await res.json();
+                if (!data) return;
+
+                locales = Object.values(data).map(loc => loc.nombre);
+                actualizarLocales();
+            } catch (e) {
+                console.error('Error cargando locales:', e);
+            }
+        }
+
+        // Mostrar u ocultar selección de locales
+        function actualizarLocales() {
+            const rol = document.getElementById('rol').value;
+            const contenedor = document.getElementById('locales-container');
+            const grupo = document.getElementById('grupo-locales');
+
+            contenedor.innerHTML = '';
+            if (rol === 'encargado' && locales.length > 0) {
+                grupo.style.display = 'block';
+                locales.forEach(loc => {
+                    const div = document.createElement('div');
+                    div.style.margin = '5px 0';
+                    div.innerHTML = `
+                        <label>
+                            <input type="checkbox" value="${loc}" class="local-check">
+                            ${loc}
+                        </label>
+                    `;
+                    contenedor.appendChild(div);
+                });
+            } else {
+                grupo.style.display = 'none';
+            }
+        }
+
+        // Cargar usuarios
+        async function cargarUsuarios() {
+            try {
+                const res = await fetch(DB_USUARIOS);
+                const data = await res.json();
+                usuarios = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+
+                const tbody = document.querySelector('#tabla-usuarios tbody');
+                tbody.innerHTML = '';
+
+                if (usuarios.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center">No hay usuarios registrados</td></tr>`;
+                    return;
+                }
+
+                usuarios.forEach(user => {
+                    const tr = document.createElement('tr');
+                    const localesTexto = user.locales.includes('todos') ? 'Todos' : user.locales.join(', ');
+                    tr.innerHTML = `
+                        <td><strong>${user.nombre}</strong></td>
+                        <td>${user.usuario}</td>
+                        <td>${user.rol === 'admin' ? 'Administrador' : 'Encargado'}</td>
+                        <td>${localesTexto}</td>
+                        <td style="text-align:center;">
+                            <button class="btn-warning" onclick="editarUsuario('${user.key}')">Editar</button>
+                            <button class="btn-danger" onclick="eliminarUsuario('${user.key}', '${user.nombre}')">Eliminar</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error('Error:', e);
+                showToast('❌ Error al cargar usuarios', true);
+            }
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('form-usuario').reset();
+            document.getElementById('edit-key').value = '';
+            document.getElementById('btn-texto').textContent = 'Guardar Usuario';
+            document.getElementById('grupo-locales').style.display = 'none';
+            document.getElementById('locales-container').innerHTML = '';
+        }
+
+        async function editarUsuario(key) {
+            const user = usuarios.find(u => u.key === key);
+            if (!user) return;
+
+            document.getElementById('nombre').value = user.nombre;
+            document.getElementById('usuario').value = user.usuario;
+            document.getElementById('clave').value = '********'; // No se muestra la clave real
+            document.getElementById('rol').value = user.rol;
+            document.getElementById('edit-key').value = key;
+            document.getElementById('btn-texto').textContent = 'Actualizar Usuario';
+
+            if (user.rol === 'encargado') {
+                await cargarLocales(); // Asegurar que los locales estén cargados
+                setTimeout(() => {
+                    const checks = document.querySelectorAll('.local-check');
+                    checks.forEach(check => {
+                        check.checked = user.locales.includes(check.value);
+                    });
+                }, 100);
+            }
+        }
+
+        async function eliminarUsuario(key, nombre) {
+            if (!confirm(`¿Eliminar al usuario "${nombre}"?`)) return;
+
+            try {
+                await fetch(`${DB_USUARIOS.replace('.json', `/${key}.json`)}`, {
+                    method: 'DELETE'
+                });
+                showToast('🗑️ Usuario eliminado');
+                await cargarUsuarios();
+            } catch (err) {
+                console.error('Error:', err);
+                showToast('❌ Error al eliminar', true);
+            }
+        }
+
+        async function guardarUsuario(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('nombre').value.trim();
+            const usuario = document.getElementById('usuario').value.trim();
+            const clave = document.getElementById('clave').value;
+            const rol = document.getElementById('rol').value;
+            const editKey = document.getElementById('edit-key').value;
+
+            // Validar campos
+            if (!nombre || !usuario || !clave || !rol) {
+                showToast('⚠️ Completa todos los campos', true);
+                return;
+            }
+
+            // Validar locales si es encargado
+            let localesSeleccionados = [];
+            if (rol === 'encargado') {
+                localesSeleccionados = Array.from(document.querySelectorAll('.local-check:checked')).map(cb => cb.value);
+                if (localesSeleccionados.length === 0) {
+                    showToast('⚠️ Selecciona al menos un local', true);
+                    return;
+                }
+            }
+
+            const userData = {
+                nombre,
+                usuario,
+                clave,
+                rol,
+                locales: rol === 'admin' ? ['todos'] : localesSeleccionados
+            };
+
+            try {
+                let url = DB_USUARIOS;
+                let method = 'POST';
+                let body = JSON.stringify(userData);
+
+                if (editKey) {
+                    url = `${DB_USUARIOS.replace('.json', `/${editKey}.json`)}`;
+                    method = 'PUT';
+                }
+
+                const res = await fetch(url, { 
+                    method, 
+                    body, 
+                    headers: { 'Content-Type': 'application/json' } 
+                });
+
+                if (!res.ok) throw new Error('Error al guardar');
+
+                showToast('✅ Usuario guardado');
+                limpiarFormulario();
+                await cargarUsuarios();
+            } catch (err) {
+                console.error('Error:', err);
+                showToast('❌ Error al guardar', true);
+            }
+        }
+
+        // Inicializar
+        window.onload = async function () {
+            await cargarLocales();
+            await cargarUsuarios();
+
+            document.getElementById('form-usuario').addEventListener('submit', guardarUsuario);
+        };
+    </script>
+
+    <!-- ✅ Botón flotante -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (document.getElementById('btn-menu-flotante')) return;
+            const btn = document.createElement('button');
+            btn.id = 'btn-menu-flotante';
+            btn.textContent = '☰ Menú';
+            btn.title = 'Volver al menú principal';
+            btn.style.cssText = `
+                position: fixed !important;
+                top: 20px !important;
+                right: 20px !important;
+                z-index: 99999 !important;
+                padding: 12px 16px !important;
+                font-size: 14px !important;
+                font-weight: bold !important;
+                color: white !important;
+                background-color: #2980b9 !important;
+                border: none !important;
+                border-radius: 6px !important;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
+                cursor: pointer !important;
+                opacity: 1 !important;
+                display: block !important;
+                transition: all 0.2s ease !important;
+            `;
+            btn.onclick = () => {
+                window.location.href = '../index.html';
+            };
+            document.body.appendChild(btn);
+        });
+    </script>
+</body>
+</html>
