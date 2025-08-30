@@ -241,7 +241,46 @@ async function backupData(collection, data, action = 'created') {
         console.warn('⚠️ No se pudo guardar el backup', err);
     }
 }
+    <script>
+    const DB_USUARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/usuarios.json';
+
+    async function verificarLogin() {
+        // Si ya está logueado, no pide clave de nuevo
+        const usuario = sessionStorage.getItem('usuario');
+        if (usuario) return;
+
+        // Pedir usuario y clave
+        const inputUsuario = prompt('🔐 Usuario:');
+        const inputClave = prompt('🔐 Contraseña:');
+
+        try {
+            const res = await fetch(DB_USUARIOS);
+            const usuarios = await res.json();
+
+            // Buscar si existe el usuario y clave
+            const user = Object.values(usuarios).find(u => 
+                u.usuario === inputUsuario && u.clave === inputClave
+            );
+
+            if (user) {
+                // Guardar en sesión
+                sessionStorage.setItem('usuario', JSON.stringify(user));
+                alert(`✅ Bienvenido, ${user.nombre}`);
+            } else {
+                alert('❌ Usuario o clave incorrectos');
+                location.reload(); // Vuelve a pedir login
+            }
+        } catch (error) {
+            alert('❌ Error al conectar con la base de datos');
+            console.error(error);
+        }
+    }
+
+    // Ejecutar al cargar la página
+    verificarLogin();
+</script>
 </body>
 </html>
+
 
 
