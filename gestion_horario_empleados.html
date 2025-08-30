@@ -230,13 +230,13 @@
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
-        // ✅ Cargar empleados y locales
+        // ✅ Cargar empleados
         async function cargarDatos() {
             try {
                 const res = await fetch(DB_EMPLEADOS);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                
                 const data = await res.json();
-
-                // ✅ Asegurar que cada empleado tenga .key
                 empleados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
 
                 // Extraer locales únicos
@@ -258,7 +258,7 @@
             }
         }
 
-        // ✅ Búsqueda dinámica con filtro por nombre y local
+        // ✅ Búsqueda dinámica
         function iniciarBusquedaEmpleado() {
             const searchInput = document.getElementById('empleado-search');
             const list = document.getElementById('empleado-list');
@@ -301,7 +301,7 @@
             });
         }
 
-        // ✅ Mostrar info del empleado seleccionado
+        // ✅ Mostrar info del empleado
         function mostrarInfoEmpleado(empleadoKey) {
             const emp = empleados.find(e => e.key === empleadoKey);
             const infoDiv = document.getElementById('info-empleado');
