@@ -105,7 +105,7 @@
         <p>Administración de empleados, horarios y recursos humanos</p>
 
         <div class="menu-grid" id="menu-container">
-            <!-- Módulos serán cargados aquí -->
+            <!-- Módulos serán cargados aquí dinámicamente -->
         </div>
     </div>
 
@@ -179,31 +179,69 @@
             const menuContainer = document.getElementById('menu-container');
             menuContainer.innerHTML = '';
 
+            // Definir módulos disponibles
             const modulos = [
                 { nombre: 'Alta de Empleados', href: 'gestion_empleados.html', rol: 'admin' },
                 { nombre: 'Horarios de Empleados', href: 'horarios_empleados.html', rol: 'admin' },
                 { nombre: 'Horarios por Local', href: 'horarios_locales.html', rol: 'admin' },
                 { nombre: 'Feriados', href: 'feriados.html', rol: 'admin' },
                 { nombre: 'Ausencias', href: 'ausencias.html', rol: 'admin' },
-                { nombre: 'Novedades', href: 'novedades.html', rol: 'admin' },
+                { nombre: 'Novedades', href: 'novedades.html', rol: 'todos' },
                 { nombre: 'Personal Óptimo', href: 'personal_optimo.html', rol: 'admin' },
-                { nombre: 'Grilla de Horarios', href: 'grilla_horarios.html', rol: 'admin' },
+                { nombre: 'Grilla de Horarios', href: 'grilla_horarios.html', rol: 'todos' },
                 { nombre: 'Gestión de Usuarios', href: 'gestion_usuarios.html', rol: 'admin' }
             ];
 
             modulos.forEach(modulo => {
-                if (modulo.rol === 'admin' || usuario.rol === 'admin') {
+                // El admin ve todos los módulos, el encargado solo los marcados como 'todos'
+                if (usuario.rol === 'admin' || modulo.rol === 'todos') {
                     const item = document.createElement('div');
                     item.className = 'menu-item';
                     item.innerHTML = `
-                        <i class="fas fa-${modulo.icono || 'user'}"></i>
+                        <i class="fas fa-${getIcono(modulo.nombre)}"></i>
                         <h3>${modulo.nombre}</h3>
-                        <p>${modulo.descripcion || modulo.nombre.toLowerCase()}</p>
+                        <p>${getDescripcion(modulo.nombre)}</p>
                     `;
-                    item.onclick = () => window.location.href = modulo.href;
+                    item.onclick = () => {
+                        // Guardar usuario en sessionStorage para que otros módulos lo usen
+                        sessionStorage.setItem('usuario', JSON.stringify(usuario));
+                        window.location.href = modulo.href;
+                    };
                     menuContainer.appendChild(item);
                 }
             });
+        }
+
+        // ✅ Asignar íconos
+        function getIcono(nombre) {
+            const iconos = {
+                'Alta de Empleados': 'user-plus',
+                'Horarios de Empleados': 'clock',
+                'Horarios por Local': 'store',
+                'Feriados': 'calendar-alt',
+                'Ausencias': 'bed',
+                'Novedades': 'bell',
+                'Personal Óptimo': 'balance-scale',
+                'Grilla de Horarios': 'th-large',
+                'Gestión de Usuarios': 'users-cog'
+            };
+            return iconos[nombre] || 'cog';
+        }
+
+        // ✅ Descripciones
+        function getDescripcion(nombre) {
+            const desc = {
+                'Alta de Empleados': 'Registrar, editar y eliminar empleados',
+                'Horarios de Empleados': 'Asignar horarios semanales por empleado',
+                'Horarios por Local': 'Configurar apertura, cierre y personal',
+                'Feriados': 'Registrar días feriados por local',
+                'Ausencias': 'Vacaciones, licencias y enfermedades',
+                'Novedades': 'Resumen mensual de asistencias y ausencias',
+                'Personal Óptimo': 'Comparar necesidad vs. asignación',
+                'Grilla de Horarios': 'Vista semanal de todos los horarios',
+                'Gestión de Usuarios': 'Administrar accesos y permisos'
+            };
+            return desc[nombre] || 'Módulo de gestión';
         }
 
         // ✅ Ejecutar al cargar
@@ -217,6 +255,39 @@
                 console.error('Error en login:', error);
             }
         };
+    </script>
+
+    <!-- ✅ Botón flotante -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (document.getElementById('btn-menu-flotante')) return;
+            const btn = document.createElement('button');
+            btn.id = 'btn-menu-flotante';
+            btn.textContent = '☰ Menú';
+            btn.title = 'Volver al menú principal';
+            btn.style.cssText = `
+                position: fixed !important;
+                top: 20px !important;
+                right: 20px !important;
+                z-index: 99999 !important;
+                padding: 12px 16px !important;
+                font-size: 14px !important;
+                font-weight: bold !important;
+                color: white !important;
+                background-color: #2980b9 !important;
+                border: none !important;
+                border-radius: 6px !important;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
+                cursor: pointer !important;
+                opacity: 1 !important;
+                display: block !important;
+                transition: all 0.2s ease !important;
+            `;
+            btn.onclick = () => {
+                window.location.href = 'index.html';
+            };
+            document.body.appendChild(btn);
+        });
     </script>
 </body>
 </html>
