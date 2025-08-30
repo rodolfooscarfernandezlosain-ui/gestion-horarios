@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -420,4 +420,253 @@
                         const select = item.querySelector('select');
                         const input = item.querySelector('input');
                         if (!select.value || !input.value) {
-                            v
+                            valido = false;
+                            return;
+                        }
+                        const categoria = categorias.find(c => c.nombre === select.value);
+                        puestos.push({
+                            id: select.value,
+                            puesto: categoria ? categoria.puesto : select.value,
+                            cantidad: input.value
+                        });
+                    });
+                    data[dia].puestos_pico = puestos;
+                }
+
+                // Guardar puestos del segundo pico (si >14h)
+                const puestosExtraCont = group.querySelector('.puestos-extra-container');
+                if (puestosExtraCont && group.querySelector('.pico-extra').style.display === 'block') {
+                    const puestosExtra = [];
+                    puestosExtraCont.querySelectorAll('.puesto-item').forEach(item => {
+                        const select = item.querySelector('select');
+                        const input = item.querySelector('input');
+                        if (!select.value || !input.value) {
+                            valido = false;
+                            return;
+                        }
+                        const categoria = categorias.find(c => c.nombre === select.value);
+                        puestosExtra.push({
+                            id: select.value,
+                            puesto: categoria ? categoria.puesto : select.value,
+                            cantidad: input.value
+                        });
+                    });
+                    data[dia].puestos_pico_extra = puestosExtra;
+                }
+            }
+
+            if (!valido) {
+                showToast('⚠️ Completa todos los campos', true);
+                return;
+            }
+
+            try {
+                const key = document.getElementById('edit-key').value;
+                let url = DB_HORARIOS_LOCALES;
+                let method = 'POST';
+                let body = JSON.stringify(data);
+
+                if (key) {
+                    url = `${DB_HORARIOS_LOCALES.replace('.json', `/${key}.json`)}`;
+                    method = 'PUT';
+                }
+
+                const res = await fetch(url, {
+                    method,
+                    body,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!res.ok) throw new Error('Error al guardar');
+
+                showToast('✅ Configuración guardada');
+                limpiarFormulario();
+                await cargarHorarios();
+            } catch (err) {
+                console.error('Error:', err);
+                showToast('❌ Error al guardar', true);
+            }
+        }
+
+        // ✅ Cargar horarios
+        async function cargarHorarios() {
+            try {
+                const res = await fetch(DB_HORARIOS_LOCALES);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                
+                const data = await res.json();
+                const horarios = data ? Object.entries(data).map(([k, v]) => ({ key: k, ...v })) : [];
+                const tbody = document.querySelector('#tabla-horarios tbody');
+                tbody.innerHTML = '';
+
+                if (horarios.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center">No hay configuraciones</td></tr>';
+                    return;
+                }
+
+                // ✅ Filtrar horarios por locales del usuario
+                const horariosFiltrados = horarios.filter(h => {
+                    return usuarioGlobal.rol === 'admin' || usuarioGlobal.locales.includes(h.local);
+                });
+
+                if (horariosFiltrados.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center">No tienes acceso a estas configuraciones</td></tr>';
+                    return;
+                }
+
+                horariosFiltrados.forEach(h => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${h.local}</td>
+                        <td>${h.lunes ? '✅' : '—'}</td>
+                        <td>${h.martes ? '✅' : '—'}</td>
+                        <td>${h.miercoles ? '✅' : '—'}</td>
+                        <td>${h.jueves ? '✅' : '—'}</td>
+                        <td>${h.viernes ? '✅' : '—'}</td>
+                        <td>${h.sabado ? '✅' : '—'}</td>
+                        <td>${h.domingo ? '✅' : '—'}</td>
+                        <td style="text-align: center;">
+                            <button class="btn btn-warning btn-sm" onclick="editarHorario('${h.key}', '${h.local}')">Editar</button>
+                            <button class="btn btn-danger btn-sm" onclick="eliminarHorario('${h.key}', '${h.local}')">Eliminar</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error('Error cargando horarios:', e);
+                showToast('❌ Error al cargar horarios', true);
+            }
+        }
+
+        // ✅ Editar horario
+        async function editarHorario(key, localNombre) {
+            try {
+                const res = await fetch(`${DB_HORARIOS_LOCALES.replace('.json', `/${key}.json`)}`);
+                const data = await res.json();
+
+                // ✅ Verificar acceso al local
+                if (usuarioGlobal.rol !== 'admin' && !usuarioGlobal.locales.includes(localNombre)) {
+                    showToast('❌ No puedes editar este local', true);
+                    return;
+                }
+
+                document.getElementById('local-nombre').value = localNombre;
+                document.getElementById('edit-key').value = key;
+                document.getElementById('btn-texto').textContent = 'Actualizar Configuración';
+
+                const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+                dias.forEach(dia => {
+                    const group = document.querySelector(`[data-dia="${dia}"]`);
+                    const horario = data[dia];
+                    if (horario) {
+                        group.querySelector('.hora-apertura').value = horario.apertura;
+                        group.querySelector('.hora-cierre').value = horario.cierre;
+                        group.querySelector('.chk-doble').checked = horario.doble;
+                        group.querySelector('.chk-continuo').checked = horario.continuo;
+                        group.querySelector('.doble-horario').style.display = horario.doble ? 'flex' : 'none';
+                        group.querySelector('.pico-simple').style.display = horario.continuo ? 'block' : 'none';
+
+                        // Rellenar puestos pico
+                        const puestosCont = group.querySelector('.puestos-container');
+                        puestosCont.innerHTML = '';
+                        if (horario.puestos_pico) {
+                            horario.puestos_pico.forEach(p => {
+                                agregarPuesto(group, '.puestos-container');
+                                const item = puestosCont.lastElementChild;
+                                item.querySelector('select').value = p.id;
+                                item.querySelector('input').value = p.cantidad;
+                            });
+                        }
+
+                        // Rellenar puestos pico extra
+                        const puestosExtraCont = group.querySelector('.puestos-extra-container');
+                        puestosExtraCont.innerHTML = '';
+                        if (horario.puestos_pico_extra) {
+                            horario.puestos_pico_extra.forEach(p => {
+                                agregarPuesto(group, '.puestos-extra-container');
+                                const item = puestosExtraCont.lastElementChild;
+                                item.querySelector('select').value = p.id;
+                                item.querySelector('input').value = p.cantidad;
+                            });
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error('Error al editar:', e);
+                showToast('❌ Error al cargar datos', true);
+            }
+        }
+
+        // ✅ Eliminar horario
+        async function eliminarHorario(key, nombre) {
+            // ✅ Verificar acceso al local
+            if (usuarioGlobal.rol !== 'admin' && !usuarioGlobal.locales.includes(nombre)) {
+                showToast('❌ No puedes eliminar este horario', true);
+                return;
+            }
+
+            if (!confirm(`¿Eliminar la configuración de "${nombre}"?`)) return;
+
+            try {
+                const res = await fetch(`${DB_HORARIOS_LOCALES.replace('.json', `/${key}.json`)}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('Error al eliminar');
+                showToast('🗑️ Configuración eliminada');
+                await cargarHorarios();
+            } catch (e) {
+                console.error('Error al eliminar:', e);
+                showToast('❌ Error al eliminar', true);
+            }
+        }
+
+        // ✅ Limpiar formulario
+        function limpiarFormulario() {
+            document.getElementById('form-horario').reset();
+            document.getElementById('edit-key').value = '';
+            document.getElementById('btn-texto').textContent = 'Guardar Configuración';
+            inicializarDias();
+        }
+
+        // ✅ Inicializar
+        window.onload = async function () {
+            await cargarCategorias();
+            await cargarLocales();
+            await cargarHorarios();
+            inicializarDias();
+            document.getElementById('form-horario').addEventListener('submit', guardarHorario);
+        };
+    </script>
+
+    <!-- ✅ Botón flotante -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (document.getElementById('btn-menu-flotante')) return;
+            const btn = document.createElement('button');
+            btn.id = 'btn-menu-flotante';
+            btn.textContent = '☰ Menú';
+            btn.title = 'Volver al menú principal';
+            btn.style.cssText = `
+                position: fixed !important;
+                top: 20px !important;
+                right: 20px !important;
+                z-index: 99999 !important;
+                padding: 12px 16px !important;
+                font-size: 14px !important;
+                font-weight: bold !important;
+                color: white !important;
+                background-color: #2980b9 !important;
+                border: none !important;
+                border-radius: 6px !important;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
+                cursor: pointer !important;
+                opacity: 1 !important;
+                display: block !important;
+                transition: all 0.2s ease !important;
+            `;
+            btn.onclick = () => {
+                window.location.href = 'index.html';
+            };
+            document.body.appendChild(btn);
+        });
+    </script>
+</body>
+</html>
