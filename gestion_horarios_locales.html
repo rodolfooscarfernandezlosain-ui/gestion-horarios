@@ -533,7 +533,26 @@
             inicializarDias();
             document.getElementById('form-horario').addEventListener('submit', guardarHorario);
         };}
-        
+        <script>
+    // ✅ Verificar acceso
+    function verificarAcceso() {
+        const usuario = sessionStorage.getItem('usuario');
+        if (!usuario) {
+            alert('❌ Acceso denegado. Debe iniciar sesión.');
+            window.location.href = 'index.html';
+            return null;
+        }
+        return JSON.parse(usuario);
+    }
+
+    const usuarioGlobal = verificarAcceso();
+
+    // ✅ Filtrar empleados por local del usuario
+    function filtrarPorLocal(empleados) {
+        if (usuarioGlobal.rol === 'admin') return empleados;
+        return empleados.filter(e => usuarioGlobal.locales.includes(e.local));
+    }
+</script>
     <script>
     // ✅ Verificar acceso
     function verificarAcceso() {
@@ -647,6 +666,7 @@ async function backupData(collection, data, action = 'created') {
 </script>
 </body>
 </html>
+
 
 
 
