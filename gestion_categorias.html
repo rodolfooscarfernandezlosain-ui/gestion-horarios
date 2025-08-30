@@ -182,7 +182,22 @@
             await cargarCategorias();
             document.getElementById('form-categoria').addEventListener('submit', guardarCategoria);
         };
-    </script>
+        
+    <script>
+    // ✅ Verificar acceso
+    function verificarAcceso() {
+        const usuario = sessionStorage.getItem('usuario');
+        if (!usuario) {
+            alert('❌ Acceso denegado. Debe iniciar sesión.');
+            window.location.href = 'index.html';
+            return null;
+        }
+
+        const user = JSON.parse(usuario);
+        return user; // Devuelve el usuario
+    }
+
+    const usuarioGlobal = verificarAcceso();
 
     <!-- ✅ Botón flotante sin espacios -->
     <script>
@@ -281,6 +296,7 @@ async function backupData(collection, data, action = 'created') {
 </script>
 </body>
 </html>
+
 
 
 
