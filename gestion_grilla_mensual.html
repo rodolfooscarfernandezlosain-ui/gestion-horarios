@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+<!DOCTYPE html><!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grilla Mensual de Horarios</title>
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
@@ -18,7 +19,6 @@
             padding: 20px; 
             border-radius: 8px; 
             box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-            overflow-x: auto;
         }
         h1 { 
             color: #2c3e50; 
@@ -41,39 +41,26 @@
             border-collapse: collapse; 
             margin-top: 20px; 
             font-size: 14px;
-            table-layout: fixed;
         }
         th, td { 
             border: 1px solid #ddd; 
             padding: 8px; 
             text-align: center; 
-            min-width: 100px;
-            max-width: 100px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            min-width: 80px;
         }
         th { 
             background: #ecf0f1; 
             position: sticky;
             top: 0;
             z-index: 10;
-            white-space: normal;
-            height: 60px;
-        }
-        .dia-header {
-            font-weight: bold;
-            font-size: 14px;
         }
         .turno { 
             display: inline-block;
             width: 100%;
-            padding: 4px 2px;
+            padding: 4px;
             border-radius: 4px;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 500;
-            white-space: normal;
-            line-height: 1.2;
         }
         .mañana { background: #d6eaf8; color: #2c3e50; }
         .tarde { background: #d5f4e6; color: #2c3e50; }
@@ -94,16 +81,26 @@
             transition: opacity 0.3s; 
         }
         .snackbar.show { opacity: 1; }
+        .print-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1><i class="fas fa-th-large"></i> Grilla Mensual de Horarios (Días en filas)</h1>
+        <h1><i class="fas fa-th-large"></i> Grilla Mensual de Horarios</h1>
+
+        <button onclick="imprimirReporte()" class="print-btn">
+            🖨️ Imprimir Reporte del Local
+        </button>
 
         <div class="controls">
-            <select id="filtro-local" onchange="generarGrilla()">
-                <option value="">Todos los locales</option>
-            </select>
             <select id="mes" onchange="generarGrilla()">
                 <option value="0">Enero</option>
                 <option value="1">Febrero</option>
@@ -119,14 +116,13 @@
                 <option value="11">Diciembre</option>
             </select>
             <input type="number" id="anio" value="2025" min="2020" max="2030" onchange="generarGrilla()">
-            <button onclick="exportarCSV()" style="background:#27ae60; color:white; padding:8px 12px; border:none; border-radius:4px;">
-                <i class="fas fa-file-csv"></i> Exportar CSV
-            </button>
         </div>
 
         <div style="overflow-x: auto;">
             <table id="grilla-horarios">
-                <thead id="header-grilla"></thead>
+                <thead>
+                    <tr id="header-dias"></tr>
+                </thead>
                 <tbody id="cuerpo-grilla"></tbody>
             </table>
         </div>
@@ -144,12 +140,25 @@
         let horarios = [];
         let feriados = [];
         let ausencias = [];
-        let locales = [];
 
-        function showToast(msg) {
+        // ✅ Verificar acceso
+        function verificarAcceso() {
+            const usuario = sessionStorage.getItem('usuario');
+            if (!usuario) {
+                alert('❌ Acceso denegado. Debe iniciar sesión.');
+                window.location.href = 'index.html';
+                return false;
+            }
+            return JSON.parse(usuario);
+        }
+
+        const usuarioGlobal = verificarAcceso();
+
+        function showToast(msg, isError = false) {
             const sb = document.getElementById('snackbar');
             sb.textContent = msg;
             sb.className = 'snackbar show';
+            if (isError) sb.classList.add('error');
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
@@ -172,79 +181,51 @@
                 feriados = dataFer ? Object.values(dataFer) : [];
                 ausencias = dataAus ? Object.values(dataAus) : [];
 
-                locales = [...new Set(empleados.map(e => e.local).filter(Boolean))];
-                const select = document.getElementById('filtro-local');
-                locales.forEach(loc => {
-                    const opt = document.createElement('option');
-                    opt.value = loc;
-                    opt.textContent = loc;
-                    select.appendChild(opt);
-                });
+                // Filtrar empleados por local del usuario
+                if (usuarioGlobal.rol !== 'admin') {
+                    empleados = empleados.filter(e => usuarioGlobal.locales.includes(e.local));
+                }
 
                 generarGrilla();
             } catch (e) {
                 console.error('Error cargando datos:', e);
-                showToast('❌ Error al cargar datos');
+                showToast('❌ Error al cargar datos', true);
             }
         }
 
         function generarGrilla() {
             const mes = parseInt(document.getElementById('mes').value);
             const anio = parseInt(document.getElementById('anio').value);
-            const local = document.getElementById('filtro-local').value;
-
-            // Filtrar empleados por local
-            const empleadosFiltrados = local 
-                ? empleados.filter(e => e.local === local) 
-                : empleados;
 
             const primerDia = new Date(anio, mes, 1);
             const ultimoDia = new Date(anio, mes + 1, 0);
             const diasDelMes = ultimoDia.getDate();
 
-            // Cabecera
-            const header = document.getElementById('header-grilla');
-            header.innerHTML = `<tr><th style="position: sticky; left: 0; background: white; z-index: 10;">Día</th></tr>`;
+            // Cabecera de días
+            const header = document.getElementById('header-dias');
+            header.innerHTML = '<th>Empleado</th>';
+            for (let i = 1; i <= diasDelMes; i++) {
+                const fecha = new Date(anio, mes, i);
+                const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fecha.getDay()];
+                header.innerHTML += `<th title="${fecha.toISOString().split('T')[0]}">${i} <small>${diaSemana}</small></th>`;
+            }
 
-            // Cuerpo
+            // Cuerpo de la tabla
             const cuerpo = document.getElementById('cuerpo-grilla');
             cuerpo.innerHTML = '';
 
-            // Llenar encabezados (empleados)
-            const headerRow = document.querySelector('#header-grilla tr');
-            empleadosFiltrados.forEach(emp => {
-                const th = document.createElement('th');
-                th.textContent = emp.nombre.split(' ')[0]; // Solo primer nombre
-                th.title = emp.nombre;
-                headerRow.appendChild(th);
-            });
-
-            // Generar una fila por día
-            for (let dia = 1; dia <= diasDelMes; dia++) {
-                const fecha = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-                const fechaObj = new Date(fecha);
-                const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fechaObj.getDay()];
-                const nombreDiaSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'][fechaObj.getDay()];
-
+            empleados.forEach(emp => {
                 const tr = document.createElement('tr');
-
-                // Celda del día (siempre visible)
-                const th = document.createElement('th');
-                th.style.cssText = 'position: sticky !important; left: 0 !important; background: white !important; z-index: 9 !important; font-weight: bold;';
-                th.innerHTML = `<div class="dia-header">${dia}<br><small>${diaSemana}</small></div>`;
-                tr.appendChild(th);
-
-                // Una celda por empleado
-                empleadosFiltrados.forEach(emp => {
-                    // Buscar horario del empleado
+                tr.innerHTML = `<td style="text-align:left; font-weight:bold;">${emp.nombre}</td>`;
+                
+                for (let dia = 1; dia <= diasDelMes; dia++) {
+                    const fecha = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+                    const diaSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'][new Date(fecha).getDay()];
+                    
                     const horarioEmpleado = horarios.find(h => h.empleadoKey === emp.key);
-                    let turno = null;
+                    const turno = horarioEmpleado?.dias?.[diaSemana];
 
-                    if (horarioEmpleado && horarioEmpleado.dias && horarioEmpleado.dias[nombreDiaSemana]) {
-                        turno = horarioEmpleado.dias[nombreDiaSemana];
-                    }
-
-                    let celda = '<td><div class="turno libre">Libre</div></td>';
+                    let celda = '<td class="libre"><div class="turno libre">Libre</div></td>';
                     
                     if (turno && !turno.libre) {
                         const clase = turno.doble ? 'doble' : (turno.entrada < '12:00' ? 'mañana' : 'tarde');
@@ -266,68 +247,56 @@
                     }
 
                     tr.innerHTML += celda;
-                });
+                }
                 cuerpo.appendChild(tr);
-            }
+            });
         }
 
-        function exportarCSV() {
-            const headerRow = document.querySelector('#header-grilla tr');
-            const rows = document.querySelectorAll('#cuerpo-grilla tr');
-            let csv = [];
+        // ✅ Imprimir reporte del local
+        function imprimirReporte() {
+            const local = usuarioGlobal.locales[0];
+            const mes = document.getElementById('mes').value;
+            const anio = document.getElementById('anio').value;
+            const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+            const titulo = `Reporte de Horarios - ${local} (${meses[mes]} ${anio})`;
 
-            // Encabezado
-            let headerCols = ['Día'];
-            headerRow.querySelectorAll('th').forEach((th, i) => {
-                if (i > 0) headerCols.push(th.textContent.trim());
-            });
-            csv.push(headerCols.join(','));
+            const ventana = window.open('', '_blank');
+            ventana.document.write(`
+                <html>
+                <head>
+                    <title>${titulo}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        h2 { text-align: center; color: #2c3e50; }
+                        p { text-align: center; color: #666; }
+                        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+                        th { background-color: #f2f2f2; }
+                        .turno { display: inline-block; width: 100%; padding: 4px; border-radius: 4px; font-size: 12px; }
+                        .mañana { background: #d6eaf8; }
+                        .tarde { background: #d5f4e6; }
+                        .doble { background: #f8c471; }
+                        .libre { background: #e8f8f5; }
+                        .feriado { background: #f1948a; color: white; }
+                        .ausencia { background: #f0b27a; color: white; }
+                    </style>
+                </head>
+                <body>
+                    <h2>${titulo}</h2>
+                    <p>Generado el: ${new Date().toLocaleString()}</p>
+                    <div id="contenido"></div>
+                </body>
+                </html>
+            `);
 
-            // Filas
-            rows.forEach(row => {
-                let cols = row.querySelectorAll('td, th');
-                let csvRow = [];
-                cols.forEach((col, i) => {
-                    if (i === 0) {
-                        // Primera celda (día)
-                        csvRow.push(`"${col.textContent.trim()}"`);
-                    } else {
-                        let text = col.querySelector('.turno')?.innerHTML || col.textContent;
-                        text = text.replace(/<br>/g, ' | ').replace(/<[^>]*>/g, '');
-                        csvRow.push(`"${text}"`);
-                    }
-                });
-                csv.push(csvRow.join(','));
-            });
-
-            const csvContent = 'data:text/csv;charset=utf-8,' + csv.join('\n');
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement('a');
-            link.setAttribute('href', encodedUri);
-            link.setAttribute('download', `grilla_horarios_${document.getElementById('mes').value + 1}-${document.getElementById('anio').value}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showToast('✅ CSV exportado');
+            const contenido = document.querySelector('#cuerpo-grilla').outerHTML;
+            ventana.document.getElementById('contenido').innerHTML = `<table>${document.querySelector('#header-dias').outerHTML}${contenido}</table>`;
+            ventana.document.close();
+            ventana.print();
         }
 
         window.onload = cargarDatos;
     </script>
-    
-    // ✅ Verificar acceso
-    function verificarAcceso() {
-        const usuario = sessionStorage.getItem('usuario');
-        if (!usuario) {
-            alert('❌ Acceso denegado. Debe iniciar sesión.');
-            window.location.href = 'index.html';
-            return null;
-        }
-
-        const user = JSON.parse(usuario);
-        return user; // Devuelve el usuario
-    }
-
-    const usuarioGlobal = verificarAcceso();
 
     <!-- ✅ Botón flotante -->
     <script>
@@ -356,50 +325,10 @@
                 transition: all 0.2s ease !important;
             `;
             btn.onclick = () => {
-                window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
+                window.location.href = 'index.html';
             };
             document.body.appendChild(btn);
         });
     </script>
 </body>
-    <script>
-    const DB_USUARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/usuarios.json';
-
-    async function verificarLogin() {
-        // Si ya está logueado, no pide clave de nuevo
-        const usuario = sessionStorage.getItem('usuario');
-        if (usuario) return;
-
-        // Pedir usuario y clave
-        const inputUsuario = prompt('🔐 Usuario:');
-        const inputClave = prompt('🔐 Contraseña:');
-
-        try {
-            const res = await fetch(DB_USUARIOS);
-            const usuarios = await res.json();
-
-            // Buscar si existe el usuario y clave
-            const user = Object.values(usuarios).find(u => 
-                u.usuario === inputUsuario && u.clave === inputClave
-            );
-
-            if (user) {
-                // Guardar en sesión
-                sessionStorage.setItem('usuario', JSON.stringify(user));
-                alert(`✅ Bienvenido, ${user.nombre}`);
-            } else {
-                alert('❌ Usuario o clave incorrectos');
-                location.reload(); // Vuelve a pedir login
-            }
-        } catch (error) {
-            alert('❌ Error al conectar con la base de datos');
-            console.error(error);
-        }
-    }
-
-    // Ejecutar al cargar la página
-    verificarLogin();
-</script>
 </html>
-
-
