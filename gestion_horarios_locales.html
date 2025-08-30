@@ -119,6 +119,64 @@
     </style>
 </head>
 <body>
+
+    <!-- ✅ 1. VERIFICAR ACCESO Y PERMISOS -->
+    <script>
+        // Verificar login
+        async function verificarLogin() {
+            const usuario = sessionStorage.getItem('usuario');
+            if (usuario) return JSON.parse(usuario);
+
+            const inputUsuario = prompt('🔐 Usuario:');
+            if (!inputUsuario) return location.reload();
+
+            const inputClave = prompt('🔐 Contraseña:');
+            if (!inputClave) return location.reload();
+
+            try {
+                const res = await fetch('https://gestion-personal-c9edd-default-rtdb.firebaseio.com/usuarios.json');
+                if (!res.ok) throw new Error('Error en conexión');
+
+                const usuarios = await res.json();
+                const user = Object.values(usuarios).find(u => 
+                    u.usuario === inputUsuario && u.clave === inputClave
+                );
+
+                if (user) {
+                    sessionStorage.setItem('usuario', JSON.stringify(user));
+                    return user;
+                } else {
+                    alert('❌ Usuario o clave incorrectos');
+                    location.reload();
+                    return null;
+                }
+            } catch (error) {
+                alert('❌ Error al conectar con la base de datos');
+                console.error(error);
+                return null;
+            }
+        }
+
+        // Verificar acceso
+        function verificarAcceso() {
+            const usuario = sessionStorage.getItem('usuario');
+            if (!usuario) {
+                alert('❌ Acceso denegado. Debe iniciar sesión.');
+                window.location.href = 'index.html';
+                return null;
+            }
+            return JSON.parse(usuario);
+        }
+
+        const usuarioGlobal = verificarAcceso();
+
+        // Filtrar locales por usuario
+        function filtrarPorLocal(todosLosLocales) {
+            if (usuarioGlobal.rol === 'admin') return todosLosLocales;
+            return todosLosLocales.filter(loc => usuarioGlobal.locales.includes(loc.nombre));
+        }
+    </script>
+
     <div class="container">
         <h1><i class="fas fa-clock"></i> Configuración de Horarios por Local</h1>
 
@@ -163,7 +221,7 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase
+        // ✅ URLs de Firebase (sin espacios)
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
         const DB_HORARIOS_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_locales.json';
         const DB_CATEGORIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/categorias.json';
@@ -183,11 +241,22 @@
         async function cargarLocales() {
             try {
                 const res = await fetch(DB_LOCALES);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                
                 const data = await res.json();
-                locales = data ? Object.values(data) : [];
+                const todosLosLocales = data ? Object.values(data) : [];
+
+                // ✅ Filtrar locales por usuario
+                locales = filtrarPorLocal(todosLosLocales);
 
                 const select = document.getElementById('local-nombre');
                 select.innerHTML = '<option value="">Selecciona un local</option>';
+
+                if (locales.length === 0) {
+                    select.innerHTML = '<option value="">No tienes acceso a locales</option>';
+                    return;
+                }
+
                 locales.forEach(loc => {
                     const option = document.createElement('option');
                     option.value = loc.nombre;
@@ -204,6 +273,8 @@
         async function cargarCategorias() {
             try {
                 const res = await fetch(DB_CATEGORIAS);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                
                 const data = await res.json();
                 categorias = data ? Object.values(data) : [];
             } catch (e) {
@@ -313,6 +384,12 @@
             const localNombre = document.getElementById('local-nombre').value.trim();
             if (!localNombre) return showToast('⚠️ Selecciona un local', true);
 
+            // ✅ Verificar que el local pertenece al usuario
+            if (usuarioGlobal.rol !== 'admin' && !usuarioGlobal.locales.includes(localNombre)) {
+                showToast('❌ No puedes editar horarios de un local que no te pertenece', true);
+                return;
+            }
+
             const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
             const data = { local: localNombre };
 
@@ -343,330 +420,4 @@
                         const select = item.querySelector('select');
                         const input = item.querySelector('input');
                         if (!select.value || !input.value) {
-                            valido = false;
-                            return;
-                        }
-                        const categoria = categorias.find(c => c.nombre === select.value);
-                        puestos.push({
-                            id: select.value,
-                            puesto: categoria ? categoria.puesto : select.value,
-                            cantidad: input.value
-                        });
-                    });
-                    data[dia].puestos_pico = puestos;
-                }
-
-                // Guardar puestos del segundo pico (si >14h)
-                const puestosExtraCont = group.querySelector('.puestos-extra-container');
-                if (puestosExtraCont && group.querySelector('.pico-extra').style.display === 'block') {
-                    const puestosExtra = [];
-                    puestosExtraCont.querySelectorAll('.puesto-item').forEach(item => {
-                        const select = item.querySelector('select');
-                        const input = item.querySelector('input');
-                        if (!select.value || !input.value) {
-                            valido = false;
-                            return;
-                        }
-                        const categoria = categorias.find(c => c.nombre === select.value);
-                        puestosExtra.push({
-                            id: select.value,
-                            puesto: categoria ? categoria.puesto : select.value,
-                            cantidad: input.value
-                        });
-                    });
-                    data[dia].puestos_pico_extra = puestosExtra;
-                }
-            }
-
-            if (!valido) {
-                showToast('⚠️ Completa todos los campos', true);
-                return;
-            }
-
-            try {
-                const key = document.getElementById('edit-key').value;
-                let url = DB_HORARIOS_LOCALES;
-                let method = 'POST';
-                let body = JSON.stringify(data);
-
-                if (key) {
-                    url = `${DB_HORARIOS_LOCALES.replace('.json', `/${key}.json`)}`;
-                    method = 'PUT';
-                }
-
-                const res = await fetch(url, {
-                    method,
-                    body,
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                if (!res.ok) throw new Error('Error al guardar');
-
-                showToast('✅ Configuración guardada');
-                limpiarFormulario();
-                await cargarHorarios();
-            } catch (err) {
-                console.error('Error:', err);
-                showToast('❌ Error al guardar', true);
-            }
-        }
-
-        // ✅ Cargar horarios
-        async function cargarHorarios() {
-            try {
-                const res = await fetch(DB_HORARIOS_LOCALES);
-                const data = await res.json();
-                const horarios = data ? Object.entries(data).map(([k, v]) => ({ key: k, ...v })) : [];
-                const tbody = document.querySelector('#tabla-horarios tbody');
-                tbody.innerHTML = '';
-
-                if (horarios.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center">No hay configuraciones</td></tr>';
-                    return;
-                }
-
-                horarios.forEach(h => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${h.local}</td>
-                        <td>${h.lunes ? '✅' : '—'}</td>
-                        <td>${h.martes ? '✅' : '—'}</td>
-                        <td>${h.miercoles ? '✅' : '—'}</td>
-                        <td>${h.jueves ? '✅' : '—'}</td>
-                        <td>${h.viernes ? '✅' : '—'}</td>
-                        <td>${h.sabado ? '✅' : '—'}</td>
-                        <td>${h.domingo ? '✅' : '—'}</td>
-                        <td style="text-align: center;">
-                            <button class="btn btn-warning btn-sm" onclick="editarHorario('${h.key}', '${h.local}')">Editar</button>
-                            <button class="btn btn-danger btn-sm" onclick="eliminarHorario('${h.key}', '${h.local}')">Eliminar</button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            } catch (e) {
-                console.error('Error cargando horarios:', e);
-                showToast('❌ Error al cargar horarios', true);
-            }
-        }
-
-        // ✅ Editar horario
-        async function editarHorario(key, localNombre) {
-            try {
-                const res = await fetch(`${DB_HORARIOS_LOCALES.replace('.json', `/${key}.json`)}`);
-                const data = await res.json();
-
-                document.getElementById('local-nombre').value = localNombre;
-                document.getElementById('edit-key').value = key;
-                document.getElementById('btn-texto').textContent = 'Actualizar Configuración';
-
-                const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-                dias.forEach(dia => {
-                    const group = document.querySelector(`[data-dia="${dia}"]`);
-                    const horario = data[dia];
-                    if (horario) {
-                        group.querySelector('.hora-apertura').value = horario.apertura;
-                        group.querySelector('.hora-cierre').value = horario.cierre;
-                        group.querySelector('.chk-doble').checked = horario.doble;
-                        group.querySelector('.chk-continuo').checked = horario.continuo;
-                        group.querySelector('.doble-horario').style.display = horario.doble ? 'flex' : 'none';
-                        group.querySelector('.pico-simple').style.display = horario.continuo ? 'block' : 'none';
-
-                        // Rellenar puestos pico
-                        const puestosCont = group.querySelector('.puestos-container');
-                        puestosCont.innerHTML = '';
-                        if (horario.puestos_pico) {
-                            horario.puestos_pico.forEach(p => {
-                                agregarPuesto(group, '.puestos-container');
-                                const item = puestosCont.lastElementChild;
-                                item.querySelector('select').value = p.id;
-                                item.querySelector('input').value = p.cantidad;
-                            });
-                        }
-
-                        // Rellenar puestos pico extra
-                        const puestosExtraCont = group.querySelector('.puestos-extra-container');
-                        puestosExtraCont.innerHTML = '';
-                        if (horario.puestos_pico_extra) {
-                            horario.puestos_pico_extra.forEach(p => {
-                                agregarPuesto(group, '.puestos-extra-container');
-                                const item = puestosExtraCont.lastElementChild;
-                                item.querySelector('select').value = p.id;
-                                item.querySelector('input').value = p.cantidad;
-                            });
-                        }
-                    }
-                });
-            } catch (e) {
-                console.error('Error al editar:', e);
-                showToast('❌ Error al cargar datos', true);
-            }
-        }
-
-        // ✅ Eliminar horario
-        async function eliminarHorario(key, nombre) {
-            if (!confirm(`¿Eliminar la configuración de "${nombre}"?`)) return;
-
-            try {
-                const res = await fetch(`${DB_HORARIOS_LOCALES.replace('.json', `/${key}.json`)}`, { method: 'DELETE' });
-                if (!res.ok) throw new Error('Error al eliminar');
-                showToast('🗑️ Configuración eliminada');
-                await cargarHorarios();
-            } catch (e) {
-                console.error('Error al eliminar:', e);
-                showToast('❌ Error al eliminar', true);
-            }
-        }
-
-        // ✅ Limpiar formulario
-        function limpiarFormulario() {
-            document.getElementById('form-horario').reset();
-            document.getElementById('edit-key').value = '';
-            document.getElementById('btn-texto').textContent = 'Guardar Configuración';
-            inicializarDias();
-        }
-
-        // ✅ Inicializar
-        window.onload = async function () {
-            await cargarCategorias();
-            await cargarLocales();
-            await cargarHorarios();
-            inicializarDias();
-            document.getElementById('form-horario').addEventListener('submit', guardarHorario);
-        };}
-        <script>
-    // ✅ Verificar acceso
-    function verificarAcceso() {
-        const usuario = sessionStorage.getItem('usuario');
-        if (!usuario) {
-            alert('❌ Acceso denegado. Debe iniciar sesión.');
-            window.location.href = 'index.html';
-            return null;
-        }
-        return JSON.parse(usuario);
-    }
-
-    const usuarioGlobal = verificarAcceso();
-
-    // ✅ Filtrar empleados por local del usuario
-    function filtrarPorLocal(empleados) {
-        if (usuarioGlobal.rol === 'admin') return empleados;
-        return empleados.filter(e => usuarioGlobal.locales.includes(e.local));
-    }
-</script>
-    <script>
-    // ✅ Verificar acceso
-    function verificarAcceso() {
-        const usuario = sessionStorage.getItem('usuario');
-        if (!usuario) {
-            alert('❌ Acceso denegado. Debe iniciar sesión.');
-            window.location.href = 'index.html';
-            return null;
-        }
-
-        const user = JSON.parse(usuario);
-        return user; // Devuelve el usuario
-    }
-
-    const usuarioGlobal = verificarAcceso();
-
-    <!-- ✅ Botón flotante -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            if (document.getElementById('btn-menu-flotante')) return;
-            const btn = document.createElement('button');
-            btn.id = 'btn-menu-flotante';
-            btn.textContent = '☰ Menú';
-            btn.title = 'Volver al menú principal';
-            btn.style.cssText = `
-                position: fixed !important;
-                top: 20px !important;
-                right: 20px !important;
-                z-index: 99999 !important;
-                padding: 12px 16px !important;
-                font-size: 14px !important;
-                font-weight: bold !important;
-                color: white !important;
-                background-color: #2980b9 !important;
-                border: none !important;
-                border-radius: 6px !important;
-                box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
-                cursor: pointer !important;
-                opacity: 1 !important;
-                display: block !important;
-                transition: all 0.2s ease !important;
-            `;
-            btn.onclick = () => {
-                window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
-            };
-            document.body.appendChild(btn);
-        });
-    </script>
-    // ✅ Función de backup automático
-async function backupData(collection, data, action = 'created') {
-    const backupUrl = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/backups.json';
-    const timestamp = new Date().toISOString();
-    const key = `${collection}_${Date.now()}`;
-
-    const entry = {
-        collection,
-        action, // 'created', 'updated', 'deleted'
-        data,
-        timestamp,
-        key
-    };
-
-    try {
-        await fetch(backupUrl, {
-            method: 'POST',
-            body: JSON.stringify(entry),
-            headers: { 'Content-Type': 'application/json' }
-        });
-        console.log('✅ Backup automático guardado:', collection);
-    } catch (err) {
-        console.warn('⚠️ No se pudo guardar el backup', err);
-    }
-}
-    <script>
-    const DB_USUARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/usuarios.json';
-
-    async function verificarLogin() {
-        // Si ya está logueado, no pide clave de nuevo
-        const usuario = sessionStorage.getItem('usuario');
-        if (usuario) return;
-
-        // Pedir usuario y clave
-        const inputUsuario = prompt('🔐 Usuario:');
-        const inputClave = prompt('🔐 Contraseña:');
-
-        try {
-            const res = await fetch(DB_USUARIOS);
-            const usuarios = await res.json();
-
-            // Buscar si existe el usuario y clave
-            const user = Object.values(usuarios).find(u => 
-                u.usuario === inputUsuario && u.clave === inputClave
-            );
-
-            if (user) {
-                // Guardar en sesión
-                sessionStorage.setItem('usuario', JSON.stringify(user));
-                alert(`✅ Bienvenido, ${user.nombre}`);
-            } else {
-                alert('❌ Usuario o clave incorrectos');
-                location.reload(); // Vuelve a pedir login
-            }
-        } catch (error) {
-            alert('❌ Error al conectar con la base de datos');
-            console.error(error);
-        }
-    }
-
-    // Ejecutar al cargar la página
-    verificarLogin();
-</script>
-</body>
-</html>
-
-
-
-
+                            v
