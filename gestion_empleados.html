@@ -106,6 +106,64 @@
     </style>
 </head>
 <body>
+
+    <!-- ✅ 1. VERIFICAR ACCESO Y PERMISOS -->
+    <script>
+        // Verificar login
+        async function verificarLogin() {
+            const usuario = sessionStorage.getItem('usuario');
+            if (usuario) return JSON.parse(usuario);
+
+            const inputUsuario = prompt('🔐 Usuario:');
+            if (!inputUsuario) return location.reload();
+
+            const inputClave = prompt('🔐 Contraseña:');
+            if (!inputClave) return location.reload();
+
+            try {
+                const res = await fetch('https://gestion-personal-c9edd-default-rtdb.firebaseio.com/usuarios.json');
+                if (!res.ok) throw new Error('Error en conexión');
+
+                const usuarios = await res.json();
+                const user = Object.values(usuarios).find(u => 
+                    u.usuario === inputUsuario && u.clave === inputClave
+                );
+
+                if (user) {
+                    sessionStorage.setItem('usuario', JSON.stringify(user));
+                    return user;
+                } else {
+                    alert('❌ Usuario o clave incorrectos');
+                    location.reload();
+                    return null;
+                }
+            } catch (error) {
+                alert('❌ Error al conectar con la base de datos');
+                console.error(error);
+                return null;
+            }
+        }
+
+        // Verificar acceso
+        function verificarAcceso() {
+            const usuario = sessionStorage.getItem('usuario');
+            if (!usuario) {
+                alert('❌ Acceso denegado. Debe iniciar sesión.');
+                window.location.href = 'index.html';
+                return null;
+            }
+            return JSON.parse(usuario);
+        }
+
+        const usuarioGlobal = verificarAcceso();
+
+        // Filtrar empleados por local del usuario
+        function filtrarPorLocal(empleados) {
+            if (usuarioGlobal.rol === 'admin') return empleados;
+            return empleados.filter(e => usuarioGlobal.locales.includes(e.local));
+        }
+    </script>
+
     <div class="container">
         <h1><i class="fas fa-user-plus"></i> Alta de Empleados</h1>
 
@@ -166,7 +224,7 @@
                 <input type="date" id="empleado-fecha-ingreso" required>
             </div>
 
-            <!-- ✅ Disponibilidad avanzada -->
+            <!-- Disponibilidad avanzada -->
             <div class="form-group">
                 <label>Disponibilidad</label>
                 <div class="checkbox-group">
@@ -215,7 +273,7 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase (SIN espacios)
+        // ✅ URLs de Firebase (sin espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_CATEGORIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/categorias.json';
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
@@ -235,6 +293,7 @@
         async function cargarCategorias() {
             try {
                 const res = await fetch(DB_CATEGORIAS);
+                if (!res.ok) throw new Error('Error en respuesta');
                 const data = await res.json();
                 categorias = data ? Object.values(data) : [];
 
@@ -247,7 +306,6 @@
                     select.appendChild(option);
                 });
 
-                // Extraer puestos únicos
                 puestos = [...new Set(categorias.map(c => c.puesto))];
                 const reemplazaSelect = document.getElementById('empleado-reemplaza');
                 reemplazaSelect.innerHTML = '';
@@ -267,11 +325,23 @@
         async function cargarLocales() {
             try {
                 const res = await fetch(DB_LOCALES);
+                if (!res.ok) throw new Error('Error en respuesta');
                 const data = await res.json();
-                const locales = data ? Object.values(data) : [];
+                const todosLosLocales = data ? Object.values(data) : [];
 
                 const select = document.getElementById('empleado-local');
                 select.innerHTML = '<option value="">Selecciona un local</option>';
+
+                // ✅ Filtrar locales por usuario
+                const locales = usuarioGlobal.rol === 'admin' 
+                    ? todosLosLocales 
+                    : todosLosLocales.filter(loc => usuarioGlobal.locales.includes(loc.nombre));
+
+                if (locales.length === 0) {
+                    select.innerHTML = '<option value="">No tienes acceso a locales</option>';
+                    return;
+                }
+
                 locales.forEach(loc => {
                     const option = document.createElement('option');
                     option.value = loc.nombre;
@@ -288,14 +358,18 @@
         async function cargarEmpleados() {
             try {
                 const res = await fetch(DB_EMPLEADOS);
+                if (!res.ok) throw new Error('Error en respuesta');
                 const data = await res.json();
-                const empleados = data ? Object.values(data) : [];
+                const todosEmpleados = data ? Object.values(data) : [];
+
+                // ✅ Filtrar empleados por local del usuario
+                const empleados = filtrarPorLocal(todosEmpleados);
 
                 const tbody = document.querySelector('#tabla-empleados tbody');
                 tbody.innerHTML = '';
 
                 if (empleados.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center">No hay empleados</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center">No hay empleados en tu local</td></tr>`;
                     return;
                 }
 
@@ -329,7 +403,7 @@
             } catch (e) {
                 console.error('Error cargando empleados:', e);
                 document.querySelector('#tabla-empleados tbody').innerHTML = 
-                    `<tr><td colspan="10" style="text-align:center; color: red;">Error al cargar datos. Revisa la consola.</td></tr>`;
+                    `<tr><td colspan="10" style="text-align:center; color: red;">Error al cargar datos.</td></tr>`;
             }
         }
 
@@ -391,6 +465,12 @@
                 return;
             }
 
+            // ✅ Verificar que el local pertenece al usuario
+            if (usuarioGlobal.rol !== 'admin' && !usuarioGlobal.locales.includes(local)) {
+                showToast('❌ No puedes asignar empleados a un local que no te pertenece', true);
+                return;
+            }
+
             const empleado = {
                 legajo, dni, cuil, nombre, categoria, puesto, local, estado, fechaIngreso,
                 feriados, domingos, rota, horasExtras, reemplaza
@@ -437,41 +517,7 @@
 
             document.getElementById('form-empleado').addEventListener('submit', guardarEmpleado);
         };
-        <script>
-    // ✅ Verificar acceso
-    function verificarAcceso() {
-        const usuario = sessionStorage.getItem('usuario');
-        if (!usuario) {
-            alert('❌ Acceso denegado. Debe iniciar sesión.');
-            window.location.href = 'index.html';
-            return null;
-        }
-        return JSON.parse(usuario);
-    }
-
-    const usuarioGlobal = verificarAcceso();
-
-    // ✅ Filtrar empleados por local del usuario
-    function filtrarPorLocal(empleados) {
-        if (usuarioGlobal.rol === 'admin') return empleados;
-        return empleados.filter(e => usuarioGlobal.locales.includes(e.local));
-    }
-</script>
     </script>
-    // ✅ Verificar acceso
-    function verificarAcceso() {
-        const usuario = sessionStorage.getItem('usuario');
-        if (!usuario) {
-            alert('❌ Acceso denegado. Debe iniciar sesión.');
-            window.location.href = 'index.html';
-            return null;
-        }
-
-        const user = JSON.parse(usuario);
-        return user; // Devuelve el usuario
-    }
-
-    const usuarioGlobal = verificarAcceso();
 
     <!-- ✅ Botón flotante -->
     <script>
@@ -500,78 +546,10 @@
                 transition: all 0.2s ease !important;
             `;
             btn.onclick = () => {
-                window.location.href = 'https://rodolfooscarfernandezlosain-ui.github.io/gestion-horarios/';
+                window.location.href = 'index.html';
             };
             document.body.appendChild(btn);
         });
     </script>
-    // ✅ Función de backup automático
-async function backupData(collection, data, action = 'created') {
-    const backupUrl = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/backups.json';
-    const timestamp = new Date().toISOString();
-    const key = `${collection}_${Date.now()}`;
-
-    const entry = {
-        collection,
-        action, // 'created', 'updated', 'deleted'
-        data,
-        timestamp,
-        key
-    };
-
-    try {
-        await fetch(backupUrl, {
-            method: 'POST',
-            body: JSON.stringify(entry),
-            headers: { 'Content-Type': 'application/json' }
-        });
-        console.log('✅ Backup automático guardado:', collection);
-    } catch (err) {
-        console.warn('⚠️ No se pudo guardar el backup', err);
-    }
-
-    }
-    <script>
-    const DB_USUARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/usuarios.json';
-
-    async function verificarLogin() {
-        // Si ya está logueado, no pide clave de nuevo
-        const usuario = sessionStorage.getItem('usuario');
-        if (usuario) return;
-
-        // Pedir usuario y clave
-        const inputUsuario = prompt('🔐 Usuario:');
-        const inputClave = prompt('🔐 Contraseña:');
-
-        try {
-            const res = await fetch(DB_USUARIOS);
-            const usuarios = await res.json();
-
-            // Buscar si existe el usuario y clave
-            const user = Object.values(usuarios).find(u => 
-                u.usuario === inputUsuario && u.clave === inputClave
-            );
-
-            if (user) {
-                // Guardar en sesión
-                sessionStorage.setItem('usuario', JSON.stringify(user));
-                alert(`✅ Bienvenido, ${user.nombre}`);
-            } else {
-                alert('❌ Usuario o clave incorrectos');
-                location.reload(); // Vuelve a pedir login
-            }
-        } catch (error) {
-            alert('❌ Error al conectar con la base de datos');
-            console.error(error);
-        }
-    }
-
-    // Ejecutar al cargar la página
-    verificarLogin();
-</script>
 </body>
 </html>
-
-
-
-
