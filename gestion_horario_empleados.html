@@ -235,7 +235,9 @@
             try {
                 const res = await fetch(DB_EMPLEADOS);
                 const data = await res.json();
-                empleados = data ? Object.values(data) : [];
+                
+                // ✅ Asegurarse de que cada empleado tenga un .key
+                empleados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
 
                 // Extraer locales únicos
                 locales = [...new Set(empleados.map(e => e.local).filter(Boolean))];
@@ -249,28 +251,40 @@
                 });
 
                 // Inicializar autocompletado
-                mostrarTodosEmpleados();
+                iniciarBusquedaEmpleado();
             } catch (e) {
                 console.error('Error cargando empleados:', e);
                 showToast('❌ Error al cargar empleados', true);
             }
         }
 
-        // ✅ Mostrar todos los empleados al hacer clic en el input
-        function mostrarTodosEmpleados() {
+        // ✅ Búsqueda dinámica con filtro por local y nombre
+        function iniciarBusquedaEmpleado() {
             const searchInput = document.getElementById('empleado-search');
             const list = document.getElementById('empleado-list');
-            const localFiltro = document.getElementById('filtro-local').value;
 
-            searchInput.addEventListener('focus', () => {
-                list.innerHTML = ''; // ✅ Limpia la lista antes de agregar
-                list.style.display = 'none';
+            // ✅ Evento de entrada para búsqueda
+            searchInput.addEventListener('input', () => {
+                const query = searchInput.value.toLowerCase();
+                const localFiltro = document.getElementById('filtro-local').value;
 
-                const filtrados = localFiltro 
-                    ? empleados.filter(e => e.local === localFiltro)
-                    : empleados;
+                list.innerHTML = '';
+                if (!query) {
+                    list.style.display = 'none';
+                    return;
+                }
 
-                if (filtrados.length === 0) return;
+                const filtrados = empleados.filter(emp => {
+                    const coincideLocal = !localFiltro || emp.local === localFiltro;
+                    const coincideNombre = emp.nombre.toLowerCase().includes(query);
+                    return coincideLocal && coincideNombre;
+                });
+
+                if (filtrados.length === 0) {
+                    list.style.display = 'block';
+                    list.innerHTML = '<div class="autocomplete-item">No se encontraron empleados</div>';
+                    return;
+                }
 
                 list.style.display = 'block';
                 filtrados.forEach(emp => {
@@ -278,40 +292,13 @@
                     div.className = 'autocomplete-item';
                     div.innerHTML = `<strong>${emp.nombre}</strong> <small>(${emp.local})</small>`;
                     div.onclick = () => {
-                        document.getElementById('empleado-search').value = emp.nombre;
+                        searchInput.value = emp.nombre;
                         document.getElementById('empleado-key').value = emp.key;
                         list.style.display = 'none';
                         mostrarInfoEmpleado(emp.key);
                     };
                     list.appendChild(div);
                 });
-            });
-        }
-
-        // ✅ Filtrar empleados por local
-        function filtrarEmpleados() {
-            const local = document.getElementById('filtro-local').value;
-            const list = document.getElementById('empleado-list');
-            list.innerHTML = ''; // ✅ Limpia la lista
-
-            const filtrados = local 
-                ? empleados.filter(e => e.local === local)
-                : empleados;
-
-            if (filtrados.length === 0) return;
-
-            list.style.display = 'block';
-            filtrados.forEach(emp => {
-                const div = document.createElement('div');
-                div.className = 'autocomplete-item';
-                div.innerHTML = `<strong>${emp.nombre}</strong> <small>(${emp.local})</small>`;
-                div.onclick = () => {
-                    document.getElementById('empleado-search').value = emp.nombre;
-                    document.getElementById('empleado-key').value = emp.key;
-                    list.style.display = 'none';
-                    mostrarInfoEmpleado(emp.key);
-                };
-                list.appendChild(div);
             });
         }
 
@@ -472,11 +459,19 @@
             e.preventDefault();
             const empleadoKey = document.getElementById('empleado-key').value;
             const empleadoNombre = document.getElementById('empleado-search').value.trim();
-            const emp = empleados.find(e => e.key === empleadoKey);
-            if (!emp) {
+            
+            // ✅ Validar que haya empleado seleccionado
+            if (!empleadoKey || !empleadoNombre) {
                 showToast('⚠️ Selecciona un empleado válido', true);
                 return;
             }
+
+            const emp = empleados.find(e => e.key === empleadoKey);
+            if (!emp) {
+                showToast('⚠️ Empleado no encontrado en la lista', true);
+                return;
+            }
+
             const local = emp.local;
             const key = document.getElementById('edit-key').value;
 
