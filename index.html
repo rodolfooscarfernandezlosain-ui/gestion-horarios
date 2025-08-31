@@ -254,5 +254,29 @@
             }
         };
     </script>
+    <!-- ✅ Botón de Cerrar Sesión -->
+<div style="position: fixed; top: 10px; right: 180px; z-index: 999;">
+    <button id="btn-cerrar-sesion" style="
+        background: #e74c3c; 
+        color: white; 
+        border: none; 
+        padding: 8px 12px; 
+        border-radius: 6px; 
+        font-size: 14px; 
+        cursor: pointer;
+        box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+    ">🔐 Cerrar Sesión</button>
+</div>
+
+    // ✅ Cerrar sesión
+    document.getElementById('btn-cerrar-sesion').addEventListener('click', function() {
+        if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+            sessionStorage.removeItem('usuario');
+            alert('✅ Sesión cerrada. Serás redirigido al inicio.');
+            location.reload(); // Vuelve a pedir usuario y clave
+        }
+    });
+</script>
 </body>
 </html>
+
