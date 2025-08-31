@@ -224,7 +224,6 @@
                 <input type="date" id="empleado-fecha-ingreso" required>
             </div>
 
-            <!-- Disponibilidad avanzada -->
             <div class="form-group">
                 <label>Disponibilidad</label>
                 <div class="checkbox-group">
@@ -332,7 +331,6 @@
                 const select = document.getElementById('empleado-local');
                 select.innerHTML = '<option value="">Selecciona un local</option>';
 
-                // ✅ Filtrar locales por usuario
                 const locales = usuarioGlobal.rol === 'admin' 
                     ? todosLosLocales 
                     : todosLosLocales.filter(loc => usuarioGlobal.locales.includes(loc.nombre));
@@ -362,9 +360,7 @@
                 const data = await res.json();
                 const todosEmpleados = data ? Object.values(data) : [];
 
-                // ✅ Filtrar empleados por local del usuario
                 const empleados = filtrarPorLocal(todosEmpleados);
-
                 const tbody = document.querySelector('#tabla-empleados tbody');
                 tbody.innerHTML = '';
 
@@ -503,13 +499,30 @@
             }
         }
 
+        async function eliminarEmpleado(key, nombre, legajo) {
+            if (!confirm(`¿Eliminar al empleado "${nombre}" (Legajo: ${legajo})?`)) return;
+
+            try {
+                const res = await fetch(`${DB_EMPLEADOS.replace('.json', `/${key}.json`)}`, {
+                    method: 'DELETE'
+                });
+
+                if (!res.ok) throw new Error('Error al eliminar');
+
+                showToast('🗑️ Empleado eliminado');
+                await cargarEmpleados();
+            } catch (err) {
+                console.error('Error:', err);
+                showToast('❌ Error al eliminar', true);
+            }
+        }
+
         // Inicializar
         window.onload = async function () {
             await cargarCategorias();
             await cargarLocales();
             await cargarEmpleados();
 
-            // Actualizar puesto cuando cambia la categoría
             document.getElementById('empleado-categoria').addEventListener('change', (e) => {
                 const cat = categorias.find(c => c.nombre === e.target.value);
                 document.getElementById('empleado-puesto').value = cat ? cat.puesto : '';
