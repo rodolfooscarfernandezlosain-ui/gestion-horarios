@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Novedades del Mes</title>
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; padding: 20px; }
@@ -20,6 +21,64 @@
     </style>
 </head>
 <body>
+
+    <!-- ✅ 1. VERIFICAR ACCESO Y PERMISOS -->
+    <script>
+        // Verificar login
+        async function verificarLogin() {
+            const usuario = sessionStorage.getItem('usuario');
+            if (usuario) return JSON.parse(usuario);
+
+            const inputUsuario = prompt('🔐 Usuario:');
+            if (!inputUsuario) return location.reload();
+
+            const inputClave = prompt('🔐 Contraseña:');
+            if (!inputClave) return location.reload();
+
+            try {
+                const res = await fetch('https://gestion-personal-c9edd-default-rtdb.firebaseio.com/usuarios.json');
+                if (!res.ok) throw new Error('Error en conexión');
+
+                const usuarios = await res.json();
+                const user = Object.values(usuarios).find(u => 
+                    u.usuario === inputUsuario && u.clave === inputClave
+                );
+
+                if (user) {
+                    sessionStorage.setItem('usuario', JSON.stringify(user));
+                    return user;
+                } else {
+                    alert('❌ Usuario o clave incorrectos');
+                    location.reload();
+                    return null;
+                }
+            } catch (error) {
+                alert('❌ Error al conectar con la base de datos');
+                console.error(error);
+                return null;
+            }
+        }
+
+        // Verificar acceso
+        function verificarAcceso() {
+            const usuario = sessionStorage.getItem('usuario');
+            if (!usuario) {
+                alert('❌ Acceso denegado. Debe iniciar sesión.');
+                window.location.href = 'index.html';
+                return null;
+            }
+            return JSON.parse(usuario);
+        }
+
+        const usuarioGlobal = verificarAcceso();
+
+        // Filtrar empleados por local del usuario
+        function filtrarPorLocal(empleados) {
+            if (usuarioGlobal.rol === 'admin') return empleados;
+            return empleados.filter(e => usuarioGlobal.locales.includes(e.local));
+        }
+    </script>
+
     <div class="container">
         <h1><i class="fas fa-bell"></i> Novedades del Mes</h1>
 
@@ -43,59 +102,7 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        <script>
-    // ✅ Verificar acceso
-    function verificarAcceso() {
-        const usuario = sessionStorage.getItem('usuario');
-        if (!usuario) {
-            alert('❌ Acceso denegado. Debe iniciar sesión.');
-            window.location.href = 'index.html';
-            return null;
-        }
-        return JSON.parse(usuario);
-    }
-
-    const usuarioGlobal = verificarAcceso();
-
-    // ✅ Filtrar empleados por local del usuario
-    function filtrarPorLocal(empleados) {
-        if (usuarioGlobal.rol === 'admin') return empleados;
-        return empleados.filter(e => usuarioGlobal.locales.includes(e.local));
-    }
-</script>
-        <script>
-    // ✅ Verificar acceso
-    function verificarAcceso() {
-        const usuario = sessionStorage.getItem('usuario');
-        if (!usuario) {
-            alert('❌ Acceso denegado. Debe iniciar sesión.');
-            window.location.href = 'index.html';
-            return null;
-        }
-        return JSON.parse(usuario);
-    }
-
-    const usuarioGlobal = verificarAcceso();
-
-    // ✅ Filtrar empleados por local del usuario
-    function filtrarPorLocal(empleados) {
-        if (usuarioGlobal.rol === 'admin') return empleados;
-        return empleados.filter(e => usuarioGlobal.locales.includes(e.local));
-    }
-</script>
-        // ✅ Verificar acceso
-        function verificarAcceso() {
-            const usuario = sessionStorage.getItem('usuario');
-            if (!usuario) {
-                alert('❌ Acceso denegado. Debe iniciar sesión.');
-                window.location.href = 'index.html';
-                return false;
-            }
-            return JSON.parse(usuario);
-        }
-
-        const usuarioGlobal = verificarAcceso();
-
+        // ✅ URLs de Firebase (sin espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_AUSENCIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/ausencias.json';
         const DB_FERIADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/feriados.json';
@@ -136,7 +143,7 @@
             const tbody = document.querySelector('#tabla-novedades tbody');
             tbody.innerHTML = '';
 
-            // Ausencias
+            // ✅ Ausencias
             ausencias.forEach(ausencia => {
                 const emp = empleados.find(e => e.key === ausencia.empleadoKey);
                 if (!emp) return;
@@ -151,7 +158,7 @@
                 tbody.appendChild(tr);
             });
 
-            // Feriados trabajados
+            // ✅ Feriados trabajados (solo empleados del local del usuario)
             feriados.forEach(feriado => {
                 empleados.forEach(emp => {
                     const tr = document.createElement('tr');
@@ -241,5 +248,3 @@
     </script>
 </body>
 </html>
-
-
