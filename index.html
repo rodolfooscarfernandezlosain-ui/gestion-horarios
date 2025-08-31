@@ -82,6 +82,22 @@
         .user-info.admin { color: #e74c3c; font-weight: bold; }
         .user-info.encargado { color: #2980b9; font-weight: bold; }
 
+        /* ✅ Botón de cerrar sesión */
+        #btn-cerrar-sesion {
+            position: fixed;
+            top: 10px;
+            right: 180px;
+            z-index: 999;
+            background: #e74c3c; 
+            color: white; 
+            border: none; 
+            padding: 8px 12px; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            cursor: pointer;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+        }
+
         /* ✅ Snackbar */
         .snackbar { 
             position: fixed; 
@@ -112,6 +128,9 @@
     <!-- ✅ Mostrar usuario logueado -->
     <div id="user-info" class="user-info">Cargando...</div>
 
+    <!-- ✅ Botón de Cerrar Sesión -->
+    <button id="btn-cerrar-sesion" style="display: none;">🔐 Cerrar Sesión</button>
+
     <!-- ✅ Snackbar -->
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
@@ -121,11 +140,11 @@
 
         // ✅ Verificar login
         async function verificarLogin() {
-            // Si ya está logueado, cargar info
             const usuario = sessionStorage.getItem('usuario');
             if (usuario) {
                 const user = JSON.parse(usuario);
                 mostrarUsuario(user);
+                mostrarBotonCerrarSesion();
                 return user;
             }
 
@@ -155,6 +174,7 @@
                 if (user) {
                     sessionStorage.setItem('usuario', JSON.stringify(user));
                     mostrarUsuario(user);
+                    mostrarBotonCerrarSesion();
                     return user;
                 } else {
                     alert('❌ Usuario o clave incorrectos');
@@ -173,6 +193,14 @@
             const infoDiv = document.getElementById('user-info');
             infoDiv.textContent = `🟢 ${user.nombre} (${user.rol})`;
             infoDiv.className = `user-info ${user.rol}`;
+        }
+
+        // ✅ Mostrar botón de cerrar sesión
+        function mostrarBotonCerrarSesion() {
+            const btn = document.getElementById('btn-cerrar-sesion');
+            if (btn) {
+                btn.style.display = 'block'; // Mostrar botón
+            }
         }
 
         // ✅ Aplicar permisos y cargar módulos
@@ -242,41 +270,32 @@
             return desc[nombre] || 'Módulo de gestión';
         }
 
+        // ✅ Cerrar sesión
+        function setupCerrarSesion() {
+            const btn = document.getElementById('btn-cerrar-sesion');
+            if (btn) {
+                btn.onclick = function() {
+                    if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+                        sessionStorage.removeItem('usuario');
+                        alert('✅ Sesión cerrada. Serás redirigido al inicio.');
+                        location.reload();
+                    }
+                };
+            }
+        }
+
         // ✅ Ejecutar al cargar
         window.onload = async function() {
             try {
                 const usuario = await verificarLogin();
                 if (usuario) {
                     aplicarPermisos(usuario);
+                    setupCerrarSesion(); // Inicializar botón
                 }
             } catch (error) {
                 console.error('Error en login:', error);
             }
         };
     </script>
-    <!-- ✅ Botón de Cerrar Sesión -->
-<div style="position: fixed; top: 10px; right: 180px; z-index: 999;">
-    <button id="btn-cerrar-sesion" style="
-        background: #e74c3c; 
-        color: white; 
-        border: none; 
-        padding: 8px 12px; 
-        border-radius: 6px; 
-        font-size: 14px; 
-        cursor: pointer;
-        box-shadow: 0 1px 5px rgba(0,0,0,0.1);
-    ">🔐 Cerrar Sesión</button>
-</div>
-
-    // ✅ Cerrar sesión
-    document.getElementById('btn-cerrar-sesion').addEventListener('click', function() {
-        if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
-            sessionStorage.removeItem('usuario');
-            alert('✅ Sesión cerrada. Serás redirigido al inicio.');
-            location.reload(); // Vuelve a pedir usuario y clave
-        }
-    });
-</script>
 </body>
 </html>
-
