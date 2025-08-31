@@ -73,14 +73,14 @@
             right: 10px;
             font-size: 12px;
             color: #666;
-            z-: 999;
+            z-index: 999;
             background: white;
             padding: 8px 12px;
             border-radius: 6px;
             box-shadow: 0 1px 5px rgba(0,0,0,0.1);
         }
-        .user-info.admin { color: #e74c3c; }
-        .user-info.encargado { color: #2980b9; }
+        .user-info.admin { color: #e74c3c; font-weight: bold; }
+        .user-info.encargado { color: #2980b9; font-weight: bold; }
 
         /* ✅ Snackbar */
         .snackbar { 
@@ -91,7 +91,7 @@
             color: white; 
             padding: 12px 20px; 
             border-radius: 6px; 
-            z-: 1000; 
+            z-index: 1000; 
             opacity: 0; 
             transition: opacity 0.3s; 
         }
@@ -115,17 +115,18 @@
     <!-- ✅ Snackbar -->
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
-    <!-- ✅ LOGIN BÁSICO -->
     <script>
+        // ✅ URL de Firebase (sin espacios)
         const DB_USUARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/usuarios.json';
 
-        // Verificar acceso
+        // ✅ Verificar login
         async function verificarLogin() {
             // Si ya está logueado, cargar info
             const usuario = sessionStorage.getItem('usuario');
             if (usuario) {
-                mostrarUsuario(JSON.parse(usuario));
-                return JSON.parse(usuario);
+                const user = JSON.parse(usuario);
+                mostrarUsuario(user);
+                return user;
             }
 
             // Pedir credenciales
@@ -174,39 +175,40 @@
             infoDiv.className = `user-info ${user.rol}`;
         }
 
+        // ✅ Aplicar permisos y cargar módulos
         function aplicarPermisos(usuario) {
-    const menuContainer = document.getElementById('menu-container');
-    menuContainer.innerHTML = '';
+            const menuContainer = document.getElementById('menu-container');
+            menuContainer.innerHTML = '';
 
-    const modulos = [
-        { nombre: 'Alta de Empleados', href: 'gestion_empleados.html', rol: 'todos' },
-        { nombre: 'Horarios de Empleados', href: 'gestion_horario_empleados.html', rol: 'todos' },
-        { nombre: 'Horarios por Local', href: 'gestion_horarios_locales.html', rol: 'todos' },
-        { nombre: 'Feriados', href: 'gestion_feriados.html', rol: 'admin' },
-        { nombre: 'Ausencias', href: 'gestion_ausencias.html', rol: 'todos' },
-        { nombre: 'Novedades', href: 'gestion_novedades.html', rol: 'todos' },
-        { nombre: 'Personal Óptimo', href: 'gestion_optimizar.html', rol: 'todos' },
-        { nombre: 'Grilla de Horarios', href: 'gestion_grilla_mensual.html', rol: 'todos' },
-        { nombre: 'Gestión de Usuarios', href: 'gestion_usuarios.html', rol: 'admin' }
-    ];
+            const modulos = [
+                { nombre: 'Alta de Empleados', href: 'gestion_empleados.html', rol: 'todos' },
+                { nombre: 'Horarios de Empleados', href: 'gestion_horarios_empleados.html', rol: 'todos' },
+                { nombre: 'Horarios por Local', href: 'gestion_horarios_locales.html', rol: 'todos' },
+                { nombre: 'Feriados', href: 'gestion_feriados.html', rol: 'admin' },
+                { nombre: 'Ausencias', href: 'gestion_ausencias.html', rol: 'todos' },
+                { nombre: 'Novedades', href: 'gestion_novedades.html', rol: 'todos' },
+                { nombre: 'Personal Óptimo', href: 'gestion_optimizar.html', rol: 'todos' },
+                { nombre: 'Grilla de Horarios', href: 'gestion_grilla_horarios.html', rol: 'todos' },
+                { nombre: 'Gestión de Usuarios', href: 'gestion_usuarios.html', rol: 'admin' }
+            ];
 
-    modulos.forEach(modulo => {
-        if (usuario.rol === 'admin' || modulo.rol === 'todos') {
-            const item = document.createElement('div');
-            item.className = 'menu-item';
-            item.innerHTML = `
-                <i class="fas fa-${getIcono(modulo.nombre)}"></i>
-                <h3>${modulo.nombre}</h3>
-                <p>${getDescripcion(modulo.nombre)}</p>
-            `;
-            item.onclick = () => {
-                sessionStorage.setItem('usuario', JSON.stringify(usuario));
-                window.location.href = modulo.href;
-            };
-            menuContainer.appendChild(item);
+            modulos.forEach(modulo => {
+                if (usuario.rol === 'admin' || modulo.rol === 'todos') {
+                    const item = document.createElement('div');
+                    item.className = 'menu-item';
+                    item.innerHTML = `
+                        <i class="fas fa-${getIcono(modulo.nombre)}"></i>
+                        <h3>${modulo.nombre}</h3>
+                        <p>${getDescripcion(modulo.nombre)}</p>
+                    `;
+                    item.onclick = () => {
+                        sessionStorage.setItem('usuario', JSON.stringify(usuario));
+                        window.location.href = modulo.href;
+                    };
+                    menuContainer.appendChild(item);
+                }
+            });
         }
-    });
-}
 
         // ✅ Asignar íconos
         function getIcono(nombre) {
@@ -252,41 +254,5 @@
             }
         };
     </script>
-
-    <!-- ✅ Botón flotante -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            if (document.getElementById('btn-menu-flotante')) return;
-            const btn = document.createElement('button');
-            btn.id = 'btn-menu-flotante';
-            btn.textContent = '☰ Menú';
-            btn.title = 'Volver al menú principal';
-            btn.style.cssText = `
-                position: fixed !important;
-                top: 20px !important;
-                right: 20px !important;
-                z-: 99999 !important;
-                padding: 12px 16px !important;
-                font-size: 14px !important;
-                font-weight: bold !important;
-                color: white !important;
-                background-color: #2980b9 !important;
-                border: none !important;
-                border-radius: 6px !important;
-                box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
-                cursor: pointer !important;
-                opacity: 1 !important;
-                display: block !important;
-                transition: all 0.2s ease !important;
-            `;
-            btn.onclick = () => {
-                window.location.href = '.html';
-            };
-            document.body.appendChild(btn);
-        });
-    </script>
 </body>
 </html>
-
-
-
