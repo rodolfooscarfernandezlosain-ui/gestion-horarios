@@ -52,37 +52,23 @@
         th, td { 
             border: 1px solid #ddd; 
             padding: 8px; 
-            text-align: center; 
+            text-align: left; 
             white-space: nowrap;
         }
         th { 
             background: #ecf0f1; 
-            font-weight: 600;
-        }
-        .header-col {
             text-align: center;
-            font-weight: bold;
-            background: #3498db;
-            color: white;
-        }
-        .dia-header {
-            font-size: 1.1em;
-            padding: 10px;
+            font-weight: 600;
         }
         .editable {
             cursor: pointer;
             background: #f8f9fa;
-            padding: 6px;
+            padding: 4px;
             border-radius: 4px;
-            margin: 2px 0;
             transition: background 0.2s;
         }
         .editable:hover {
             background: #e9ecef;
-        }
-        .libre {
-            color: #7f8c8d;
-            font-style: italic;
         }
         .snackbar { 
             position: fixed; 
@@ -180,10 +166,12 @@
             <button class="btn" onclick="cargarGrilla()">🔄 Actualizar</button>
         </div>
 
-        <!-- Grilla: Días en fila, Empleados en columnas -->
+        <!-- Grilla -->
         <div style="overflow-x: auto;">
             <table id="tabla-grilla">
-                <thead id="thead-grilla"></thead>
+                <thead>
+                    <tr id="header-row"></tr>
+                </thead>
                 <tbody id="body-grilla"></tbody>
             </table>
         </div>
@@ -192,7 +180,7 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase (sin espacios)
+        // ✅ URLs de Firebase
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_HORARIOS_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados.json';
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
@@ -257,20 +245,29 @@
             });
         }
 
-        // ✅ Generar grilla: Días en filas, Empleados en columnas
+        // ✅ Generar grilla
         function cargarGrilla() {
             const localFiltro = document.getElementById('filtro-local').value;
             const nombreFiltro = document.getElementById('filtro-nombre').value.toLowerCase();
 
-            const thead = document.getElementById('thead-grilla');
-            const tbody = document.getElementById('body-grilla');
-            thead.innerHTML = '';
-            tbody.innerHTML = '';
+            const headerRow = document.getElementById('header-row');
+            const body = document.getElementById('body-grilla');
+            body.innerHTML = '';
+            headerRow.innerHTML = '<th>Empleado</th>';
 
             const hoy = new Date();
             const mes = hoy.getMonth();
             const anio = hoy.getFullYear();
             const diasEnMes = new Date(anio, mes + 1, 0).getDate();
+
+            // Generar encabezados de días
+            for (let i = 1; i <= diasEnMes; i++) {
+                const th = document.createElement('th');
+                const diaSemana = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][new Date(anio, mes, i).getDay()];
+                th.innerHTML = `${i}<br><small>${diaSemana}</small>`;
+                th.style.textAlign = 'center';
+                headerRow.appendChild(th);
+            }
 
             // Filtrar empleados
             let empleadosFiltrados = empleados;
@@ -283,64 +280,36 @@
 
             if (empleadosFiltrados.length === 0) {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td colspan="100" style="text-align:center">No hay empleados para mostrar</td>`;
-                tbody.appendChild(tr);
+                tr.innerHTML = `<td colspan="${diasEnMes + 1}" style="text-align:center">No hay empleados para mostrar</td>`;
+                body.appendChild(tr);
                 return;
             }
 
-            // Encabezado: Empleados como columnas
-            const headerRow = document.createElement('tr');
-            headerRow.innerHTML = '<th>Día</th>';
+            // Generar filas
             empleadosFiltrados.forEach(emp => {
-                const th = document.createElement('th');
-                th.innerHTML = `<div class="header-col">${emp.nombre}</div><small>${emp.local}</small>`;
-                th.title = `${emp.puesto}`;
-                headerRow.appendChild(th);
-            });
-            thead.appendChild(headerRow);
-
-            // Filas: un día por fila
-            for (let dia = 1; dia <= diasEnMes; dia++) {
-                const fechaStr = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-                const diaSemana = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][new Date(fechaStr).getDay()];
-                const nombreDia = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][new Date(fechaStr).getDay()];
-
                 const tr = document.createElement('tr');
-
-                // Celda del día
-                const th = document.createElement('th');
-                th.className = 'dia-header';
-                th.innerHTML = `${dia}<br><small>${nombreDia}</small>`;
-                tr.appendChild(th);
-
-                // Celdas de cada empleado
-                empleadosFiltrados.forEach(emp => {
-                    const td = document.createElement('td');
+                tr.innerHTML = `<td><strong>${emp.nombre}</strong><br><small>${emp.local}</small></td>`;
+                
+                for (let dia = 1; dia <= diasEnMes; dia++) {
+                    const fechaStr = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+                    const diaSemana = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][new Date(fechaStr).getDay()];
+                    
                     const horario = horariosEmpleados.find(h => h.empleadoKey === emp.key);
                     const diaData = horario?.dias?.[diaSemana];
 
+                    const td = document.createElement('td');
+                    td.style.textAlign = 'center';
+                    
                     if (!diaData || diaData.libre) {
-                        td.innerHTML = '<span class="libre">Libre</span>';
+                        td.innerHTML = '<span style="color:#95a5a6">Libre</span>';
                     } else {
-                        const entrada = diaData.entrada || '';
-                        const salida = diaData.salida || '';
-                        const entrada2 = diaData.entrada2 || '';
-                        const salida2 = diaData.salida2 || '';
-
-                        if (entrada && salida) {
-                            const html = `${entrada} - ${salida}`;
-                            td.innerHTML = `<div class="editable" onclick="editarCelda('${emp.key}', '${diaSemana}', '${horario?.key || ''}', this)">${html}</div>`;
-                        } else if (entrada2 && salida2) {
-                            const html = `${entrada2} - ${salida2}`;
-                            td.innerHTML = `<div class="editable" onclick="editarCelda('${emp.key}', '${diaSemana}', '${horario?.key || ''}', this)">${html}</div>`;
-                        } else {
-                            td.innerHTML = '<span class="libre">Libre</span>';
-                        }
+                        const html = `${diaData.entrada || ''} - ${diaData.salida || ''}`;
+                        td.innerHTML = `<div class="editable" onclick="editarCelda('${emp.key}', '${diaSemana}', '${horario?.key || ''}', this)">${html}</div>`;
                     }
                     tr.appendChild(td);
-                });
-                tbody.appendChild(tr);
-            }
+                }
+                body.appendChild(tr);
+            });
         }
 
         // ✅ Editar celda
