@@ -3,28 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grilla Mensual de Horarios</title>
+    <title>Grilla de Horarios Mensual</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; padding: 20px; }
-        .container { max-width: 1400px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-        .controls { display: flex; gap: 15px; margin: 20px 0; flex-wrap: wrap; }
-        .controls select, .controls input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; min-width: 80px; }
-        th { background: #ecf0f1; position: sticky; top: 0; z-index: 10; }
-        .turno { display: inline-block; width: 100%; padding: 4px; border-radius: 4px; font-size: 12px; font-weight: 500; }
-        .mañana { background: #d6eaf8; color: #2c3e50; }
-        .tarde { background: #d5f4e6; color: #2c3e50; }
-        .doble { background: #f8c471; color: #2c3e50; }
-        .libre { background: #e8f8f5; color: #1abc9c; }
-        .feriado { background: #f1948a; color: white; }
-        .ausencia { background: #f0b27a; color: white; }
-        .snackbar { position: fixed; bottom: 20px; right: 20px; background: #27ae60; color: white; padding: 12px 20px; border-radius: 6px; z-index: 1000; opacity: 0; transition: opacity 0.3s; }
-        .snackbar.show { opacity: 1; }
-        .print-btn { background: #27ae60; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; margin: 10px 0; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #f4f6f9; 
+            padding: 20px; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        h1 { 
+            color: #2c3e50; 
+            border-bottom: 2px solid #3498db; 
+            padding-bottom: 10px; 
+        }
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filters input, .filters select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 8px; 
+            text-align: left; 
+            white-space: nowrap;
+        }
+        th { 
+            background: #ecf0f1; 
+            text-align: center;
+            font-weight: 600;
+        }
+        .editable {
+            cursor: pointer;
+            background: #f8f9fa;
+            padding: 4px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .editable:hover {
+            background: #e9ecef;
+        }
+        .snackbar { 
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px; 
+            background: #27ae60; 
+            color: white; 
+            padding: 12px 20px; 
+            border-radius: 6px; 
+            z-index: 1000; 
+            opacity: 0; 
+            transition: opacity 0.3s; 
+        }
+        .snackbar.show { 
+            opacity: 1; 
+        }
     </style>
 </head>
 <body>
@@ -79,44 +139,40 @@
 
         const usuarioGlobal = verificarAcceso();
 
-        // Filtrar empleados por local del usuario
-        function filtrarPorLocal(empleados) {
-            if (usuarioGlobal.rol === 'admin') return empleados;
-            return empleados.filter(e => usuarioGlobal.locales.includes(e.local));
+        // Obtener locales del usuario
+        function getLocalesUsuario() {
+            if (usuarioGlobal.rol === 'admin') return null;
+            return Array.isArray(usuarioGlobal.locales) 
+                ? usuarioGlobal.locales 
+                : [usuarioGlobal.locales].filter(l => l);
         }
     </script>
 
     <div class="container">
-        <h1><i class="fas fa-th-large"></i> Grilla Mensual de Horarios</h1>
+        <h1><i class="fas fa-th-large"></i> Grilla de Horarios Mensual</h1>
 
-        <button onclick="imprimirReporte()" class="print-btn">
-            🖨️ Imprimir Reporte del Local
-        </button>
-
-        <div class="controls">
-            <select id="mes" onchange="generarGrilla()">
-                <option value="0">Enero</option>
-                <option value="1">Febrero</option>
-                <option value="2">Marzo</option>
-                <option value="3">Abril</option>
-                <option value="4">Mayo</option>
-                <option value="5">Junio</option>
-                <option value="6">Julio</option>
-                <option value="7">Agosto</option>
-                <option value="8">Septiembre</option>
-                <option value="9">Octubre</option>
-                <option value="10">Noviembre</option>
-                <option value="11">Diciembre</option>
-            </select>
-            <input type="number" id="anio" value="2025" min="2020" max="2030" onchange="generarGrilla()">
+        <!-- Filtros -->
+        <div class="filters">
+            <div>
+                <label>Local</label>
+                <select id="filtro-local" onchange="filtrarGrilla()">
+                    <option value="">Todos los locales</option>
+                </select>
+            </div>
+            <div>
+                <label>Buscar Empleado</label>
+                <input type="text" id="filtro-nombre" placeholder="Nombre..." oninput="filtrarGrilla()">
+            </div>
+            <button class="btn" onclick="cargarGrilla()">🔄 Actualizar</button>
         </div>
 
+        <!-- Grilla -->
         <div style="overflow-x: auto;">
-            <table id="grilla-horarios">
+            <table id="tabla-grilla">
                 <thead>
-                    <tr id="header-dias"></tr>
+                    <tr id="header-row"></tr>
                 </thead>
-                <tbody id="cuerpo-grilla"></tbody>
+                <tbody id="body-grilla"></tbody>
             </table>
         </div>
     </div>
@@ -124,145 +180,190 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase (sin espacios)
+        // ✅ URLs de Firebase
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
-        const DB_HORARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_empleados.json';
-        const DB_FERIADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/feriados.json';
-        const DB_AUSENCIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/ausencias.json';
+        const DB_HORARIOS_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados.json';
+        const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
 
         let empleados = [];
-        let horarios = [];
-        let feriados = [];
-        let ausencias = [];
+        let horariosEmpleados = [];
+        let locales = [];
 
+        function showToast(msg, isError = false) {
+            const sb = document.getElementById('snackbar');
+            sb.textContent = msg;
+            sb.className = 'snackbar show';
+            if (isError) sb.classList.add('error');
+            setTimeout(() => sb.className = 'snackbar', 3000);
+        }
+
+        // ✅ Cargar datos
         async function cargarDatos() {
             try {
-                const [resEmp, resHor, resFer, resAus] = await Promise.all([
+                const [resEmp, resHor, resLoc] = await Promise.all([
                     fetch(DB_EMPLEADOS),
-                    fetch(DB_HORARIOS),
-                    fetch(DB_FERIADOS),
-                    fetch(DB_AUSENCIAS)
+                    fetch(DB_HORARIOS_EMPLEADOS),
+                    fetch(DB_LOCALES)
                 ]);
 
                 const dataEmp = await resEmp.json();
                 const dataHor = await resHor.json();
-                const dataFer = await resFer.json();
-                const dataAus = await resAus.json();
+                const dataLoc = await resLoc.json();
 
-                empleados = dataEmp ? Object.entries(dataEmp).map(([key, value]) => ({ key, ...value })) : [];
-                horarios = dataHor ? Object.entries(dataHor).map(([key, value]) => ({ key, ...value })) : [];
-                feriados = dataFer ? Object.values(dataFer) : [];
-                ausencias = dataAus ? Object.values(dataAus) : [];
+                empleados = Object.entries(dataEmp || {}).map(([key, value]) => ({ key, ...value }));
+                horariosEmpleados = Object.values(dataHor || {});
+                locales = Object.values(dataLoc || {});
 
                 // ✅ Filtrar empleados por local del usuario
-                if (usuarioGlobal.rol !== 'admin') {
-                    empleados = empleados.filter(e => usuarioGlobal.locales.includes(e.local));
+                const localesUsuario = getLocalesUsuario();
+                if (localesUsuario) {
+                    empleados = empleados.filter(e => localesUsuario.includes(e.local));
                 }
 
-                generarGrilla();
+                // Cargar locales en filtro
+                cargarLocales();
+                cargarGrilla();
             } catch (e) {
                 console.error('Error cargando datos:', e);
-                alert('❌ Error al cargar datos. Revisa tu conexión.');
+                showToast('❌ Error al cargar datos', true);
             }
         }
 
-        function generarGrilla() {
-            const mes = parseInt(document.getElementById('mes').value);
-            const anio = parseInt(document.getElementById('anio').value);
-            const diasDelMes = new Date(anio, mes + 1, 0).getDate();
+        // ✅ Cargar locales
+        function cargarLocales() {
+            const select = document.getElementById('filtro-local');
+            select.innerHTML = '<option value="">Todos los locales</option>';
 
-            // Cabecera
-            const header = document.getElementById('header-dias');
-            header.innerHTML = '<th>Empleado</th>';
-            for (let i = 1; i <= diasDelMes; i++) {
-                const fecha = new Date(anio, mes, i);
-                const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fecha.getDay()];
-                header.innerHTML += `<th title="${fecha.toISOString().split('T')[0]}">${i} <small>${diaSemana}</small></th>`;
-            }
+            const localesUsuario = getLocalesUsuario();
+            const localesFiltrados = localesUsuario ? locales.filter(l => localesUsuario.includes(l.nombre)) : locales;
 
-            // Cuerpo
-            const cuerpo = document.getElementById('cuerpo-grilla');
-            cuerpo.innerHTML = '';
-
-            empleados.forEach(emp => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td style="text-align:left; font-weight:bold;">${emp.nombre}</td>`;
-                
-                for (let dia = 1; dia <= diasDelMes; dia++) {
-                    const fecha = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-                    const diaSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'][new Date(fecha).getDay()];
-                    
-                    const horarioEmpleado = horarios.find(h => h.empleadoKey === emp.key);
-                    const turno = horarioEmpleado?.dias?.[diaSemana];
-
-                    let celda = '<td class="libre"><div class="turno libre">Libre</div></td>';
-                    
-                    if (turno && !turno.libre) {
-                        const clase = turno.doble ? 'doble' : (turno.entrada < '12:00' ? 'mañana' : 'tarde');
-                        const texto = turno.doble 
-                            ? `${turno.entrada}-${turno.salida}<br>${turno.entrada2}-${turno.salida2}` 
-                            : `${turno.entrada}-${turno.salida}`;
-                        celda = `<td><div class="turno ${clase}">${texto}</div></td>`;
-                    }
-
-                    if (feriados.some(f => f.fecha === fecha && f.local === emp.local)) {
-                        celda = `<td><div class="turno feriado">Feriado</div></td>`;
-                    }
-
-                    if (ausencias.some(a => a.empleadoKey === emp.key && a.fechaInicio <= fecha && a.fechaFin >= fecha)) {
-                        const ausencia = ausencias.find(a => a.empleadoKey === emp.key && a.fechaInicio <= fecha && a.fechaFin >= fecha);
-                        celda = `<td><div class="turno ausencia">${ausencia.tipo}</div></td>`;
-                    }
-
-                    tr.innerHTML += celda;
-                }
-                cuerpo.appendChild(tr);
+            localesFiltrados.forEach(loc => {
+                const opt = document.createElement('option');
+                opt.value = loc.nombre;
+                opt.textContent = loc.nombre;
+                select.appendChild(opt);
             });
         }
 
-        function imprimirReporte() {
-            const local = usuarioGlobal.locales[0];
-            const mes = document.getElementById('mes').value;
-            const anio = document.getElementById('anio').value;
-            const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-            const titulo = `Reporte de Horarios - ${local} (${meses[mes]} ${anio})`;
+        // ✅ Generar grilla
+        function cargarGrilla() {
+            const localFiltro = document.getElementById('filtro-local').value;
+            const nombreFiltro = document.getElementById('filtro-nombre').value.toLowerCase();
 
-            const ventana = window.open('', '_blank');
-            ventana.document.write(`
-                <html>
-                <head>
-                    <title>${titulo}</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; margin: 20px; }
-                        h2 { text-align: center; color: #2c3e50; }
-                        p { text-align: center; color: #666; }
-                        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-                        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-                        th { background-color: #f2f2f2; }
-                        .turno { display: inline-block; width: 100%; padding: 4px; border-radius: 4px; font-size: 12px; }
-                        .mañana { background: #d6eaf8; }
-                        .tarde { background: #d5f4e6; }
-                        .doble { background: #f8c471; }
-                        .libre { background: #e8f8f5; }
-                        .feriado { background: #f1948a; color: white; }
-                        .ausencia { background: #f0b27a; color: white; }
-                    </style>
-                </head>
-                <body>
-                    <h2>${titulo}</h2>
-                    <p>Generado el: ${new Date().toLocaleString()}</p>
-                    <div id="contenido"></div>
-                </body>
-                </html>
-            `);
+            const headerRow = document.getElementById('header-row');
+            const body = document.getElementById('body-grilla');
+            body.innerHTML = '';
+            headerRow.innerHTML = '<th>Empleado</th>';
 
-            const contenido = document.querySelector('#cuerpo-grilla').outerHTML;
-            ventana.document.getElementById('contenido').innerHTML = `<table>${document.querySelector('#header-dias').outerHTML}${contenido}</table>`;
-            ventana.document.close();
-            ventana.print();
+            const hoy = new Date();
+            const mes = hoy.getMonth();
+            const anio = hoy.getFullYear();
+            const diasEnMes = new Date(anio, mes + 1, 0).getDate();
+
+            // Generar encabezados de días
+            for (let i = 1; i <= diasEnMes; i++) {
+                const th = document.createElement('th');
+                const diaSemana = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][new Date(anio, mes, i).getDay()];
+                th.innerHTML = `${i}<br><small>${diaSemana}</small>`;
+                th.style.textAlign = 'center';
+                headerRow.appendChild(th);
+            }
+
+            // Filtrar empleados
+            let empleadosFiltrados = empleados;
+            if (localFiltro) {
+                empleadosFiltrados = empleadosFiltrados.filter(e => e.local === localFiltro);
+            }
+            if (nombreFiltro) {
+                empleadosFiltrados = empleadosFiltrados.filter(e => e.nombre.toLowerCase().includes(nombreFiltro));
+            }
+
+            if (empleadosFiltrados.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="${diasEnMes + 1}" style="text-align:center">No hay empleados para mostrar</td>`;
+                body.appendChild(tr);
+                return;
+            }
+
+            // Generar filas
+            empleadosFiltrados.forEach(emp => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td><strong>${emp.nombre}</strong><br><small>${emp.local}</small></td>`;
+                
+                for (let dia = 1; dia <= diasEnMes; dia++) {
+                    const fechaStr = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+                    const diaSemana = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][new Date(fechaStr).getDay()];
+                    
+                    const horario = horariosEmpleados.find(h => h.empleadoKey === emp.key);
+                    const diaData = horario?.dias?.[diaSemana];
+
+                    const td = document.createElement('td');
+                    td.style.textAlign = 'center';
+                    
+                    if (!diaData || diaData.libre) {
+                        td.innerHTML = '<span style="color:#95a5a6">Libre</span>';
+                    } else {
+                        const html = `${diaData.entrada || ''} - ${diaData.salida || ''}`;
+                        td.innerHTML = `<div class="editable" onclick="editarCelda('${emp.key}', '${diaSemana}', '${horario?.key || ''}', this)">${html}</div>`;
+                    }
+                    tr.appendChild(td);
+                }
+                body.appendChild(tr);
+            });
         }
 
-        window.onload = cargarDatos;
+        // ✅ Editar celda
+        async function editarCelda(empleadoKey, diaSemana, horarioKey, elemento) {
+            const emp = empleados.find(e => e.key === empleadoKey);
+            if (!emp) return;
+
+            const horario = horariosEmpleados.find(h => h.empleadoKey === empleadoKey);
+            const diaData = horario?.dias?.[diaSemana] || { libre: true };
+
+            const entrada = prompt('Entrada (HH:MM)', diaData.entrada || '');
+            const salida = prompt('Salida (HH:MM)', diaData.salida || '');
+            if (entrada === null || salida === null) return;
+
+            if (!entrada || !salida) {
+                if (!confirm('¿Marcar como día libre?')) return;
+            }
+
+            // Actualizar horario
+            const nuevoHorario = { ...horario };
+            if (!nuevoHorario.dias) nuevoHorario.dias = {};
+            if (entrada && salida) {
+                nuevoHorario.dias[diaSemana] = { entrada, salida };
+            } else {
+                nuevoHorario.dias[diaSemana] = { libre: true };
+            }
+
+            try {
+                const url = `https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados/${horarioKey}.json`;
+                const res = await fetch(url, {
+                    method: 'PUT',
+                    body: JSON.stringify(nuevoHorario),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!res.ok) throw new Error('Error al guardar');
+
+                showToast('✅ Horario actualizado');
+                cargarGrilla();
+            } catch (err) {
+                console.error('Error:', err);
+                showToast('❌ Error al actualizar', true);
+            }
+        }
+
+        // ✅ Filtrar grilla
+        function filtrarGrilla() {
+            setTimeout(cargarGrilla, 100);
+        }
+
+        // Inicializar
+        window.onload = async function () {
+            await cargarDatos();
+        };
     </script>
 
     <!-- ✅ Botón flotante -->
