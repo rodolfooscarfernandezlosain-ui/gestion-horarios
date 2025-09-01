@@ -126,6 +126,10 @@
                 );
 
                 if (user) {
+                    // ✅ Asegurar que `locales` sea un array
+                    if (user.rol !== 'admin' && typeof user.locales === 'string') {
+                        user.locales = [user.locales];
+                    }
                     sessionStorage.setItem('usuario', JSON.stringify(user));
                     return user;
                 } else {
@@ -153,7 +157,7 @@
 
         const usuarioGlobal = verificarAcceso();
 
-        // Obtener locales del usuario
+        // ✅ Obtener locales del usuario (siempre como array)
         function getLocalesUsuario() {
             if (usuarioGlobal.rol === 'admin') return null;
             return Array.isArray(usuarioGlobal.locales) 
@@ -431,4 +435,3 @@
     </script>
 </body>
 </html>
-
