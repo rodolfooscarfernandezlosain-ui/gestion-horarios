@@ -155,10 +155,12 @@
 
         const usuarioGlobal = verificarAcceso();
 
-        // Filtrar empleados por local del usuario
-        function filtrarPorLocal(todosEmpleados) {
-            if (usuarioGlobal.rol === 'admin') return todosEmpleados;
-            return todosEmpleados.filter(e => usuarioGlobal.locales.includes(e.local));
+        // Obtener locales del usuario
+        function getLocalesUsuario() {
+            if (usuarioGlobal.rol === 'admin') return null; // null = todos
+            return Array.isArray(usuarioGlobal.locales) 
+                ? usuarioGlobal.locales 
+                : [usuarioGlobal.locales].filter(l => l);
         }
     </script>
 
@@ -255,8 +257,9 @@
                 feriados = Object.values(dataFeriados || {});
 
                 // ✅ Filtrar empleados por local del usuario
-                if (usuarioGlobal.rol !== 'admin') {
-                    empleados = empleados.filter(e => usuarioGlobal.locales.includes(e.local));
+                const localesUsuario = getLocalesUsuario();
+                if (localesUsuario) {
+                    empleados = empleados.filter(e => localesUsuario.includes(e.local));
                 }
 
                 cargarLocales();
@@ -272,9 +275,8 @@
             select.innerHTML = '<option value="">Selecciona un local</option>';
 
             // ✅ Filtrar locales por usuario
-            const localesFiltrados = usuarioGlobal.rol === 'admin' 
-                ? locales 
-                : locales.filter(loc => usuarioGlobal.locales.includes(loc.nombre));
+            const localesUsuario = getLocalesUsuario();
+            const localesFiltrados = localesUsuario ? locales.filter(loc => localesUsuario.includes(loc.nombre)) : locales;
 
             if (localesFiltrados.length === 0) {
                 select.innerHTML = '<option value="">No tienes acceso a locales</option>';
@@ -298,7 +300,8 @@
             }
 
             // ✅ Verificar que el local pertenece al usuario
-            if (usuarioGlobal.rol !== 'admin' && !usuarioGlobal.locales.includes(localNombre)) {
+            const localesUsuario = getLocalesUsuario();
+            if (localesUsuario && !localesUsuario.includes(localNombre)) {
                 showToast('❌ No puedes ver este local', true);
                 return;
             }
@@ -366,7 +369,7 @@
             const empleadosLocal = empleados.filter(e => e.local === local && e.puesto === puesto);
             return empleadosLocal.filter(emp => {
                 const horario = horariosEmpleados.find(h => h.empleadoKey === emp.key);
-                return horario && horario.dias && !horario.dias[dia]?.libre;
+                return horario && horario.dias && horario.dias[dia] && !horario.dias[dia].libre;
             }).length;
         }
 
