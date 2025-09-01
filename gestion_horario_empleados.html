@@ -201,10 +201,12 @@
 
         const usuarioGlobal = verificarAcceso();
 
-        // Filtrar empleados por local del usuario
-        function filtrarPorLocal(empleados) {
-            if (usuarioGlobal.rol === 'admin') return empleados;
-            return empleados.filter(e => usuarioGlobal.locales.includes(e.local));
+        // ✅ Obtener locales del usuario
+        function getLocalesUsuario() {
+            if (usuarioGlobal.rol === 'admin') return null; // null = todos
+            return Array.isArray(usuarioGlobal.locales) 
+                ? usuarioGlobal.locales 
+                : [usuarioGlobal.locales].filter(l => l);
         }
     </script>
 
@@ -308,8 +310,9 @@
                 empleados = Object.entries(dataEmpleados).map(([key, value]) => ({ key, ...value }));
 
                 // ✅ Filtrar empleados por local del usuario
-                if (usuarioGlobal.rol !== 'admin') {
-                    empleados = empleados.filter(e => usuarioGlobal.locales.includes(e.local));
+                const localesUsuario = getLocalesUsuario();
+                if (localesUsuario) {
+                    empleados = empleados.filter(e => localesUsuario.includes(e.local));
                 }
 
                 // Cargar locales
@@ -339,9 +342,8 @@
                 select.innerHTML = '<option value="">Todos los locales</option>';
 
                 // ✅ Filtrar locales por usuario
-                const localesFiltrados = usuarioGlobal.rol === 'admin' 
-                    ? locales 
-                    : locales.filter(loc => usuarioGlobal.locales.includes(loc));
+                const localesUsuario = getLocalesUsuario();
+                const localesFiltrados = localesUsuario ? locales.filter(loc => localesUsuario.includes(loc)) : locales;
 
                 localesFiltrados.forEach(loc => {
                     const opt = document.createElement('option');
@@ -478,9 +480,10 @@
                 }
 
                 // ✅ Filtrar horarios por empleados del local del usuario
+                const localesUsuario = getLocalesUsuario();
                 const horariosFiltrados = horarios.filter(horario => {
                     const emp = empleados.find(e => e.key === horario.empleadoKey);
-                    return emp && (usuarioGlobal.rol === 'admin' || usuarioGlobal.locales.includes(emp.local));
+                    return emp && (!localesUsuario || localesUsuario.includes(emp.local));
                 });
 
                 if (horariosFiltrados.length === 0) {
@@ -579,7 +582,8 @@
             }
 
             // ✅ Verificar que el empleado pertenece al local del usuario
-            if (usuarioGlobal.rol !== 'admin' && !usuarioGlobal.locales.includes(emp.local)) {
+            const localesUsuario = getLocalesUsuario();
+            if (localesUsuario && !localesUsuario.includes(emp.local)) {
                 showToast('❌ No puedes asignar horarios a empleados de otro local', true);
                 return;
             }
@@ -664,6 +668,12 @@
                 console.error('Error:', err);
                 showToast('❌ Error al eliminar', true);
             }
+        }
+
+        // ✅ Filtrar empleados por local
+        function filtrarEmpleados() {
+            // Este evento se dispara, pero la búsqueda ya filtra por local
+            // No necesita lógica adicional porque `iniciarBusquedaEmpleado` ya usa `empleados` filtrados
         }
 
         // Inicializar
