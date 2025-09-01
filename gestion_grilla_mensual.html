@@ -192,7 +192,7 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase (sin espacios)
+        // ✅ URLs de Firebase
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_HORARIOS_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados.json';
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
@@ -322,8 +322,20 @@
                     if (!diaData || diaData.libre) {
                         td.innerHTML = '<span class="libre">Libre</span>';
                     } else {
-                        const html = `${diaData.entrada || ''} - ${diaData.salida || ''}`;
-                        td.innerHTML = `<div class="editable" onclick="editarCelda('${emp.key}', '${diaSemana}', '${horario?.key || ''}', this)">${html}</div>`;
+                        const entrada = diaData.entrada || '';
+                        const salida = diaData.salida || '';
+                        const entrada2 = diaData.entrada2 || '';
+                        const salida2 = diaData.salida2 || '';
+
+                        if (entrada && salida) {
+                            const html = `${entrada} - ${salida}`;
+                            td.innerHTML = `<div class="editable" onclick="editarCelda('${emp.key}', '${diaSemana}', '${horario?.key || ''}', this)">${html}</div>`;
+                        } else if (entrada2 && salida2) {
+                            const html = `${entrada2} - ${salida2}`;
+                            td.innerHTML = `<div class="editable" onclick="editarCelda('${emp.key}', '${diaSemana}', '${horario?.key || ''}', this)">${html}</div>`;
+                        } else {
+                            td.innerHTML = '<span class="libre">Libre</span>';
+                        }
                     }
                     tr.appendChild(td);
                 });
