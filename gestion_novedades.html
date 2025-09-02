@@ -227,7 +227,7 @@
                         <th>Feriados</th>
                         <th>Domingos</th>
                         <th>Vacaciones Tomadas</th>
-                        <th>Vacaciones Acumuladas</th>
+                        <th>Vacaciones Disponibles</th>
                         <th>Vacaciones Restantes</th>
                         <th>Licencias</th>
                         <th>Enfermedad</th>
@@ -413,21 +413,22 @@
             return domingos;
         }
 
-        // ✅ Calcular vacaciones acumuladas
-        function calcularVacacionesAcumuladas(empleadoKey) {
+        // ✅ Calcular vacaciones disponibles (por antigüedad)
+        function calcularVacacionesDisponibles(empleadoKey) {
             const emp = empleados.find(e => e.key === empleadoKey);
             if (!emp || !emp.fechaIngreso) return 0;
 
             const fechaIngreso = new Date(emp.fechaIngreso);
             const hoy = new Date();
-            const diffTime = Math.abs(hoy - fechaIngreso);
-            const diffYears = diffTime / (1000 * 60 * 60 * 24 * 365);
-
-            // 14 días por año completo
-            return Math.floor(diffYears * 14);
+            const antiguedad = hoy.getFullYear() - fechaIngreso.getFullYear();
+            
+            if (antiguedad >= 20) return 44;
+            if (antiguedad >= 10) return 35;
+            if (antiguedad >= 5) return 26;
+            return 17;
         }
 
-        // ✅ Calcular vacaciones tomadas en el mes
+        // ✅ Calcular vacaciones tomadas en el mes seleccionado
         function calcularVacacionesTomadas(empleadoKey, mes, anio) {
             return ausencias.filter(a => 
                 a.empleadoKey === empleadoKey && 
@@ -437,14 +438,12 @@
             ).length;
         }
 
-        // ✅ Calcular vacaciones restantes
-        function calcularVacacionesRestantes(empleadoKey) {
-            const acumuladas = calcularVacacionesAcumuladas(empleadoKey);
-            const tomadas = ausencias.filter(a => 
-                a.empleadoKey === empleadoKey && 
-                a.tipo === 'vacaciones'
-            ).length;
-            return Math.max(0, acumuladas - tomadas);
+        // ✅ Calcular vacaciones restantes (disponibles - tomadas en el mes)
+        function calcularVacacionesRestantes(empleadoKey, mes, anio) {
+            const disponibles = calcularVacacionesDisponibles(empleadoKey);
+            const tomadas = calcularVacacionesTomadas(empleadoKey, mes, anio);
+            
+            return Math.max(0, disponibles - tomadas);
         }
 
         // ✅ Calcular licencias
@@ -506,8 +505,8 @@
                 const feriados = calcularFeriadosTrabajados(emp.key, mes, anio);
                 const domingos = calcularDomingosTrabajados(emp.key, mes, anio);
                 const vacacionesTomadas = calcularVacacionesTomadas(emp.key, mes, anio);
-                const vacacionesAcumuladas = calcularVacacionesAcumuladas(emp.key);
-                const vacacionesRestantes = calcularVacacionesRestantes(emp.key);
+                const vacacionesDisponibles = calcularVacacionesDisponibles(emp.key);
+                const vacacionesRestantes = calcularVacacionesRestantes(emp.key, mes, anio);
                 const licencias = contarLicencias(emp.key, mes, anio);
                 const enfermedad = contarEnfermedad(emp.key, mes, anio);
 
@@ -525,7 +524,7 @@
                     <td>${feriados}</td>
                     <td>${domingos}</td>
                     <td>${vacacionesTomadas}</td>
-                    <td>${vacacionesAcumuladas}</td>
+                    <td>${vacacionesDisponibles}</td>
                     <td><strong>${vacacionesRestantes}</strong></td>
                     <td>${licencias}</td>
                     <td>${enfermedad}</td>
@@ -558,7 +557,7 @@
             XLSX.utils.sheet_add_aoa(ws, [[`NOVEDADES - ${nombreMes} ${anio}`]], {origin: 'A1'});
             XLSX.utils.sheet_add_aoa(ws, [[]], {origin: 'A2'});
 
-            const headers = [['Empleado','Local','Horas Semanales','Horas Trab.','Horas Extras','Feriados','Domingos','Vac. Tomadas','Vac. Acumuladas','Vac. Restantes','Licencias','Enfermedad']];
+            const headers = [['Empleado','Local','H.Sem','H.Trab','H.Extras','Fer','Dom','V.Tom','V.Dis','V.Res','Lic','Enf']];
             XLSX.utils.sheet_add_aoa(ws, headers, {origin: 'A3'});
 
             // Datos
@@ -592,7 +591,7 @@
             doc.text(`NOVEDADES - ${nombreMes} ${anio}`, 14, 10);
 
             // Datos para la tabla
-            const headers = [['Empleado','Local','H.Sem','H.Trab','H.Extras','Fer','Dom','V.Tom','V.Acu','V.Res','Lic','Enf']];
+            const headers = [['Empleado','Local','H.Sem','H.Trab','H.Extras','Fer','Dom','V.Tom','V.Dis','V.Res','Lic','Enf']];
             const data = [];
 
             const tbody = document.getElementById('body-novedades');
