@@ -26,14 +26,23 @@
             padding-bottom: 10px; 
         }
         .filters {
+            display: flex;
+            gap: 15px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
-        .filters input {
+        .filters input, .filters select {
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            width: 100%;
-            max-width: 300px;
+        }
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
         }
         table { 
             width: 100%; 
@@ -50,6 +59,16 @@
             background: #ecf0f1; 
             font-weight: 600;
         }
+        .header-col {
+            text-align: center;
+            font-weight: bold;
+            background: #3498db;
+            color: white;
+        }
+        .dia-header {
+            font-size: 1.1em;
+            padding: 10px;
+        }
         .editable {
             cursor: pointer;
             background: #f8f9fa;
@@ -65,17 +84,107 @@
             color: #7f8c8d;
             font-style: italic;
         }
+        .doble-turno {
+            background: #e6f3ff;
+            border: 1px dashed #3498db;
+            padding: 4px;
+            margin: 2px 0;
+            border-radius: 4px;
+        }
+        .snackbar { 
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px; 
+            background: #27ae60; 
+            color: white; 
+            padding: 12px 20px; 
+            border-radius: 6px; 
+            z-index: 1000; 
+            opacity: 0; 
+            transition: opacity 0.3s; 
+        }
+        .snackbar.show { 
+            opacity: 1; 
+        }
     </style>
 </head>
 <body>
 
+    <!-- ✅ 1. VERIFICAR ACCESO Y PERMISOS -->
+    <script>
+        // Verificar login
+        async function verificarLogin() {
+            const usuario = sessionStorage.getItem('usuario');
+            if (usuario) return JSON.parse(usuario);
+
+            const inputUsuario = prompt('🔐 Usuario:');
+            if (!inputUsuario) return location.reload();
+
+            const inputClave = prompt('🔐 Contraseña:');
+            if (!inputClave) return location.reload();
+
+            try {
+                const res = await fetch('https://gestion-personal-c9edd-default-rtdb.firebaseio.com/usuarios.json');
+                if (!res.ok) throw new Error('Error en conexión');
+
+                const usuarios = await res.json();
+                const user = Object.values(usuarios).find(u => 
+                    u.usuario === inputUsuario && u.clave === inputClave
+                );
+
+                if (user) {
+                    sessionStorage.setItem('usuario', JSON.stringify(user));
+                    return user;
+                } else {
+                    alert('❌ Usuario o clave incorrectos');
+                    location.reload();
+                    return null;
+                }
+            } catch (error) {
+                alert('❌ Error al conectar con la base de datos');
+                console.error(error);
+                return null;
+            }
+        }
+
+        // Verificar acceso
+        function verificarAcceso() {
+            const usuario = sessionStorage.getItem('usuario');
+            if (!usuario) {
+                alert('❌ Acceso denegado. Debe iniciar sesión.');
+                window.location.href = 'index.html';
+                return null;
+            }
+            return JSON.parse(usuario);
+        }
+
+        const usuarioGlobal = verificarAcceso();
+
+        // Obtener locales del usuario
+        function getLocalesUsuario() {
+            if (usuarioGlobal.rol === 'admin') return null;
+            return Array.isArray(usuarioGlobal.locales) 
+                ? usuarioGlobal.locales 
+                : [usuarioGlobal.locales].filter(l => l);
+        }
+    </script>
+
     <div class="container">
         <h1><i class="fas fa-th-large"></i> Grilla de Horarios Mensual</h1>
 
-        <!-- Filtro por nombre -->
+        <!-- Filtros -->
         <div class="filters">
-            <label>Buscar Empleado</label>
-            <input type="text" id="filtro-nombre" placeholder="Nombre..." oninput="filtrarGrilla()">
+            <div>
+                <label>Local</label>
+                <select id="filtro-local" onchange="filtrarGrilla()">
+                    <option value="">Todos los locales</option>
+                </select>
+            </div>
+            <div>
+                <label>Buscar Empleado</label>
+                <input type="text" id="filtro-nombre" placeholder="Nombre..." oninput="filtrarGrilla()">
+            </div>
+            <button class="btn" onclick="cargarGrilla()">🔄 Actualizar</button>
         </div>
 
         <!-- Grilla: Días en fila, Empleados en columnas -->
@@ -87,39 +196,77 @@
         </div>
     </div>
 
+    <div id="snackbar" class="snackbar">Acción realizada</div>
+
     <script>
         // ✅ URLs de Firebase (sin espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_HORARIOS_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_empleados.json';
+        const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
 
         let empleados = [];
         let horariosEmpleados = [];
+        let locales = [];
 
-        // ✅ Cargar datos reales de Firebase
+        function showToast(msg, isError = false) {
+            const sb = document.getElementById('snackbar');
+            sb.textContent = msg;
+            sb.className = 'snackbar show';
+            if (isError) sb.classList.add('error');
+            setTimeout(() => sb.className = 'snackbar', 3000);
+        }
+
+        // ✅ Cargar datos
         async function cargarDatos() {
             try {
-                const [dataEmp, dataHor] = await Promise.all([
-                    fetch(DB_EMPLEADOS).then(r => r.json()),
-                    fetch(DB_HORARIOS_EMPLEADOS).then(r => r.json())
+                const [resEmp, resHor, resLoc] = await Promise.all([
+                    fetch(DB_EMPLEADOS),
+                    fetch(DB_HORARIOS_EMPLEADOS),
+                    fetch(DB_LOCALES)
                 ]);
 
-                // Procesar datos
+                const dataEmp = await resEmp.json();
+                const dataHor = await resHor.json();
+                const dataLoc = await resLoc.json();
+
                 empleados = Object.entries(dataEmp || {}).map(([key, value]) => ({ key, ...value }));
                 horariosEmpleados = Object.values(dataHor || {});
+                locales = Object.values(dataLoc || {});
 
-                console.log('✅ Datos reales cargados:', { empleados, horariosEmpleados });
+                // ✅ Filtrar empleados por local del usuario
+                const localesUsuario = getLocalesUsuario();
+                if (localesUsuario) {
+                    empleados = empleados.filter(e => localesUsuario.includes(e.local));
+                }
 
-                // Iniciar grilla
+                // Cargar locales en filtro
+                cargarLocales();
                 cargarGrilla();
             } catch (e) {
-                console.error('❌ Error cargando datos:', e);
-                document.getElementById('body-grilla').innerHTML = 
-                    `<tr><td colspan="100">❌ Error al cargar datos: ${e.message}</td></tr>`;
+                console.error('Error cargando datos:', e);
+                showToast('❌ Error al cargar datos', true);
             }
         }
 
-        // ✅ Generar grilla
+        // ✅ Cargar locales
+        function cargarLocales() {
+            const select = document.getElementById('filtro-local');
+            select.innerHTML = '<option value="">Todos los locales</option>';
+
+            const localesUsuario = getLocalesUsuario();
+            const localesFiltrados = localesUsuario ? locales.filter(l => localesUsuario.includes(l.nombre)) : locales;
+
+            localesFiltrados.forEach(loc => {
+                const opt = document.createElement('option');
+                opt.value = loc.nombre;
+                opt.textContent = loc.nombre;
+                select.appendChild(opt);
+            });
+        }
+
+        // ✅ Generar grilla: Días en filas, Empleados en columnas
         function cargarGrilla() {
+            const localFiltro = document.getElementById('filtro-local').value;
             const nombreFiltro = document.getElementById('filtro-nombre').value.toLowerCase();
 
             const thead = document.getElementById('thead-grilla');
@@ -132,10 +279,13 @@
             const anio = hoy.getFullYear();
             const diasEnMes = new Date(anio, mes + 1, 0).getDate();
 
-            // Filtrar empleados por nombre
+            // Filtrar empleados
             let empleadosFiltrados = empleados;
+            if (localFiltro) {
+                empleadosFiltrados = empleadosFiltrados.filter(e => e.local === localFiltro);
+            }
             if (nombreFiltro) {
-                empleadosFiltrados = empleados.filter(e => e.nombre.toLowerCase().includes(nombreFiltro));
+                empleadosFiltrados = empleadosFiltrados.filter(e => e.nombre.toLowerCase().includes(nombreFiltro));
             }
 
             if (empleadosFiltrados.length === 0) {
@@ -150,7 +300,8 @@
             headerRow.innerHTML = '<th>Día</th>';
             empleadosFiltrados.forEach(emp => {
                 const th = document.createElement('th');
-                th.innerHTML = `<strong>${emp.nombre}</strong><br><small>${emp.local}</small>`;
+                th.innerHTML = `<div class="header-col">${emp.nombre}</div><small>${emp.local}</small>`;
+                th.title = `${emp.puesto}`;
                 headerRow.appendChild(th);
             });
             thead.appendChild(headerRow);
@@ -159,12 +310,14 @@
             for (let dia = 1; dia <= diasEnMes; dia++) {
                 const fechaStr = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
                 const diaSemana = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][new Date(fechaStr).getDay()];
+                const nombreDia = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][new Date(fechaStr).getDay()];
 
                 const tr = document.createElement('tr');
 
                 // Celda del día
                 const th = document.createElement('th');
-                th.innerHTML = `${dia}<br><small>${diaSemana.substring(0,3)}</small>`;
+                th.className = 'dia-header';
+                th.innerHTML = `${dia}<br><small>${nombreDia}</small>`;
                 tr.appendChild(th);
 
                 // Celdas de cada empleado
@@ -176,14 +329,77 @@
                     if (!diaData || diaData.libre) {
                         td.innerHTML = '<span class="libre">Libre</span>';
                     } else {
-                        const entrada = diaData.entrada || '';
-                        const salida = diaData.salida || '';
-                        const html = `${entrada} - ${salida}`;
-                        td.innerHTML = `<div class="editable">${html}</div>`;
+                        let html = '';
+                        
+                        // Turno 1
+                        if (diaData.entrada && diaData.salida) {
+                            html += `<div class="editable" onclick="editarCelda('${emp.key}', '${diaSemana}', '${horario?.key || ''}', this)">${diaData.entrada} - ${diaData.salida}</div>`;
+                        }
+                        
+                        // Turno 2
+                        if (diaData.doble && diaData.entrada2 && diaData.salida2) {
+                            html += `<div class="doble-turno">2do: ${diaData.entrada2} - ${diaData.salida2}</div>`;
+                        }
+
+                        td.innerHTML = html;
                     }
                     tr.appendChild(td);
                 });
                 tbody.appendChild(tr);
+            }
+        }
+
+        // ✅ Editar celda
+        async function editarCelda(empleadoKey, diaSemana, horarioKey, elemento) {
+            const emp = empleados.find(e => e.key === empleadoKey);
+            if (!emp) return;
+
+            const horario = horariosEmpleados.find(h => h.empleadoKey === empleadoKey);
+            const diaData = horario?.dias?.[diaSemana] || { libre: true };
+
+            const entrada = prompt('1er turno - Entrada (HH:MM)', diaData.entrada || '');
+            const salida = prompt('1er turno - Salida (HH:MM)', diaData.salida || '');
+            
+            const tieneDoble = confirm('¿Tiene turno doble?');
+            let entrada2 = '', salida2 = '';
+            if (tieneDoble) {
+                entrada2 = prompt('2do turno - Entrada (HH:MM)', diaData.entrada2 || '');
+                salida2 = prompt('2do turno - Salida (HH:MM)', diaData.salida2 || '');
+            }
+
+            if (entrada === null || salida === null) return;
+
+            // Actualizar horario
+            const nuevoHorario = { ...horario };
+            if (!nuevoHorario.dias) nuevoHorario.dias = {};
+            
+            if (entrada && salida) {
+                nuevoHorario.dias[diaSemana] = { 
+                    entrada, 
+                    salida,
+                    doble: tieneDoble,
+                    entrada2: tieneDoble ? entrada2 : '',
+                    salida2: tieneDoble ? salida2 : ''
+                };
+            } else {
+                nuevoHorario.dias[diaSemana] = { libre: true };
+            }
+
+            try {
+                const url = `https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_empleados/${horarioKey}.json`;
+                const res = await fetch(url, {
+                    method: 'PUT',
+                    body: JSON.stringify(nuevoHorario),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!res.ok) throw new Error('Error al guardar');
+
+                showToast('✅ Horario actualizado');
+                cargarGrilla();
+            } catch (err) {
+                console.error('Error:', err);
+                showToast('❌ Error al actualizar', true);
             }
         }
 
@@ -197,6 +413,38 @@
             await cargarDatos();
         };
     </script>
+
+    <!-- ✅ Botón flotante -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (document.getElementById('btn-menu-flotante')) return;
+            const btn = document.createElement('button');
+            btn.id = 'btn-menu-flotante';
+            btn.textContent = '☰ Menú';
+            btn.title = 'Volver al menú principal';
+            btn.style.cssText = `
+                position: fixed !important;
+                top: 20px !important;
+                right: 20px !important;
+                z-index: 99999 !important;
+                padding: 12px 16px !important;
+                font-size: 14px !important;
+                font-weight: bold !important;
+                color: white !important;
+                background-color: #2980b9 !important;
+                border: none !important;
+                border-radius: 6px !important;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
+                cursor: pointer !important;
+                opacity: 1 !important;
+                display: block !important;
+                transition: all 0.2s ease !important;
+            `;
+            btn.onclick = () => {
+                window.location.href = 'index.html';
+            };
+            document.body.appendChild(btn);
+        });
+    </script>
 </body>
 </html>
-
