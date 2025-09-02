@@ -65,21 +65,6 @@
             color: #7f8c8d;
             font-style: italic;
         }
-        .snackbar { 
-            position: fixed; 
-            bottom: 20px; 
-            right: 20px; 
-            background: #27ae60; 
-            color: white; 
-            padding: 12px 20px; 
-            border-radius: 6px; 
-            z-index: 1000; 
-            opacity: 0; 
-            transition: opacity 0.3s; 
-        }
-        .snackbar.show { 
-            opacity: 1; 
-        }
     </style>
 </head>
 <body>
@@ -102,48 +87,30 @@
         </div>
     </div>
 
-    <div id="snackbar" class="snackbar">Acción realizada</div>
-
     <script>
-        // ✅ URLs de Firebase (sin espacios)
-        const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
-        const DB_HORARIOS_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados.json';
+        // ✅ DATOS DE PRUEBA (no depende de Firebase)
+        let empleados = [
+            { key: 'emp1', nombre: 'Rodolfo', local: 'Local Centro', puesto: 'Encargado' },
+            { key: 'emp2', nombre: 'Ana', local: 'Local Centro', puesto: 'Cajera' },
+            { key: 'emp3', nombre: 'Juan', local: 'Local Norte', puesto: 'Vendedor' }
+        ];
 
-        let empleados = [];
-        let horariosEmpleados = [];
-
-        function showToast(msg, isError = false) {
-            const sb = document.getElementById('snackbar');
-            sb.textContent = msg;
-            sb.className = 'snackbar show';
-            if (isError) sb.classList.add('error');
-            setTimeout(() => sb.className = 'snackbar', 3000);
-        }
-
-        // ✅ Cargar datos SIN FILTRO POR LOCAL
-        async function cargarDatos() {
-            try {
-                const [dataEmp, dataHor] = await Promise.all([
-                    fetch(DB_EMPLEADOS).then(r => r.json()),
-                    fetch(DB_HORARIOS_EMPLEADOS).then(r => r.json())
-                ]);
-
-                // Procesar datos
-                empleados = Object.entries(dataEmp || {}).map(([key, value]) => ({ key, ...value }));
-                horariosEmpleados = Object.values(dataHor || {});
-
-                console.log('✅ Empleados cargados:', empleados);
-                console.log('✅ Horarios cargados:', horariosEmpleados);
-
-                // Iniciar grilla
-                cargarGrilla();
-            } catch (e) {
-                console.error('❌ Error cargando datos:', e);
-                showToast('Error al cargar datos', true);
+        let horariosEmpleados = [
+            {
+                empleadoKey: 'emp1',
+                dias: {
+                    lunes: { entrada: '08:00', salida: '16:00' },
+                    martes: { entrada: '08:00', salida: '16:00' },
+                    miercoles: { entrada: '08:00', salida: '16:00' },
+                    jueves: { entrada: '08:00', salida: '16:00' },
+                    viernes: { entrada: '08:00', salida: '16:00' },
+                    sabado: { libre: true },
+                    domingo: { libre: true }
+                }
             }
-        }
+        ];
 
-        // ✅ Generar grilla: Días en filas, Empleados en columnas
+        // ✅ Generar grilla
         function cargarGrilla() {
             const nombreFiltro = document.getElementById('filtro-nombre').value.toLowerCase();
 
@@ -184,13 +151,12 @@
             for (let dia = 1; dia <= diasEnMes; dia++) {
                 const fechaStr = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
                 const diaSemana = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][new Date(fechaStr).getDay()];
-                const nombreDia = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][new Date(fechaStr).getDay()];
 
                 const tr = document.createElement('tr');
 
                 // Celda del día
                 const th = document.createElement('th');
-                th.innerHTML = `${dia}<br><small>${nombreDia}</small>`;
+                th.innerHTML = `${dia}<br><small>${diaSemana.substring(0,3)}</small>`;
                 tr.appendChild(th);
 
                 // Celdas de cada empleado
@@ -205,43 +171,11 @@
                         const entrada = diaData.entrada || '';
                         const salida = diaData.salida || '';
                         const html = `${entrada} - ${salida}`;
-                        td.innerHTML = `<div class="editable" onclick="editarCelda('${emp.key}', '${diaSemana}', '${horario?.key || ''}', this)">${html}</div>`;
+                        td.innerHTML = `<div class="editable">${html}</div>`;
                     }
                     tr.appendChild(td);
                 });
                 tbody.appendChild(tr);
-            }
-        }
-
-        // ✅ Editar celda (opcional, puedes quitarlo si solo querés lectura)
-        async function editarCelda(empleadoKey, diaSemana, horarioKey, elemento) {
-            const horario = horariosEmpleados.find(h => h.empleadoKey === empleadoKey);
-            const diaData = horario?.dias?.[diaSemana] || { libre: true };
-
-            const entrada = prompt('Entrada (HH:MM)', diaData.entrada || '');
-            const salida = prompt('Salida (HH:MM)', diaData.salida || '');
-            if (entrada === null || salida === null) return;
-
-            // Actualizar horario
-            const nuevoHorario = { ...horario };
-            if (!nuevoHorario.dias) nuevoHorario.dias = {};
-            if (entrada && salida) {
-                nuevoHorario.dias[diaSemana] = { entrada, salida };
-            } else {
-                nuevoHorario.dias[diaSemana] = { libre: true };
-            }
-
-            try {
-                await fetch(`https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados/${horarioKey}.json`, {
-                    method: 'PUT',
-                    body: JSON.stringify(nuevoHorario),
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                showToast('✅ Horario actualizado');
-                cargarGrilla();
-            } catch (err) {
-                console.error('Error:', err);
-                showToast('❌ Error al actualizar', true);
             }
         }
 
@@ -251,8 +185,8 @@
         }
 
         // Inicializar
-        window.onload = async function () {
-            await cargarDatos();
+        window.onload = function () {
+            cargarGrilla();
         };
     </script>
 </body>
