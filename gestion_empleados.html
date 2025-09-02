@@ -394,75 +394,75 @@
             }
         }
 
-        // ✅ Exportar a PDF (corregido y funcional)
-        async function imprimirEmpleado(key) {
-            // Esperar a que jsPDF esté completamente cargado
-            if (typeof window.jspdf === 'undefined') {
-                showToast('❌ Cargando librería PDF...', true);
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                if (typeof window.jspdf === 'undefined') {
-                    showToast('❌ Error al cargar librería PDF', true);
-                    return;
-                }
-            }
-
-            const emp = empleados.find(e => e.key === key);
-            if (!emp) {
-                showToast('❌ Empleado no encontrado', true);
-                return;
-            }
-
-            try {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF('p', 'mm', 'a4');
-                
-                doc.setFontSize(16);
-                doc.text('FICHA DE EMPLEADO', 14, 10);
-                doc.setFontSize(12);
-                doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 18);
-
-                // Datos personales
-                doc.setFontSize(14);
-                doc.text('Datos Personales', 14, 30);
-                doc.setFontSize(10);
-                doc.text(`Legajo: ${emp.legajo || '—'}`, 14, 38);
-                doc.text(`Nombre: ${emp.nombre}`, 14, 44);
-                doc.text(`Local: ${emp.local}`, 14, 50);
-                doc.text(`Puesto: ${emp.puesto}`, 14, 56);
-                doc.text(`Fecha de Ingreso: ${emp.fechaIngreso || '—'}`, 14, 62);
-                doc.text(`DNI: ${emp.dni || '—'}`, 14, 68);
-                doc.text(`Teléfono: ${emp.telefono || '—'}`, 14, 74);
-                doc.text(`Email: ${emp.email || '—'}`, 14, 80);
-                doc.text(`Dirección: ${emp.direccion || '—'}`, 14, 86);
-
-                // Información laboral
-                doc.setFontSize(14);
-                doc.text('Información Laboral', 14, 100);
-                doc.setFontSize(10);
-                doc.text(`Horas Semanales: ${emp.horasSemanales || '—'}`, 14, 108);
-                doc.text(`Estudios: ${emp.estudios || '—'}`, 14, 114);
-                doc.text(`Feriados: ${emp.feriados ? 'Sí' : 'No'}`, 14, 120);
-                doc.text(`Domingos: ${emp.domingos ? 'Sí' : 'No'}`, 14, 126);
-                doc.text(`Rota: ${emp.rota ? 'Sí' : 'No'}`, 14, 132);
-                doc.text(`Horas Extras: ${emp.horasExtras ? 'Sí' : 'No'}`, 14, 138);
-                doc.text(`Reemplaza: ${emp.reemplaza?.length > 0 ? emp.reemplaza.join(', ') : 'Ninguno'}`, 14, 144);
-
-                // Observaciones
-                if (emp.observaciones) {
-                    doc.setFontSize(14);
-                    doc.text('Observaciones', 14, 158);
-                    doc.setFontSize(10);
-                    const obsLines = doc.splitTextToSize(emp.observaciones, 180);
-                    doc.text(obsLines, 14, 166);
-                }
-
-                doc.save(`empleado_${emp.legajo || emp.nombre}.pdf`);
-                showToast('✅ Ficha exportada a PDF');
-            } catch (err) {
-                console.error('Error al generar PDF:', err);
-                showToast('❌ Error al generar PDF', true);
-            }
+        // ✅ Exportar a PDF (corregido)
+async function imprimirEmpleado(key) {
+    try {
+        // Cargar el empleado directamente desde Firebase
+        const res = await fetch(`https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados/${key}.json`);
+        if (!res.ok) throw new Error('No se pudo cargar el empleado');
+        
+        const emp = await res.json();
+        if (!emp) {
+            showToast('❌ Empleado no encontrado', true);
+            return;
         }
+
+        // Verificar que jsPDF esté disponible
+        if (typeof window.jspdf === 'undefined') {
+            showToast('❌ Cargando librería PDF...', true);
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        
+        doc.setFontSize(16);
+        doc.text('FICHA DE EMPLEADO', 14, 10);
+        doc.setFontSize(12);
+        doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 18);
+
+        // Datos personales
+        doc.setFontSize(14);
+        doc.text('Datos Personales', 14, 30);
+        doc.setFontSize(10);
+        doc.text(`Legajo: ${emp.legajo || '—'}`, 14, 38);
+        doc.text(`Nombre: ${emp.nombre}`, 14, 44);
+        doc.text(`Local: ${emp.local}`, 14, 50);
+        doc.text(`Puesto: ${emp.puesto}`, 14, 56);
+        doc.text(`Fecha de Ingreso: ${emp.fechaIngreso || '—'}`, 14, 62);
+        doc.text(`DNI: ${emp.dni || '—'}`, 14, 68);
+        doc.text(`Teléfono: ${emp.telefono || '—'}`, 14, 74);
+        doc.text(`Email: ${emp.email || '—'}`, 14, 80);
+        doc.text(`Dirección: ${emp.direccion || '—'}`, 14, 86);
+
+        // Información laboral
+        doc.setFontSize(14);
+        doc.text('Información Laboral', 14, 100);
+        doc.setFontSize(10);
+        doc.text(`Horas Semanales: ${emp.horasSemanales || '—'}`, 14, 108);
+        doc.text(`Estudios: ${emp.estudios || '—'}`, 14, 114);
+        doc.text(`Feriados: ${emp.feriados ? 'Sí' : 'No'}`, 14, 120);
+        doc.text(`Domingos: ${emp.domingos ? 'Sí' : 'No'}`, 14, 126);
+        doc.text(`Rota: ${emp.rota ? 'Sí' : 'No'}`, 14, 132);
+        doc.text(`Horas Extras: ${emp.horasExtras ? 'Sí' : 'No'}`, 14, 138);
+        doc.text(`Reemplaza: ${emp.reemplaza?.length > 0 ? emp.reemplaza.join(', ') : 'Ninguno'}`, 14, 144);
+
+        // Observaciones
+        if (emp.observaciones) {
+            doc.setFontSize(14);
+            doc.text('Observaciones', 14, 158);
+            doc.setFontSize(10);
+            const obsLines = doc.splitTextToSize(emp.observaciones, 180);
+            doc.text(obsLines, 14, 166);
+        }
+
+        doc.save(`empleado_${emp.legajo || emp.nombre}.pdf`);
+        showToast('✅ Ficha exportada a PDF');
+    } catch (err) {
+        console.error('Error al generar PDF:', err);
+        showToast('❌ Error al generar PDF', true);
+    }
+}
 
         function limpiarFormulario() {
             document.getElementById('form-empleado').reset();
@@ -638,3 +638,4 @@
     </script>
 </body>
 </html>
+
