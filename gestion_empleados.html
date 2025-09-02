@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alta de Empleados</title>
+    <title>Horarios por Empleado</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Librería para PDF (cargada correctamente) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <style>
         body { 
             font-family: 'Segoe UI', sans-serif; 
@@ -36,12 +33,80 @@
             margin-bottom: 5px; 
             font-weight: 600; 
         }
-        input, select, textarea { 
+        input, select { 
             width: 100%; 
             padding: 8px; 
             border: 1px solid #ddd; 
             border-radius: 4px; 
             box-sizing: border-box; 
+        }
+        .autocomplete-container {
+            position: relative;
+        }
+        .autocomplete-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            border-radius: 0 0 4px 4px;
+        }
+        .autocomplete-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .autocomplete-item:hover {
+            background: #f1f1f1;
+        }
+        .day-group {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            border: 1px solid #eee;
+        }
+        .time-row {
+            display: flex;
+            gap: 10px;
+            margin: 5px 0;
+            align-items: center;
+        }
+        .time-row input, .time-row select {
+            flex: 1;
+        }
+        .doble-turno {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e8f4fc;
+            border-radius: 6px;
+            border: 1px dashed #3498db;
+            display: none;
+        }
+        .info-empleado {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-size: 0.95rem;
+        }
+        .checkbox-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin: 0;
+            font-weight: normal;
         }
         button { 
             background: #3498db; 
@@ -50,15 +115,9 @@
             padding: 10px 15px; 
             border-radius: 4px; 
             cursor: pointer; 
-            margin-right: 10px;
-            min-width: 90px; /* ✅ Todos los botones del mismo ancho */
-            text-align: center;
         }
         button.btn-danger { 
             background: #e74c3c; 
-        }
-        button.btn-warning { 
-            background: #f39c12; 
         }
         table { 
             width: 100%; 
@@ -142,9 +201,9 @@
 
         const usuarioGlobal = verificarAcceso();
 
-        // Obtener locales del usuario
+        // ✅ Obtener locales del usuario
         function getLocalesUsuario() {
-            if (usuarioGlobal.rol === 'admin') return null;
+            if (usuarioGlobal.rol === 'admin') return null; // null = todos
             return Array.isArray(usuarioGlobal.locales) 
                 ? usuarioGlobal.locales 
                 : [usuarioGlobal.locales].filter(l => l);
@@ -152,144 +211,60 @@
     </script>
 
     <div class="container">
-        <h1><i class="fas fa-user-plus"></i> Alta de Empleados</h1>
+        <h1><i class="fas fa-calendar-alt"></i> Asignar Horario a Empleado</h1>
 
-        <form id="form-empleado">
+        <form id="form-horario-empleado">
             <input type="hidden" id="edit-key" value="">
 
             <div class="form-group">
-                <label>Local *</label>
-                <select id="local" required>
-                    <option value="">Seleccionar local</option>
+                <label>Local</label>
+                <select id="filtro-local" onchange="filtrarEmpleados()">
+                    <option value="">Todos los locales</option>
                 </select>
             </div>
 
             <div class="form-group">
-                <label>Legajo *</label>
-                <input type="text" id="legajo" placeholder="Número de legajo" required>
+                <label>Empleado *</label>
+                <div class="autocomplete-container">
+                    <input type="text" id="empleado-search" placeholder="Buscar empleado..." autocomplete="off">
+                    <div id="empleado-list" class="autocomplete-list" style="display:none;"></div>
+                </div>
+                <input type="hidden" id="empleado-key" required>
             </div>
 
-            <div class="form-group">
-                <label>Nombre *</label>
-                <input type="text" id="nombre" placeholder="Nombre completo" required>
+            <!-- Información del empleado -->
+            <div id="info-empleado" class="info-empleado" style="display:none;">
+                <strong>Disponibilidad:</strong>
+                <div class="checkbox-group">
+                    <label><i class="fas fa-calendar-day"></i> Feriados: <span id="info-feriados">—</span></label>
+                    <label><i class="fas fa-sync"></i> Rota feriados: <span id="info-rota-feriados">—</span></label>
+                    <label><i class="fas fa-calendar-week"></i> Domingos: <span id="info-domingos">—</span></label>
+                    <label><i class="fas fa-sync"></i> Rota domingos: <span id="info-rota-domingos">—</span></label>
+                    <label><i class="fas fa-clock"></i> Horas extras: <span id="info-horas-extras">—</span></label>
+                </div>
+                <div>
+                    <strong>Puestos adicionales:</strong> <span id="info-reemplaza">—</span>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label>Puesto *</label>
-                <input type="text" id="puesto" placeholder="Puesto del empleado" required>
-            </div>
-
-            <div class="form-group">
-                <label>Horas Semanales *</label>
-                <select id="horasSemanales" required>
-                    <option value="">Seleccionar horas</option>
-                    <option value="45">45 horas</option>
-                    <option value="28">28 horas</option>
-                    <option value="22.5">22.5 horas</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Estudios Cursados *</label>
-                <select id="estudios" required>
-                    <option value="">Seleccionar nivel</option>
-                    <option value="PRIMARIO">Primario</option>
-                    <option value="SECUNDARIO">Secundario</option>
-                    <option value="TERCIARIO">Terciario</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Fecha de Ingreso</label>
-                <input type="date" id="fechaIngreso">
-            </div>
-
-            <div class="form-group">
-                <label>DNI</label>
-                <input type="text" id="dni" placeholder="Solo números">
-            </div>
-
-            <div class="form-group">
-                <label>Teléfono</label>
-                <input type="text" id="telefono" placeholder="Con código de área">
-            </div>
-
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="email" placeholder="email@dominio.com">
-            </div>
-
-            <div class="form-group">
-                <label>Dirección</label>
-                <textarea id="direccion" rows="2" placeholder="Calle, número, piso, departamento"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label>Feriados</label>
-                <select id="feriados">
-                    <option value="true">Sí</option>
-                    <option value="false">No</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Domingos</label>
-                <select id="domingos">
-                    <option value="true">Sí</option>
-                    <option value="false">No</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Rota</label>
-                <select id="rota">
-                    <option value="true">Sí</option>
-                    <option value="false">No</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Horas Extras</label>
-                <select id="horasExtras">
-                    <option value="true">Sí</option>
-                    <option value="false">No</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Puestos Adicionales</label>
-                <select id="reemplaza" multiple>
-                    <option value="Encargado">Encargado</option>
-                    <option value="Cajero">Cajero</option>
-                    <option value="Vendedor">Vendedor</option>
-                    <option value="Repositor">Repositor</option>
-                    <option value="Limpieza">Limpieza</option>
-                </select>
-                <small>Presiona Ctrl para seleccionar varios</small>
-            </div>
-
-            <div class="form-group">
-                <label>Observaciones</label>
-                <textarea id="observaciones" rows="3" placeholder="Información adicional"></textarea>
+            <div id="dias-container">
+                <!-- Generado por JS -->
             </div>
 
             <button type="submit" class="btn-success">
-                <i class="fas fa-save"></i> <span id="btn-texto">Guardar Empleado</span>
+                <i class="fas fa-save"></i> <span id="btn-texto">Guardar Horario</span>
             </button>
-            <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6;">
-                <i class="fas fa-eraser"></i> Limpiar
+            <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6; margin-left:10px;">
+                Cancelar
             </button>
         </form>
 
-        <table id="tabla-empleados">
+        <table id="tabla-horarios">
             <thead>
                 <tr>
-                    <th>Legajo</th>
-                    <th>Nombre</th>
+                    <th>Empleado</th>
                     <th>Local</th>
-                    <th>Puesto</th>
-                    <th>Horas</th>
-                    <th>Estudios</th>
+                    <th>Horario Semanal</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -300,10 +275,12 @@
     <div id="snackbar" class="snackbar">Acción realizada</div>
 
     <script>
-        // ✅ URLs de Firebase
+        // ✅ URLs de Firebase (sin espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
+        const DB_HORARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados.json';
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
 
+        let empleados = [];
         let locales = [];
 
         function showToast(msg, isError = false) {
@@ -314,7 +291,42 @@
             setTimeout(() => sb.className = 'snackbar', 3000);
         }
 
-        // ✅ Cargar locales
+        // ✅ Cargar empleados y locales
+        async function cargarDatos() {
+            try {
+                // Cargar empleados
+                const resEmpleados = await fetch(DB_EMPLEADOS);
+                if (!resEmpleados.ok) throw new Error(`HTTP ${resEmpleados.status}`);
+                
+                const dataEmpleados = await resEmpleados.json();
+                
+                if (!dataEmpleados) {
+                    console.warn('⚠️ No hay empleados registrados');
+                    empleados = [];
+                    return;
+                }
+
+                // ✅ Asegurar que cada empleado tenga .key
+                empleados = Object.entries(dataEmpleados).map(([key, value]) => ({ key, ...value }));
+
+                // ✅ Filtrar empleados por local del usuario
+                const localesUsuario = getLocalesUsuario();
+                if (localesUsuario) {
+                    empleados = empleados.filter(e => localesUsuario.includes(e.local));
+                }
+
+                // Cargar locales
+                await cargarLocales();
+
+                // Iniciar búsqueda
+                iniciarBusquedaEmpleado();
+            } catch (e) {
+                console.error('❌ Error cargando datos:', e);
+                showToast('Error al cargar empleados', true);
+            }
+        }
+
+        // ✅ Cargar locales desde Firebase
         async function cargarLocales() {
             try {
                 const res = await fetch(DB_LOCALES);
@@ -326,8 +338,8 @@
                 const localesData = Object.values(data);
                 locales = localesData.map(loc => loc.nombre);
 
-                const select = document.getElementById('local');
-                select.innerHTML = '<option value="">Seleccionar local</option>';
+                const select = document.getElementById('filtro-local');
+                select.innerHTML = '<option value="">Todos los locales</option>';
 
                 // ✅ Filtrar locales por usuario
                 const localesUsuario = getLocalesUsuario();
@@ -345,262 +357,351 @@
             }
         }
 
-        // ✅ Cargar empleados
-        async function cargarEmpleados() {
-            try {
-                const res = await fetch(DB_EMPLEADOS);
-                const data = await res.json();
-                const empleados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+        // ✅ Búsqueda dinámica
+        function iniciarBusquedaEmpleado() {
+            const searchInput = document.getElementById('empleado-search');
+            const list = document.getElementById('empleado-list');
 
-                const tbody = document.querySelector('#tabla-empleados tbody');
+            searchInput.addEventListener('input', () => {
+                const query = searchInput.value.toLowerCase().trim();
+                const localFiltro = document.getElementById('filtro-local').value;
+
+                list.innerHTML = '';
+                if (!query) {
+                    list.style.display = 'none';
+                    return;
+                }
+
+                const filtrados = empleados.filter(emp => {
+                    const coincideLocal = !localFiltro || emp.local === localFiltro;
+                    const coincideNombre = emp.nombre.toLowerCase().includes(query);
+                    return coincideLocal && coincideNombre;
+                });
+
+                if (filtrados.length === 0) {
+                    list.style.display = 'block';
+                    list.innerHTML = '<div class="autocomplete-item">No se encontraron empleados</div>';
+                    return;
+                }
+
+                list.style.display = 'block';
+                filtrados.forEach(emp => {
+                    const div = document.createElement('div');
+                    div.className = 'autocomplete-item';
+                    div.innerHTML = `<strong>${emp.nombre}</strong> <small>(${emp.local})</small>`;
+                    div.onclick = () => {
+                        searchInput.value = emp.nombre; // Nombre completo
+                        document.getElementById('empleado-key').value = emp.key;
+                        list.style.display = 'none';
+                        mostrarInfoEmpleado(emp.key);
+                    };
+                    list.appendChild(div);
+                });
+            });
+        }
+
+        // ✅ Mostrar info del empleado seleccionado
+        function mostrarInfoEmpleado(empleadoKey) {
+            const emp = empleados.find(e => e.key === empleadoKey);
+            const infoDiv = document.getElementById('info-empleado');
+            if (!emp) {
+                infoDiv.style.display = 'none';
+                return;
+            }
+
+            infoDiv.style.display = 'block';
+            document.getElementById('info-feriados').textContent = emp.feriados ? 'Sí' : 'No';
+            document.getElementById('info-rota-feriados').textContent = emp.rota ? 'Sí' : 'No';
+            document.getElementById('info-domingos').textContent = emp.domingos ? 'Sí' : 'No';
+            document.getElementById('info-rota-domingos').textContent = emp.rota ? 'Sí' : 'No';
+            document.getElementById('info-horas-extras').textContent = emp.horasExtras ? 'Sí' : 'No';
+            document.getElementById('info-reemplaza').textContent = emp.reemplaza?.length > 0 ? emp.reemplaza.join(', ') : 'Ninguno';
+        }
+
+        // ✅ Generar días
+        function generarDias() {
+            const container = document.getElementById('dias-container');
+            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            container.innerHTML = '';
+
+            dias.forEach(dia => {
+                const div = document.createElement('div');
+                div.className = 'day-group';
+                div.innerHTML = `
+                    <h3>${dia.charAt(0).toUpperCase() + dia.slice(1)}</h3>
+                    <label><input type="checkbox" class="chk-libre"> Día Libre</label>
+                    <div class="time-row main-shift">
+                        <input type="time" class="entrada" placeholder="Entrada">
+                        <input type="time" class="salida" placeholder="Salida">
+                        <label><input type="checkbox" class="chk-doble"> Turno Doble</label>
+                    </div>
+                    <div class="doble-turno">
+                        <div class="time-row">
+                            <input type="time" class="entrada2" placeholder="2da entrada">
+                            <input type="time" class="salida2" placeholder="2da salida">
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+            // Eventos
+            document.querySelectorAll('.chk-libre').forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    const group = this.closest('.day-group');
+                    const main = group.querySelector('.main-shift');
+                    const doble = group.querySelector('.doble-turno');
+                    main.style.display = this.checked ? 'none' : 'flex';
+                    doble.style.display = this.checked ? 'none' : 'block';
+                });
+            });
+
+            document.querySelectorAll('.chk-doble').forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    const group = this.closest('.day-group');
+                    group.querySelector('.doble-turno').style.display = this.checked ? 'block' : 'none';
+                });
+            });
+        }
+
+        // ✅ Cargar horarios guardados
+        async function cargarHorarios() {
+            try {
+                const res = await fetch(DB_HORARIOS);
+                const data = await res.json();
+                const horarios = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+
+                const tbody = document.querySelector('#tabla-horarios tbody');
                 tbody.innerHTML = '';
 
-                if (empleados.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center">No hay empleados registrados</td></tr>`;
+                if (horarios.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center">No hay horarios asignados</td></tr>`;
                     return;
                 }
 
-                // ✅ Filtrar empleados por local del usuario
+                // ✅ Filtrar horarios por empleados del local del usuario
                 const localesUsuario = getLocalesUsuario();
-                const empleadosFiltrados = empleados.filter(emp => 
-                    !localesUsuario || localesUsuario.includes(emp.local)
-                );
+                const horariosFiltrados = horarios.filter(horario => {
+                    const emp = empleados.find(e => e.key === horario.empleadoKey);
+                    return emp && (!localesUsuario || localesUsuario.includes(emp.local));
+                });
 
-                if (empleadosFiltrados.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center">No hay empleados para tu local</td></tr>`;
+                if (horariosFiltrados.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center">No hay horarios para tu local</td></tr>`;
                     return;
                 }
 
-                empleadosFiltrados.forEach(emp => {
+                horariosFiltrados.forEach(horario => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${emp.legajo || '—'}</td>
-                        <td><strong>${emp.nombre}</strong></td>
-                        <td>${emp.local}</td>
-                        <td>${emp.puesto}</td>
-                        <td>${emp.horasSemanales || '—'}</td>
-                        <td>${emp.estudios || '—'}</td>
+                        <td><strong>${horario.empleadoNombre}</strong></td>
+                        <td>${horario.local}</td>
+                        <td>${resumenHorario(horario)}</td>
                         <td style="text-align:center;">
-                            <button class="btn-warning" onclick="imprimirEmpleado('${emp.key}')">PDF</button>
-                            <button class="btn-warning" onclick="editarEmpleado('${emp.key}')">Editar</button>
-                            <button class="btn-danger" onclick="eliminarEmpleado('${emp.key}', '${emp.nombre}')">Eliminar</button>
+                            <button class="btn-warning" onclick="editarHorario('${horario.key}')">Editar</button>
+                            <button class="btn-danger" onclick="eliminarHorario('${horario.key}', '${horario.empleadoNombre}')">Eliminar</button>
                         </td>
                     `;
                     tbody.appendChild(tr);
                 });
             } catch (e) {
-                console.error('Error cargando empleados:', e);
+                console.error('Error cargando horarios:', e);
                 showToast('❌ Error al cargar', true);
             }
         }
 
-        // ✅ Exportar a PDF (corregido)
-async function imprimirEmpleado(key) {
-    try {
-        // Cargar el empleado directamente desde Firebase
-        const res = await fetch(`https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados/${key}.json`);
-        if (!res.ok) throw new Error('No se pudo cargar el empleado');
-        
-        const emp = await res.json();
-        if (!emp) {
-            showToast('❌ Empleado no encontrado', true);
-            return;
+        function resumenHorario(horario) {
+            const diasConHorario = Object.keys(horario.dias || {}).filter(dia => !horario.dias[dia].libre);
+            return diasConHorario.length > 0 ? `${diasConHorario.length}/7 días` : 'Todos libres';
         }
-
-        // Verificar que jsPDF esté disponible
-        if (typeof window.jspdf === 'undefined') {
-            showToast('❌ Cargando librería PDF...', true);
-            return;
-        }
-
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('p', 'mm', 'a4');
-        
-        doc.setFontSize(16);
-        doc.text('FICHA DE EMPLEADO', 14, 10);
-        doc.setFontSize(12);
-        doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 18);
-
-        // Datos personales
-        doc.setFontSize(14);
-        doc.text('Datos Personales', 14, 30);
-        doc.setFontSize(10);
-        doc.text(`Legajo: ${emp.legajo || '—'}`, 14, 38);
-        doc.text(`Nombre: ${emp.nombre}`, 14, 44);
-        doc.text(`Local: ${emp.local}`, 14, 50);
-        doc.text(`Puesto: ${emp.puesto}`, 14, 56);
-        doc.text(`Fecha de Ingreso: ${emp.fechaIngreso || '—'}`, 14, 62);
-        doc.text(`DNI: ${emp.dni || '—'}`, 14, 68);
-        doc.text(`Teléfono: ${emp.telefono || '—'}`, 14, 74);
-        doc.text(`Email: ${emp.email || '—'}`, 14, 80);
-        doc.text(`Dirección: ${emp.direccion || '—'}`, 14, 86);
-
-        // Información laboral
-        doc.setFontSize(14);
-        doc.text('Información Laboral', 14, 100);
-        doc.setFontSize(10);
-        doc.text(`Horas Semanales: ${emp.horasSemanales || '—'}`, 14, 108);
-        doc.text(`Estudios: ${emp.estudios || '—'}`, 14, 114);
-        doc.text(`Feriados: ${emp.feriados ? 'Sí' : 'No'}`, 14, 120);
-        doc.text(`Domingos: ${emp.domingos ? 'Sí' : 'No'}`, 14, 126);
-        doc.text(`Rota: ${emp.rota ? 'Sí' : 'No'}`, 14, 132);
-        doc.text(`Horas Extras: ${emp.horasExtras ? 'Sí' : 'No'}`, 14, 138);
-        doc.text(`Reemplaza: ${emp.reemplaza?.length > 0 ? emp.reemplaza.join(', ') : 'Ninguno'}`, 14, 144);
-
-        // Observaciones
-        if (emp.observaciones) {
-            doc.setFontSize(14);
-            doc.text('Observaciones', 14, 158);
-            doc.setFontSize(10);
-            const obsLines = doc.splitTextToSize(emp.observaciones, 180);
-            doc.text(obsLines, 14, 166);
-        }
-
-        doc.save(`empleado_${emp.legajo || emp.nombre}.pdf`);
-        showToast('✅ Ficha exportada a PDF');
-    } catch (err) {
-        console.error('Error al generar PDF:', err);
-        showToast('❌ Error al generar PDF', true);
-    }
-}
 
         function limpiarFormulario() {
-            document.getElementById('form-empleado').reset();
+            document.getElementById('form-horario-empleado').reset();
             document.getElementById('edit-key').value = '';
-            document.getElementById('btn-texto').textContent = 'Guardar Empleado';
+            document.getElementById('btn-texto').textContent = 'Guardar Horario';
+            document.getElementById('info-empleado').style.display = 'none';
+            document.getElementById('empleado-list').style.display = 'none';
+            generarDias();
         }
 
-        async function editarEmpleado(key) {
+        async function editarHorario(key) {
             try {
-                const res = await fetch(`${DB_EMPLEADOS.replace('.json', `/${key}.json`)}`);
-                const emp = await res.json();
+                const res = await fetch(`${DB_HORARIOS.replace('.json', `/${key}.json`)}`);
+                const horario = await res.json();
                 limpiarFormulario();
 
-                document.getElementById('local').value = emp.local;
-                document.getElementById('legajo').value = emp.legajo || '';
-                document.getElementById('nombre').value = emp.nombre;
-                document.getElementById('puesto').value = emp.puesto;
-                document.getElementById('horasSemanales').value = emp.horasSemanales || '';
-                document.getElementById('estudios').value = emp.estudios || '';
-                document.getElementById('fechaIngreso').value = emp.fechaIngreso || '';
-                document.getElementById('dni').value = emp.dni || '';
-                document.getElementById('telefono').value = emp.telefono || '';
-                document.getElementById('email').value = emp.email || '';
-                document.getElementById('direccion').value = emp.direccion || '';
-                document.getElementById('feriados').value = emp.feriados?.toString() || 'true';
-                document.getElementById('domingos').value = emp.domingos?.toString() || 'true';
-                document.getElementById('rota').value = emp.rota?.toString() || 'false';
-                document.getElementById('horasExtras').value = emp.horasExtras?.toString() || 'false';
-                
-                if (emp.reemplaza) {
-                    const select = document.getElementById('reemplaza');
-                    Array.from(select.options).forEach(option => {
-                        option.selected = emp.reemplaza.includes(option.value);
-                    });
-                }
-                
-                document.getElementById('observaciones').value = emp.observaciones || '';
-                document.getElementById('edit-key').value = key;
-                document.getElementById('btn-texto').textContent = 'Actualizar Empleado';
-            } catch (e) {
-                console.error('Error al editar:', e);
-                showToast('❌ Error al cargar empleado', true);
-            }
-        }
+                document.getElementById('empleado-search').value = horario.empleadoNombre;
+                document.getElementById('empleado-key').value = horario.empleadoKey;
+                mostrarInfoEmpleado(horario.empleadoKey);
+                document.getElementById('empleado-search').disabled = true;
 
-        async function guardarEmpleado(e) {
-            e.preventDefault();
-            const local = document.getElementById('local').value;
-            const legajo = document.getElementById('legajo').value.trim();
-            const nombre = document.getElementById('nombre').value.trim();
-            const puesto = document.getElementById('puesto').value.trim();
-            const horasSemanales = document.getElementById('horasSemanales').value;
-            const estudios = document.getElementById('estudios').value;
-
-            if (!local || !legajo || !nombre || !puesto || !horasSemanales || !estudios) {
-                showToast('⚠️ Completa todos los campos obligatorios', true);
-                return;
-            }
-
-            // ✅ Verificar que el local pertenece al usuario
-            const localesUsuario = getLocalesUsuario();
-            if (localesUsuario && !localesUsuario.includes(local)) {
-                showToast('❌ No puedes registrar empleados en otro local', true);
-                return;
-            }
-
-            const key = document.getElementById('edit-key').value;
-            const empleado = {
-                legajo,
-                local,
-                nombre,
-                puesto,
-                horasSemanales,
-                estudios,
-                fechaIngreso: document.getElementById('fechaIngreso').value,
-                dni: document.getElementById('dni').value,
-                telefono: document.getElementById('telefono').value,
-                email: document.getElementById('email').value,
-                direccion: document.getElementById('direccion').value,
-                feriados: document.getElementById('feriados').value === 'true',
-                domingos: document.getElementById('domingos').value === 'true',
-                rota: document.getElementById('rota').value === 'true',
-                horasExtras: document.getElementById('horasExtras').value === 'true',
-                reemplaza: Array.from(document.getElementById('reemplaza').selectedOptions).map(o => o.value),
-                observaciones: document.getElementById('observaciones').value
-            };
-
-            try {
-                let url = DB_EMPLEADOS;
-                let method = 'POST';
-                let body = JSON.stringify(empleado);
-
-                if (key) {
-                    url = `${DB_EMPLEADOS.replace('.json', `/${key}.json`)}`;
-                    method = 'PUT';
-                }
-
-                const res = await fetch(url, { 
-                    method, 
-                    body, 
-                    headers: { 'Content-Type': 'application/json' } 
+                const dias = horario.dias;
+                const diaNames = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+                diaNames.forEach(dia => {
+                    const group = document.querySelectorAll('.day-group')[diaNames.indexOf(dia)];
+                    if (!group) return;
+                    const diaData = dias[dia];
+                    if (diaData.libre) {
+                        group.querySelector('.chk-libre').checked = true;
+                        group.querySelector('.main-shift').style.display = 'none';
+                        group.querySelector('.doble-turno').style.display = 'none';
+                    } else {
+                        group.querySelector('.entrada').value = diaData.entrada || '';
+                        group.querySelector('.salida').value = diaData.salida || '';
+                        if (diaData.doble) {
+                            group.querySelector('.chk-doble').checked = true;
+                            group.querySelector('.doble-turno').style.display = 'block';
+                            group.querySelector('.entrada2').value = diaData.entrada2 || '';
+                            group.querySelector('.salida2').value = diaData.salida2 || '';
+                        }
+                    }
                 });
 
-                if (!res.ok) throw new Error('Error al guardar');
-
-                showToast('✅ Empleado guardado');
-                limpiarFormulario();
-                await cargarEmpleados();
-            } catch (err) {
-                console.error('Error:', err);
-                showToast('❌ Error al guardar', true);
+                document.getElementById('edit-key').value = key;
+                document.getElementById('btn-texto').textContent = 'Actualizar Horario';
+            } catch (e) {
+                console.error('Error al editar:', e);
+                showToast('❌ Error al cargar horario', true);
             }
         }
 
-        async function eliminarEmpleado(key, nombre) {
-            if (!confirm(`¿Eliminar al empleado "${nombre}"?`)) return;
+        async function guardarHorario(e) {
+            e.preventDefault();
+            const empleadoKey = document.getElementById('empleado-key').value;
+            const empleadoNombre = document.getElementById('empleado-search').value.trim();
+
+            if (!empleadoKey || !empleadoNombre) {
+                showToast('⚠️ Selecciona un empleado válido', true);
+                return;
+            }
+
+            // ✅ Cargar el nombre completo directamente desde Firebase
+            try {
+                const res = await fetch(`${DB_EMPLEADOS.replace('.json', `/${empleadoKey}.json`)}`);
+                const emp = await res.json();
+                const nombreCompleto = emp?.nombre || empleadoNombre;
+
+                const empData = empleados.find(e => e.key === empleadoKey);
+                if (!empData) {
+                    showToast('⚠️ Empleado no encontrado en la base de datos', true);
+                    return;
+                }
+
+                // ✅ Verificar que el empleado pertenece al local del usuario
+                const localesUsuario = getLocalesUsuario();
+                if (localesUsuario && !localesUsuario.includes(empData.local)) {
+                    showToast('❌ No puedes asignar horarios a empleados de otro local', true);
+                    return;
+                }
+
+                const local = empData.local;
+                const key = document.getElementById('edit-key').value;
+
+                const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+                const horario = {
+                    empleadoKey,
+                    empleadoNombre: nombreCompleto, // Usamos el nombre completo
+                    local,
+                    dias: {}
+                };
+
+                let valido = true;
+                dias.forEach(dia => {
+                    const group = document.querySelectorAll('.day-group')[dias.indexOf(dia)];
+                    if (group.querySelector('.chk-libre').checked) {
+                        horario.dias[dia] = { libre: true };
+                    } else {
+                        const entrada = group.querySelector('.entrada').value;
+                        const salida = group.querySelector('.salida').value;
+                        if (!entrada || !salida) valido = false;
+                        horario.dias[dia] = {
+                            entrada,
+                            salida,
+                            doble: group.querySelector('.chk-doble').checked
+                        };
+                        if (horario.dias[dia].doble) {
+                            horario.dias[dia].entrada2 = group.querySelector('.entrada2').value;
+                            horario.dias[dia].salida2 = group.querySelector('.salida2').value;
+                        }
+                    }
+                });
+
+                if (!valido) {
+                    showToast('⚠️ Completa todos los campos', true);
+                    return;
+                }
+
+                try {
+                    let url = DB_HORARIOS;
+                    let method = 'POST';
+                    let body = JSON.stringify(horario);
+
+                    if (key) {
+                        url = `${DB_HORARIOS.replace('.json', `/${key}.json`)}`;
+                        method = 'PUT';
+                    }
+
+                    const res = await fetch(url, { 
+                        method, 
+                        body, 
+                        headers: { 'Content-Type': 'application/json' } 
+                    });
+
+                    if (!res.ok) throw new Error('Error al guardar');
+
+                    showToast('✅ Horario asignado');
+                    limpiarFormulario();
+                    await cargarHorarios();
+                } catch (err) {
+                    console.error('Error:', err);
+                    showToast('❌ Error al guardar', true);
+                }
+            } catch (err) {
+                console.error('Error al cargar nombre completo:', err);
+                showToast('❌ Error al obtener datos del empleado', true);
+            }
+        }
+
+        async function eliminarHorario(key, nombre) {
+            if (!confirm(`¿Eliminar el horario de "${nombre}"?`)) return;
 
             try {
-                const res = await fetch(`${DB_EMPLEADOS.replace('.json', `/${key}.json`)}`, {
+                const res = await fetch(`${DB_HORARIOS.replace('.json', `/${key}.json`)}`, {
                     method: 'DELETE'
                 });
 
                 if (!res.ok) throw new Error('Error al eliminar');
 
-                showToast('🗑️ Empleado eliminado');
-                await cargarEmpleados();
+                showToast('🗑️ Horario eliminado');
+                await cargarHorarios();
             } catch (err) {
                 console.error('Error:', err);
                 showToast('❌ Error al eliminar', true);
             }
         }
 
+        // ✅ Filtrar empleados por local
+        function filtrarEmpleados() {
+            // Este evento se dispara, pero la búsqueda ya filtra por local
+            // No necesita lógica adicional porque `iniciarBusquedaEmpleado` ya usa `empleados` filtrados
+        }
+
         // Inicializar
         window.onload = async function () {
-            await cargarLocales();
-            await cargarEmpleados();
+            await cargarDatos();
+            generarDias();
+            await cargarHorarios();
 
-            document.getElementById('form-empleado').addEventListener('submit', guardarEmpleado);
+            document.getElementById('form-horario-empleado').addEventListener('submit', guardarHorario);
+
+            // Ocultar lista al hacer clic fuera
+            document.addEventListener('click', (e) => {
+                const searchInput = document.getElementById('empleado-search');
+                const list = document.getElementById('empleado-list');
+                if (!searchInput.contains(e.target) && !list.contains(e.target)) {
+                    list.style.display = 'none';
+                }
+            });
         };
     </script>
 
@@ -638,4 +739,3 @@ async function imprimirEmpleado(key) {
     </script>
 </body>
 </html>
-
