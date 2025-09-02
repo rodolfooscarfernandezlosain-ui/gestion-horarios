@@ -6,6 +6,10 @@
     <title>Novedades de Personal</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Librerías para exportación -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <style>
         body { 
             font-family: 'Segoe UI', sans-serif; 
@@ -43,9 +47,12 @@
             padding: 8px 15px; 
             border-radius: 4px; 
             cursor: pointer;
+            margin-right: 8px;
         }
         .btn-success { background: #27ae60; }
         .btn-danger { background: #e74c3c; }
+        .btn-pdf { background: #d32f2f; }
+        .btn-excel { background: #1d6f42; }
         table { 
             width: 100%; 
             border-collapse: collapse; 
@@ -186,6 +193,16 @@
             <button class="btn" onclick="cargarNovedades()">🔄 Actualizar</button>
         </div>
 
+        <!-- Botones de exportación -->
+        <div class="filters">
+            <button class="btn-excel" onclick="exportarExcel()">
+                <i class="fas fa-file-excel"></i> Exportar a Excel
+            </button>
+            <button class="btn-pdf" onclick="exportarPDF()">
+                <i class="fas fa-file-pdf"></i> Exportar a PDF
+            </button>
+        </div>
+
         <!-- Información general -->
         <div class="info-box">
             <strong>Resumen del mes:</strong>
@@ -209,10 +226,11 @@
                         <th>Horas Extras</th>
                         <th>Feriados</th>
                         <th>Domingos</th>
-                        <th>Vacaciones</th>
+                        <th>Vacaciones Tomadas</th>
+                        <th>Vacaciones Acumuladas</th>
+                        <th>Vacaciones Restantes</th>
                         <th>Licencias</th>
                         <th>Enfermedad</th>
-                        <th>Calculo Vacaciones</th>
                     </tr>
                 </thead>
                 <tbody id="body-novedades"></tbody>
@@ -307,7 +325,7 @@
             });
         }
 
-        // ✅ Calcular horas trabajadas (simulación)
+        // ✅ Calcular horas trabajadas
         function calcularHorasTrabajadas(empleadoKey, mes, anio) {
             const horario = horariosEmpleados.find(h => h.empleadoKey === empleadoKey);
             if (!horario) return 0;
@@ -335,7 +353,7 @@
                     }
                 }
             }
-            return Math.round(horas * 10) / 10; // Redondear a 1 decimal
+            return Math.round(horas * 10) / 10;
         }
 
         // ✅ Calcular horas extras
@@ -356,10 +374,9 @@
             if (!horario) return 0;
 
             // Simulación: suponemos que hay 2 feriados en el mes
-            // En un sistema real, esto vendría de la tabla de feriados
             const feriadosMes = [
-                new Date(anio, mes - 1, 10), // Ejemplo: 10/mes
-                new Date(anio, mes - 1, 25)  // Ejemplo: 25/mes
+                new Date(anio, mes - 1, 10),
+                new Date(anio, mes - 1, 25)
             ];
 
             let feriadosTrabajados = 0;
@@ -386,7 +403,7 @@
             for (let dia = 1; dia <= diasEnMes; dia++) {
                 const fechaStr = `${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
                 const diaSemana = new Date(fechaStr).getDay();
-                if (diaSemana === 0) { // Domingo
+                if (diaSemana === 0) {
                     const diaData = horario.dias?.['domingo'];
                     if (diaData && !diaData.libre) {
                         domingos++;
@@ -410,7 +427,7 @@
             return Math.floor(diffYears * 14);
         }
 
-        // ✅ Calcular vacaciones tomadas
+        // ✅ Calcular vacaciones tomadas en el mes
         function calcularVacacionesTomadas(empleadoKey, mes, anio) {
             return ausencias.filter(a => 
                 a.empleadoKey === empleadoKey && 
@@ -418,6 +435,16 @@
                 new Date(a.fechaInicio).getMonth() + 1 === mes &&
                 new Date(a.fechaInicio).getFullYear() === anio
             ).length;
+        }
+
+        // ✅ Calcular vacaciones restantes
+        function calcularVacacionesRestantes(empleadoKey) {
+            const acumuladas = calcularVacacionesAcumuladas(empleadoKey);
+            const tomadas = ausencias.filter(a => 
+                a.empleadoKey === empleadoKey && 
+                a.tipo === 'vacaciones'
+            ).length;
+            return Math.max(0, acumuladas - tomadas);
         }
 
         // ✅ Calcular licencias
@@ -479,9 +506,10 @@
                 const feriados = calcularFeriadosTrabajados(emp.key, mes, anio);
                 const domingos = calcularDomingosTrabajados(emp.key, mes, anio);
                 const vacacionesTomadas = calcularVacacionesTomadas(emp.key, mes, anio);
+                const vacacionesAcumuladas = calcularVacacionesAcumuladas(emp.key);
+                const vacacionesRestantes = calcularVacacionesRestantes(emp.key);
                 const licencias = contarLicencias(emp.key, mes, anio);
                 const enfermedad = contarEnfermedad(emp.key, mes, anio);
-                const vacacionesAcumuladas = calcularVacacionesAcumuladas(emp.key);
 
                 totalHorasExtras += horasExtras;
                 totalFeriados += feriados;
@@ -497,9 +525,10 @@
                     <td>${feriados}</td>
                     <td>${domingos}</td>
                     <td>${vacacionesTomadas}</td>
+                    <td>${vacacionesAcumuladas}</td>
+                    <td><strong>${vacacionesRestantes}</strong></td>
                     <td>${licencias}</td>
                     <td>${enfermedad}</td>
-                    <td>${vacacionesAcumuladas} días</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -514,6 +543,80 @@
         // ✅ Filtrar novedades
         function filtrarNovedades() {
             setTimeout(cargarNovedades, 100);
+        }
+
+        // ✅ Exportar a Excel
+        function exportarExcel() {
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet([]);
+
+            const mes = parseInt(document.getElementById('filtro-mes').value);
+            const anio = parseInt(document.getElementById('filtro-anio').value);
+            const nombreMes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][mes-1];
+
+            // Encabezado
+            XLSX.utils.sheet_add_aoa(ws, [[`NOVEDADES - ${nombreMes} ${anio}`]], {origin: 'A1'});
+            XLSX.utils.sheet_add_aoa(ws, [[]], {origin: 'A2'});
+
+            const headers = [['Empleado','Local','Horas Semanales','Horas Trab.','Horas Extras','Feriados','Domingos','Vac. Tomadas','Vac. Acumuladas','Vac. Restantes','Licencias','Enfermedad']];
+            XLSX.utils.sheet_add_aoa(ws, headers, {origin: 'A3'});
+
+            // Datos
+            const tbody = document.getElementById('body-novedades');
+            const rows = tbody.querySelectorAll('tr');
+            const data = [];
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const rowData = [];
+                cells.forEach(cell => {
+                    rowData.push(cell.textContent.trim());
+                });
+                data.push(rowData);
+            });
+
+            XLSX.utils.sheet_add_aoa(ws, data, {origin: 'A4'});
+            XLSX.utils.book_append_sheet(wb, ws, 'Novedades');
+            XLSX.writeFile(wb, `novedades_${mes}_${anio}.xlsx`);
+            showToast('✅ Exportado a Excel');
+        }
+
+        // ✅ Exportar a PDF
+        function exportarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4');
+            const mes = parseInt(document.getElementById('filtro-mes').value);
+            const anio = parseInt(document.getElementById('filtro-anio').value);
+            const nombreMes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][mes-1];
+
+            doc.setFontSize(16);
+            doc.text(`NOVEDADES - ${nombreMes} ${anio}`, 14, 10);
+
+            // Datos para la tabla
+            const headers = [['Empleado','Local','H.Sem','H.Trab','H.Extras','Fer','Dom','V.Tom','V.Acu','V.Res','Lic','Enf']];
+            const data = [];
+
+            const tbody = document.getElementById('body-novedades');
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const rowData = [];
+                cells.forEach(cell => {
+                    rowData.push(cell.textContent.trim());
+                });
+                data.push(rowData);
+            });
+
+            doc.autoTable({
+                head: headers,
+                body: data,
+                startY: 20,
+                theme: 'grid',
+                styles: { fontSize: 8, cellPadding: 2 },
+                columnStyles: { 0: { cellWidth: 30 }, 1: { cellWidth: 25 } }
+            });
+
+            doc.save(`novedades_${mes}_${anio}.pdf`);
+            showToast('✅ Exportado a PDF');
         }
 
         // Inicializar
