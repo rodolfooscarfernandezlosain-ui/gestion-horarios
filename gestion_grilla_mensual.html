@@ -88,27 +88,35 @@
     </div>
 
     <script>
-        // ✅ DATOS DE PRUEBA (no depende de Firebase)
-        let empleados = [
-            { key: 'emp1', nombre: 'Rodolfo', local: 'Local Centro', puesto: 'Encargado' },
-            { key: 'emp2', nombre: 'Ana', local: 'Local Centro', puesto: 'Cajera' },
-            { key: 'emp3', nombre: 'Juan', local: 'Local Norte', puesto: 'Vendedor' }
-        ];
+        // ✅ URLs de Firebase (sin espacios)
+        const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
+        const DB_HORARIOS_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados.json';
 
-        let horariosEmpleados = [
-            {
-                empleadoKey: 'emp1',
-                dias: {
-                    lunes: { entrada: '08:00', salida: '16:00' },
-                    martes: { entrada: '08:00', salida: '16:00' },
-                    miercoles: { entrada: '08:00', salida: '16:00' },
-                    jueves: { entrada: '08:00', salida: '16:00' },
-                    viernes: { entrada: '08:00', salida: '16:00' },
-                    sabado: { libre: true },
-                    domingo: { libre: true }
-                }
+        let empleados = [];
+        let horariosEmpleados = [];
+
+        // ✅ Cargar datos reales de Firebase
+        async function cargarDatos() {
+            try {
+                const [dataEmp, dataHor] = await Promise.all([
+                    fetch(DB_EMPLEADOS).then(r => r.json()),
+                    fetch(DB_HORARIOS_EMPLEADOS).then(r => r.json())
+                ]);
+
+                // Procesar datos
+                empleados = Object.entries(dataEmp || {}).map(([key, value]) => ({ key, ...value }));
+                horariosEmpleados = Object.values(dataHor || {});
+
+                console.log('✅ Datos reales cargados:', { empleados, horariosEmpleados });
+
+                // Iniciar grilla
+                cargarGrilla();
+            } catch (e) {
+                console.error('❌ Error cargando datos:', e);
+                document.getElementById('body-grilla').innerHTML = 
+                    `<tr><td colspan="100">❌ Error al cargar datos: ${e.message}</td></tr>`;
             }
-        ];
+        }
 
         // ✅ Generar grilla
         function cargarGrilla() {
@@ -185,8 +193,8 @@
         }
 
         // Inicializar
-        window.onload = function () {
-            cargarGrilla();
+        window.onload = async function () {
+            await cargarDatos();
         };
     </script>
 </body>
