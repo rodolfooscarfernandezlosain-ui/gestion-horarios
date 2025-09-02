@@ -194,14 +194,14 @@
         </div>
 
         <!-- Botones de exportación -->
-<div class="filters">
-    <button class="btn" onclick="exportarExcel()" style="background: #1d6f42;">
-        <i class="fas fa-file-excel"></i> Exportar a Excel
-    </button>
-    <button class="btn" onclick="exportarPDF()" style="background: #d32f2f;">
-        <i class="fas fa-file-pdf"></i> Exportar a PDF
-    </button>
-</div>
+        <div class="filters">
+            <button class="btn-excel" onclick="exportarExcel()">
+                <i class="fas fa-file-excel"></i> Exportar a Excel
+            </button>
+            <button class="btn-pdf" onclick="exportarPDF()">
+                <i class="fas fa-file-pdf"></i> Exportar a PDF
+            </button>
+        </div>
 
         <!-- Información general -->
         <div class="info-box">
@@ -210,7 +210,8 @@
                 Total empleados: <span id="total-empleados">0</span> | 
                 Horas extras: <span id="total-horas-extras">0</span> | 
                 Feriados trabajados: <span id="total-feriados">0</span> | 
-                Domingos trabajados: <span id="total-domingos">0</span>
+                Domingos trabajados: <span id="total-domingos">0</span> |
+                Horas nocturnas: <span id="total-horas-nocturnas">0</span>
             </div>
         </div>
 
@@ -224,6 +225,7 @@
                         <th>Horas Semanales</th>
                         <th>Horas Trabajadas</th>
                         <th>Horas Extras</th>
+                        <th>Horas Nocturnas</th>
                         <th>Feriados</th>
                         <th>Domingos</th>
                         <th>Vacaciones Tomadas</th>
@@ -368,6 +370,46 @@
             return Math.max(0, Math.round((horasTrabajadas - horasNormales) * 10) / 10);
         }
 
+        // ✅ Calcular horas nocturnas (después de las 21:00)
+        function calcularHorasNocturnas(empleadoKey, mes, anio) {
+            const horario = horariosEmpleados.find(h => h.empleadoKey === empleadoKey);
+            if (!horario) return 0;
+
+            const diasEnMes = new Date(anio, mes, 0).getDate();
+            let horasNocturnas = 0;
+
+            for (let dia = 1; dia <= diasEnMes; dia++) {
+                const fechaStr = `${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+                const diaSemana = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][new Date(fechaStr).getDay()];
+                const diaData = horario.dias?.[diaSemana];
+
+                if (diaData && !diaData.libre) {
+                    // Turno 1
+                    if (diaData.entrada && diaData.salida) {
+                        const entrada = new Date(`2000-01-01 ${diaData.entrada}`);
+                        const salida = new Date(`2000-01-01 ${diaData.salida}`);
+                        if (salida.getHours() >= 21) {
+                            // Calcular desde las 21:00 hasta la salida
+                            const inicioNocturno = new Date(`2000-01-01 21:00`);
+                            const finNocturno = salida > inicioNocturno ? salida : inicioNocturno;
+                            horasNocturnas += (finNocturno - inicioNocturno) / (1000 * 60 * 60);
+                        }
+                    }
+                    // Turno 2
+                    if (diaData.doble && diaData.entrada2 && diaData.salida2) {
+                        const entrada2 = new Date(`2000-01-01 ${diaData.entrada2}`);
+                        const salida2 = new Date(`2000-01-01 ${diaData.salida2}`);
+                        if (salida2.getHours() >= 21) {
+                            const inicioNocturno = new Date(`2000-01-01 21:00`);
+                            const finNocturno = salida2 > inicioNocturno ? salida2 : inicioNocturno;
+                            horasNocturnas += (finNocturno - inicioNocturno) / (1000 * 60 * 60);
+                        }
+                    }
+                }
+            }
+            return Math.max(0, Math.round(horasNocturnas * 10) / 10);
+        }
+
         // ✅ Calcular feriados trabajados
         function calcularFeriadosTrabajados(empleadoKey, mes, anio) {
             const horario = horariosEmpleados.find(h => h.empleadoKey === empleadoKey);
@@ -487,7 +529,7 @@
 
             if (empleadosFiltrados.length === 0) {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td colspan="12" style="text-align:center">No hay empleados para mostrar</td>`;
+                tr.innerHTML = `<td colspan="13" style="text-align:center">No hay empleados para mostrar</td>`;
                 tbody.appendChild(tr);
                 return;
             }
@@ -496,12 +538,14 @@
             let totalHorasExtras = 0;
             let totalFeriados = 0;
             let totalDomingos = 0;
+            let totalHorasNocturnas = 0;
 
             // Generar filas
             empleadosFiltrados.forEach(emp => {
                 const horasSemanales = emp.horasSemanales || '—';
                 const horasTrabajadas = calcularHorasTrabajadas(emp.key, mes, anio);
                 const horasExtras = calcularHorasExtras(emp.key, mes, anio);
+                const horasNocturnas = calcularHorasNocturnas(emp.key, mes, anio);
                 const feriados = calcularFeriadosTrabajados(emp.key, mes, anio);
                 const domingos = calcularDomingosTrabajados(emp.key, mes, anio);
                 const vacacionesTomadas = calcularVacacionesTomadas(emp.key, mes, anio);
@@ -513,6 +557,7 @@
                 totalHorasExtras += horasExtras;
                 totalFeriados += feriados;
                 totalDomingos += domingos;
+                totalHorasNocturnas += horasNocturnas;
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -521,6 +566,7 @@
                     <td>${horasSemanales}</td>
                     <td>${horasTrabajadas}</td>
                     <td><strong>${horasExtras}</strong></td>
+                    <td><strong style="color: #8e44ad;">${horasNocturnas}</strong></td>
                     <td>${feriados}</td>
                     <td>${domingos}</td>
                     <td>${vacacionesTomadas}</td>
@@ -537,6 +583,7 @@
             document.getElementById('total-horas-extras').textContent = Math.round(totalHorasExtras * 10) / 10;
             document.getElementById('total-feriados').textContent = totalFeriados;
             document.getElementById('total-domingos').textContent = totalDomingos;
+            document.getElementById('total-horas-nocturnas').textContent = Math.round(totalHorasNocturnas * 10) / 10;
         }
 
         // ✅ Filtrar novedades
@@ -557,7 +604,7 @@
             XLSX.utils.sheet_add_aoa(ws, [[`NOVEDADES - ${nombreMes} ${anio}`]], {origin: 'A1'});
             XLSX.utils.sheet_add_aoa(ws, [[]], {origin: 'A2'});
 
-            const headers = [['Empleado','Local','H.Sem','H.Trab','H.Extras','Fer','Dom','V.Tom','V.Dis','V.Res','Lic','Enf']];
+            const headers = [['Empleado','Local','H.Sem','H.Trab','H.Extras','H.Noct','Fer','Dom','V.Tom','V.Dis','V.Res','Lic','Enf']];
             XLSX.utils.sheet_add_aoa(ws, headers, {origin: 'A3'});
 
             // Datos
@@ -591,7 +638,7 @@
             doc.text(`NOVEDADES - ${nombreMes} ${anio}`, 14, 10);
 
             // Datos para la tabla
-            const headers = [['Empleado','Local','H.Sem','H.Trab','H.Extras','Fer','Dom','V.Tom','V.Dis','V.Res','Lic','Enf']];
+            const headers = [['Empleado','Local','H.Sem','H.Trab','H.Extras','H.Noct','Fer','Dom','V.Tom','V.Dis','V.Res','Lic','Enf']];
             const data = [];
 
             const tbody = document.getElementById('body-novedades');
@@ -658,4 +705,3 @@
     </script>
 </body>
 </html>
-
