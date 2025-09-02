@@ -6,6 +6,10 @@
     <title>Grilla de Horarios Mensual</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Librerías para exportación -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <style>
         body { 
             font-family: 'Segoe UI', sans-serif; 
@@ -43,7 +47,11 @@
             padding: 8px 15px;
             border-radius: 4px;
             cursor: pointer;
+            margin-right: 10px;
         }
+        .btn-success { background: #27ae60; }
+        .btn-danger { background: #e74c3c; }
+        .btn-whatsapp { background: #25D366; }
         table { 
             width: 100%; 
             border-collapse: collapse; 
@@ -185,6 +193,19 @@
                 <input type="text" id="filtro-nombre" placeholder="Nombre..." oninput="filtrarGrilla()">
             </div>
             <button class="btn" onclick="cargarGrilla()">🔄 Actualizar</button>
+        </div>
+
+        <!-- Botones de exportación -->
+        <div class="filters">
+            <button class="btn-success" onclick="exportarExcel()">
+                <i class="fas fa-file-excel"></i> Exportar a Excel
+            </button>
+            <button class="btn-danger" onclick="exportarPDF()">
+                <i class="fas fa-file-pdf"></i> Exportar a PDF
+            </button>
+            <button class="btn-whatsapp" onclick="enviarWhatsApp()">
+                <i class="fab fa-whatsapp"></i> Enviar por WhatsApp
+            </button>
         </div>
 
         <!-- Grilla: Días en fila, Empleados en columnas -->
@@ -406,6 +427,163 @@
         // ✅ Filtrar grilla
         function filtrarGrilla() {
             setTimeout(cargarGrilla, 100);
+        }
+
+        // ✅ Exportar a Excel
+        function exportarExcel() {
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet([]);
+
+            // Obtener datos de la grilla
+            const hoy = new Date();
+            const mes = hoy.getMonth();
+            const anio = hoy.getFullYear();
+            const diasEnMes = new Date(anio, mes + 1, 0).getDate();
+
+            // Encabezado
+            const header = ['Día'];
+            const empleadosFiltrados = empleados.filter(e => {
+                const localFiltro = document.getElementById('filtro-local').value;
+                const nombreFiltro = document.getElementById('filtro-nombre').value.toLowerCase();
+                return (!localFiltro || e.local === localFiltro) && 
+                       (!nombreFiltro || e.nombre.toLowerCase().includes(nombreFiltro));
+            });
+
+            empleadosFiltrados.forEach(emp => {
+                header.push(emp.nombre);
+            });
+            ws['!cols'] = [{wch: 10}].concat(Array(empleadosFiltrados.length).fill({wch: 15}));
+            XLSX.utils.sheet_add_aoa(ws, [header], {origin: 'A1'});
+
+            // Filas
+            for (let dia = 1; dia <= diasEnMes; dia++) {
+                const fechaStr = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+                const diaSemana = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][new Date(fechaStr).getDay()];
+                const nombreDia = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][new Date(fechaStr).getDay()];
+
+                const row = [`${dia} ${nombreDia}`];
+                empleadosFiltrados.forEach(emp => {
+                    const horario = horariosEmpleados.find(h => h.empleadoKey === emp.key);
+                    const diaData = horario?.dias?.[diaSemana];
+                    if (!diaData || diaData.libre) {
+                        row.push('Libre');
+                    } else {
+                        let txt = `${diaData.entrada}-${diaData.salida}`;
+                        if (diaData.doble && diaData.entrada2 && diaData.salida2) {
+                            txt += ` | ${diaData.entrada2}-${diaData.salida2}`;
+                        }
+                        row.push(txt);
+                    }
+                });
+                XLSX.utils.sheet_add_aoa(ws, [row], {origin: `A${dia + 1}`});
+            }
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Horarios');
+            XLSX.writeFile(wb, `horarios_${mes + 1}_${anio}.xlsx`);
+            showToast('✅ Exportado a Excel');
+        }
+
+        // ✅ Exportar a PDF
+        function exportarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4');
+            const hoy = new Date();
+            const mes = hoy.getMonth();
+            const anio = hoy.getFullYear();
+            const diasEnMes = new Date(anio, mes + 1, 0).getDate();
+
+            doc.setFontSize(16);
+            doc.text(`Horarios Mensuales - ${mes + 1}/${anio}`, 14, 10);
+
+            // Datos para la tabla
+            const headers = [['Día']];
+            const empleadosFiltrados = empleados.filter(e => {
+                const localFiltro = document.getElementById('filtro-local').value;
+                const nombreFiltro = document.getElementById('filtro-nombre').value.toLowerCase();
+                return (!localFiltro || e.local === localFiltro) && 
+                       (!nombreFiltro || e.nombre.toLowerCase().includes(nombreFiltro));
+            });
+
+            empleadosFiltrados.forEach(emp => {
+                headers[0].push(emp.nombre);
+            });
+
+            const data = [];
+            for (let dia = 1; dia <= diasEnMes; dia++) {
+                const fechaStr = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+                const diaSemana = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][new Date(fechaStr).getDay()];
+                const nombreDia = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][new Date(fechaStr).getDay()];
+
+                const row = [`${dia} ${nombreDia}`];
+                empleadosFiltrados.forEach(emp => {
+                    const horario = horariosEmpleados.find(h => h.empleadoKey === emp.key);
+                    const diaData = horario?.dias?.[diaSemana];
+                    if (!diaData || diaData.libre) {
+                        row.push('Libre');
+                    } else {
+                        let txt = `${diaData.entrada}-${diaData.salida}`;
+                        if (diaData.doble && diaData.entrada2 && diaData.salida2) {
+                            txt += `\n${diaData.entrada2}-${diaData.salida2}`;
+                        }
+                        row.push(txt);
+                    }
+                });
+                data.push(row);
+            }
+
+            doc.autoTable({
+                head: headers,
+                body: data,
+                startY: 20,
+                theme: 'grid',
+                styles: { fontSize: 8, cellPadding: 2 },
+                columnStyles: { 0: { cellWidth: 20 } }
+            });
+
+            doc.save(`horarios_${mes + 1}_${anio}.pdf`);
+            showToast('✅ Exportado a PDF');
+        }
+
+        // ✅ Enviar por WhatsApp
+        function enviarWhatsApp() {
+            const hoy = new Date();
+            const mes = hoy.getMonth() + 1;
+            const anio = hoy.getFullYear();
+            const localFiltro = document.getElementById('filtro-local').value;
+            const localNombre = localFiltro || 'Todos los locales';
+
+            let mensaje = `*HORARIOS MENSUALES*\n${localNombre}\n${mes}/${anio}\n\n`;
+
+            // Obtener empleados filtrados
+            const empleadosFiltrados = empleados.filter(e => {
+                const nombreFiltro = document.getElementById('filtro-nombre').value.toLowerCase();
+                return (!localFiltro || e.local === localFiltro) && 
+                       (!nombreFiltro || e.nombre.toLowerCase().includes(nombreFiltro));
+            });
+
+            empleadosFiltrados.forEach(emp => {
+                mensaje += `*${emp.nombre}*\n`;
+                const horario = horariosEmpleados.find(h => h.empleadoKey === emp.key);
+                if (horario) {
+                    const dias = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+                    dias.forEach(dia => {
+                        const diaData = horario.dias?.[dia];
+                        if (diaData && !diaData.libre) {
+                            mensaje += `${dia.substring(0,3)}: ${diaData.entrada}-${diaData.salida}`;
+                            if (diaData.doble && diaData.entrada2 && diaData.salida2) {
+                                mensaje += ` | ${diaData.entrada2}-${diaData.salida2}`;
+                            }
+                            mensaje += '\n';
+                        }
+                    });
+                }
+                mensaje += '\n';
+            });
+
+            // Codificar mensaje para WhatsApp
+            const mensajeCodificado = encodeURIComponent(mensaje);
+            const url = `https://wa.me/?text=${mensajeCodificado}`;
+            window.open(url, '_blank');
         }
 
         // Inicializar
