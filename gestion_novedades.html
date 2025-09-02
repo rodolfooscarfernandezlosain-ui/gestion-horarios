@@ -48,11 +48,15 @@
             border-radius: 4px; 
             cursor: pointer;
             margin-right: 8px;
+            min-width: 110px;
+            text-align: center;
         }
-        .btn-success { background: #27ae60; }
-        .btn-danger { background: #e74c3c; }
-        .btn-pdf { background: #d32f2f; }
-        .btn-excel { background: #1d6f42; }
+        .btn-excel { 
+            background: #1d6f42; 
+        }
+        .btn-pdf { 
+            background: #d32f2f; 
+        }
         table { 
             width: 100%; 
             border-collapse: collapse; 
@@ -195,10 +199,10 @@
 
         <!-- Botones de exportación -->
         <div class="filters">
-            <button class="btn-excel" onclick="exportarExcel()">
+            <button class="btn btn-excel" onclick="exportarExcel()">
                 <i class="fas fa-file-excel"></i> Exportar a Excel
             </button>
-            <button class="btn-pdf" onclick="exportarPDF()">
+            <button class="btn btn-pdf" onclick="exportarPDF()">
                 <i class="fas fa-file-pdf"></i> Exportar a PDF
             </button>
         </div>
@@ -370,7 +374,7 @@
             return Math.max(0, Math.round((horasTrabajadas - horasNormales) * 10) / 10);
         }
 
-        // ✅ Calcular horas nocturnas (después de las 21:00)
+        // ✅ Calcular horas nocturnas (CORREGIDO)
         function calcularHorasNocturnas(empleadoKey, mes, anio) {
             const horario = horariosEmpleados.find(h => h.empleadoKey === empleadoKey);
             if (!horario) return 0;
@@ -388,7 +392,7 @@
                     if (diaData.entrada && diaData.salida) {
                         const entrada = new Date(`2000-01-01 ${diaData.entrada}`);
                         const salida = new Date(`2000-01-01 ${diaData.salida}`);
-                        if (salida.getHours() >= 21) {
+                        if (salida.getHours() >= 21 || (salida.getHours() === 20 && salida.getMinutes() > 0)) {
                             // Calcular desde las 21:00 hasta la salida
                             const inicioNocturno = new Date(`2000-01-01 21:00`);
                             const finNocturno = salida > inicioNocturno ? salida : inicioNocturno;
@@ -399,7 +403,7 @@
                     if (diaData.doble && diaData.entrada2 && diaData.salida2) {
                         const entrada2 = new Date(`2000-01-01 ${diaData.entrada2}`);
                         const salida2 = new Date(`2000-01-01 ${diaData.salida2}`);
-                        if (salida2.getHours() >= 21) {
+                        if (salida2.getHours() >= 21 || (salida2.getHours() === 20 && salida2.getMinutes() > 0)) {
                             const inicioNocturno = new Date(`2000-01-01 21:00`);
                             const finNocturno = salida2 > inicioNocturno ? salida2 : inicioNocturno;
                             horasNocturnas += (finNocturno - inicioNocturno) / (1000 * 60 * 60);
