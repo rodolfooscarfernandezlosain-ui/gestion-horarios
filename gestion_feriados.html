@@ -235,57 +235,80 @@
             }
         }
 
-        // ✅ Corregir la función cargarFeriados
-async function cargarFeriados() {
-    try {
-        const res = await fetch(DB_FERIADOS);
-        const data = await res.json();
-        const feriados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+        // ✅ Cargar feriados
+        async function cargarFeriados() {
+            try {
+                const res = await fetch(DB_FERIADOS);
+                const data = await res.json();
+                const feriados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
 
-        const tbody = document.querySelector('#tabla-feriados tbody');
-        tbody.innerHTML = '';
+                const tbody = document.querySelector('#tabla-feriados tbody');
+                tbody.innerHTML = '';
 
-        if (feriados.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center">No hay feriados registrados</td></tr>`;
-            return;
+                if (feriados.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center">No hay feriados registrados</td></tr>`;
+                    return;
+                }
+
+                // ✅ Filtrar feriados por local del usuario
+                const localesUsuario = getLocalesUsuario();
+                const feriadosFiltrados = feriados.filter(feriado => 
+                    !localesUsuario || localesUsuario.includes(feriado.local)
+                );
+
+                if (feriadosFiltrados.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center">No hay feriados para tu local</td></tr>`;
+                    return;
+                }
+
+                feriadosFiltrados.forEach(feriado => {
+                    // ✅ Corrección: evitar problemas de zona horaria
+                    const fechaParts = feriado.fecha.split('-');
+                    const anio = fechaParts[0];
+                    const mes = fechaParts[1];
+                    const dia = fechaParts[2];
+                    const fechaFormateada = `${dia}/${mes}/${anio}`;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${feriado.local}</strong></td>
+                        <td>${fechaFormateada}</td>
+                        <td>${feriado.descripcion}</td>
+                        <td style="text-align:center;">
+                            <button class="btn-warning" onclick="editarFeriado('${feriado.key}')">Editar</button>
+                            <button class="btn-danger" onclick="eliminarFeriado('${feriado.key}', '${feriado.descripcion}')">Eliminar</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error('Error cargando feriados:', e);
+                showToast('❌ Error al cargar', true);
+            }
         }
 
-        // ✅ Filtrar feriados por local del usuario
-        const localesUsuario = getLocalesUsuario();
-        const feriadosFiltrados = feriados.filter(feriado => 
-            !localesUsuario || localesUsuario.includes(feriado.local)
-        );
-
-        if (feriadosFiltrados.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center">No hay feriados para tu local</td></tr>`;
-            return;
+        function limpiarFormulario() {
+            document.getElementById('form-feriado').reset();
+            document.getElementById('edit-key').value = '';
+            document.getElementById('btn-texto').textContent = 'Guardar Feriado';
         }
 
-        feriadosFiltrados.forEach(feriado => {
-            // ✅ Corrección: usar la fecha original sin conversión de zona horaria
-            const fechaParts = feriado.fecha.split('-');
-            const anio = fechaParts[0];
-            const mes = fechaParts[1];
-            const dia = fechaParts[2];
-            const fechaFormateada = `${dia}/${mes}/${anio}`; // Formato DD/MM/YYYY
+        async function editarFeriado(key) {
+            try {
+                const res = await fetch(`${DB_FERIADOS.replace('.json', `/${key}.json`)}`);
+                const feriado = await res.json();
+                limpiarFormulario();
 
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><strong>${feriado.local}</strong></td>
-                <td>${fechaFormateada}</td>
-                <td>${feriado.descripcion}</td>
-                <td style="text-align:center;">
-                    <button class="btn-warning" onclick="editarFeriado('${feriado.key}')">Editar</button>
-                    <button class="btn-danger" onclick="eliminarFeriado('${feriado.key}', '${feriado.descripcion}')">Eliminar</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    } catch (e) {
-        console.error('Error cargando feriados:', e);
-        showToast('❌ Error al cargar', true);
-    }
-}
+                document.getElementById('local').value = feriado.local;
+                document.getElementById('fecha').value = feriado.fecha;
+                document.getElementById('descripcion').value = feriado.descripcion;
+                document.getElementById('edit-key').value = key;
+                document.getElementById('btn-texto').textContent = 'Actualizar Feriado';
+            } catch (e) {
+                console.error('Error al editar:', e);
+                showToast('❌ Error al cargar feriado', true);
+            }
+        }
 
         async function guardarFeriado(e) {
             e.preventDefault();
@@ -400,4 +423,3 @@ async function cargarFeriados() {
     </script>
 </body>
 </html>
-
