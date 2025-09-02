@@ -6,6 +6,9 @@
     <title>Alta de Empleados</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Librería para PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <style>
         body { 
             font-family: 'Segoe UI', sans-serif; 
@@ -51,6 +54,9 @@
         }
         button.btn-danger { 
             background: #e74c3c; 
+        }
+        button.btn-pdf { 
+            background: #d32f2f; 
         }
         table { 
             width: 100%; 
@@ -154,6 +160,11 @@
                 <select id="local" required>
                     <option value="">Seleccionar local</option>
                 </select>
+            </div>
+
+            <div class="form-group">
+                <label>Legajo *</label>
+                <input type="text" id="legajo" placeholder="Número de legajo" required>
             </div>
 
             <div class="form-group">
@@ -271,6 +282,7 @@
         <table id="tabla-empleados">
             <thead>
                 <tr>
+                    <th>Legajo</th>
                     <th>Nombre</th>
                     <th>Local</th>
                     <th>Puesto</th>
@@ -342,7 +354,7 @@
                 tbody.innerHTML = '';
 
                 if (empleados.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center">No hay empleados registrados</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center">No hay empleados registrados</td></tr>`;
                     return;
                 }
 
@@ -353,19 +365,21 @@
                 );
 
                 if (empleadosFiltrados.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center">No hay empleados para tu local</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center">No hay empleados para tu local</td></tr>`;
                     return;
                 }
 
                 empleadosFiltrados.forEach(emp => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
+                        <td>${emp.legajo || '—'}</td>
                         <td><strong>${emp.nombre}</strong></td>
                         <td>${emp.local}</td>
                         <td>${emp.puesto}</td>
                         <td>${emp.horasSemanales || '—'}</td>
                         <td>${emp.estudios || '—'}</td>
                         <td style="text-align:center;">
+                            <button class="btn-warning" onclick="imprimirEmpleado('${emp.key}')">PDF</button>
                             <button class="btn-warning" onclick="editarEmpleado('${emp.key}')">Editar</button>
                             <button class="btn-danger" onclick="eliminarEmpleado('${emp.key}', '${emp.nombre}')">Eliminar</button>
                         </td>
@@ -376,6 +390,58 @@
                 console.error('Error cargando empleados:', e);
                 showToast('❌ Error al cargar', true);
             }
+        }
+
+        // ✅ Exportar a PDF
+        function imprimirEmpleado(key) {
+            const emp = empleados.find(e => e.key === key);
+            if (!emp) return;
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            doc.setFontSize(16);
+            doc.text('FICHA DE EMPLEADO', 14, 10);
+            doc.setFontSize(12);
+            doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 18);
+
+            // Datos personales
+            doc.setFontSize(14);
+            doc.text('Datos Personales', 14, 30);
+            doc.setFontSize(10);
+            doc.text(`Legajo: ${emp.legajo || '—'}`, 14, 38);
+            doc.text(`Nombre: ${emp.nombre}`, 14, 44);
+            doc.text(`Local: ${emp.local}`, 14, 50);
+            doc.text(`Puesto: ${emp.puesto}`, 14, 56);
+            doc.text(`Fecha de Ingreso: ${emp.fechaIngreso || '—'}`, 14, 62);
+            doc.text(`DNI: ${emp.dni || '—'}`, 14, 68);
+            doc.text(`Teléfono: ${emp.telefono || '—'}`, 14, 74);
+            doc.text(`Email: ${emp.email || '—'}`, 14, 80);
+            doc.text(`Dirección: ${emp.direccion || '—'}`, 14, 86);
+
+            // Información laboral
+            doc.setFontSize(14);
+            doc.text('Información Laboral', 14, 100);
+            doc.setFontSize(10);
+            doc.text(`Horas Semanales: ${emp.horasSemanales || '—'}`, 14, 108);
+            doc.text(`Estudios: ${emp.estudios || '—'}`, 14, 114);
+            doc.text(`Feriados: ${emp.feriados ? 'Sí' : 'No'}`, 14, 120);
+            doc.text(`Domingos: ${emp.domingos ? 'Sí' : 'No'}`, 14, 126);
+            doc.text(`Rota: ${emp.rota ? 'Sí' : 'No'}`, 14, 132);
+            doc.text(`Horas Extras: ${emp.horasExtras ? 'Sí' : 'No'}`, 14, 138);
+            doc.text(`Reemplaza: ${emp.reemplaza?.length > 0 ? emp.reemplaza.join(', ') : 'Ninguno'}`, 14, 144);
+
+            // Observaciones
+            if (emp.observaciones) {
+                doc.setFontSize(14);
+                doc.text('Observaciones', 14, 158);
+                doc.setFontSize(10);
+                const obsLines = doc.splitTextToSize(emp.observaciones, 180);
+                doc.text(obsLines, 14, 166);
+            }
+
+            doc.save(`empleado_${emp.legajo || emp.nombre}.pdf`);
+            showToast('✅ Ficha exportada a PDF');
         }
 
         function limpiarFormulario() {
@@ -391,6 +457,7 @@
                 limpiarFormulario();
 
                 document.getElementById('local').value = emp.local;
+                document.getElementById('legajo').value = emp.legajo || '';
                 document.getElementById('nombre').value = emp.nombre;
                 document.getElementById('puesto').value = emp.puesto;
                 document.getElementById('horasSemanales').value = emp.horasSemanales || '';
@@ -424,12 +491,13 @@
         async function guardarEmpleado(e) {
             e.preventDefault();
             const local = document.getElementById('local').value;
+            const legajo = document.getElementById('legajo').value.trim();
             const nombre = document.getElementById('nombre').value.trim();
             const puesto = document.getElementById('puesto').value.trim();
             const horasSemanales = document.getElementById('horasSemanales').value;
             const estudios = document.getElementById('estudios').value;
 
-            if (!local || !nombre || !puesto || !horasSemanales || !estudios) {
+            if (!local || !legajo || !nombre || !puesto || !horasSemanales || !estudios) {
                 showToast('⚠️ Completa todos los campos obligatorios', true);
                 return;
             }
@@ -443,6 +511,7 @@
 
             const key = document.getElementById('edit-key').value;
             const empleado = {
+                legajo,
                 local,
                 nombre,
                 puesto,
