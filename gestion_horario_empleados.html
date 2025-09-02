@@ -277,7 +277,7 @@
     <script>
         // ✅ URLs de Firebase (sin espacios)
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
-        const DB_HORARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_empleados.json';
+        const DB_HORARIOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horarios_empleados.json';
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
 
         let empleados = [];
@@ -390,7 +390,7 @@
                     div.className = 'autocomplete-item';
                     div.innerHTML = `<strong>${emp.nombre}</strong> <small>(${emp.local})</small>`;
                     div.onclick = () => {
-                        searchInput.value = emp.nombre;
+                        searchInput.value = emp.nombre; // Nombre completo
                         document.getElementById('empleado-key').value = emp.key;
                         list.style.display = 'none';
                         mostrarInfoEmpleado(emp.key);
@@ -575,80 +575,90 @@
                 return;
             }
 
-            const emp = empleados.find(e => e.key === empleadoKey);
-            if (!emp) {
-                showToast('⚠️ Empleado no encontrado en la base de datos', true);
-                return;
-            }
-
-            // ✅ Verificar que el empleado pertenece al local del usuario
-            const localesUsuario = getLocalesUsuario();
-            if (localesUsuario && !localesUsuario.includes(emp.local)) {
-                showToast('❌ No puedes asignar horarios a empleados de otro local', true);
-                return;
-            }
-
-            const local = emp.local;
-            const key = document.getElementById('edit-key').value;
-
-            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-            const horario = {
-                empleadoKey,
-                empleadoNombre,
-                local,
-                dias: {}
-            };
-
-            let valido = true;
-            dias.forEach(dia => {
-                const group = document.querySelectorAll('.day-group')[dias.indexOf(dia)];
-                if (group.querySelector('.chk-libre').checked) {
-                    horario.dias[dia] = { libre: true };
-                } else {
-                    const entrada = group.querySelector('.entrada').value;
-                    const salida = group.querySelector('.salida').value;
-                    if (!entrada || !salida) valido = false;
-                    horario.dias[dia] = {
-                        entrada,
-                        salida,
-                        doble: group.querySelector('.chk-doble').checked
-                    };
-                    if (horario.dias[dia].doble) {
-                        horario.dias[dia].entrada2 = group.querySelector('.entrada2').value;
-                        horario.dias[dia].salida2 = group.querySelector('.salida2').value;
-                    }
-                }
-            });
-
-            if (!valido) {
-                showToast('⚠️ Completa todos los campos', true);
-                return;
-            }
-
+            // ✅ Cargar el nombre completo directamente desde Firebase
             try {
-                let url = DB_HORARIOS;
-                let method = 'POST';
-                let body = JSON.stringify(horario);
+                const res = await fetch(`${DB_EMPLEADOS.replace('.json', `/${empleadoKey}.json`)}`);
+                const emp = await res.json();
+                const nombreCompleto = emp?.nombre || empleadoNombre;
 
-                if (key) {
-                    url = `${DB_HORARIOS.replace('.json', `/${key}.json`)}`;
-                    method = 'PUT';
+                const empData = empleados.find(e => e.key === empleadoKey);
+                if (!empData) {
+                    showToast('⚠️ Empleado no encontrado en la base de datos', true);
+                    return;
                 }
 
-                const res = await fetch(url, { 
-                    method, 
-                    body, 
-                    headers: { 'Content-Type': 'application/json' } 
+                // ✅ Verificar que el empleado pertenece al local del usuario
+                const localesUsuario = getLocalesUsuario();
+                if (localesUsuario && !localesUsuario.includes(empData.local)) {
+                    showToast('❌ No puedes asignar horarios a empleados de otro local', true);
+                    return;
+                }
+
+                const local = empData.local;
+                const key = document.getElementById('edit-key').value;
+
+                const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+                const horario = {
+                    empleadoKey,
+                    empleadoNombre: nombreCompleto, // Usamos el nombre completo
+                    local,
+                    dias: {}
+                };
+
+                let valido = true;
+                dias.forEach(dia => {
+                    const group = document.querySelectorAll('.day-group')[dias.indexOf(dia)];
+                    if (group.querySelector('.chk-libre').checked) {
+                        horario.dias[dia] = { libre: true };
+                    } else {
+                        const entrada = group.querySelector('.entrada').value;
+                        const salida = group.querySelector('.salida').value;
+                        if (!entrada || !salida) valido = false;
+                        horario.dias[dia] = {
+                            entrada,
+                            salida,
+                            doble: group.querySelector('.chk-doble').checked
+                        };
+                        if (horario.dias[dia].doble) {
+                            horario.dias[dia].entrada2 = group.querySelector('.entrada2').value;
+                            horario.dias[dia].salida2 = group.querySelector('.salida2').value;
+                        }
+                    }
                 });
 
-                if (!res.ok) throw new Error('Error al guardar');
+                if (!valido) {
+                    showToast('⚠️ Completa todos los campos', true);
+                    return;
+                }
 
-                showToast('✅ Horario asignado');
-                limpiarFormulario();
-                await cargarHorarios();
+                try {
+                    let url = DB_HORARIOS;
+                    let method = 'POST';
+                    let body = JSON.stringify(horario);
+
+                    if (key) {
+                        url = `${DB_HORARIOS.replace('.json', `/${key}.json`)}`;
+                        method = 'PUT';
+                    }
+
+                    const res = await fetch(url, { 
+                        method, 
+                        body, 
+                        headers: { 'Content-Type': 'application/json' } 
+                    });
+
+                    if (!res.ok) throw new Error('Error al guardar');
+
+                    showToast('✅ Horario asignado');
+                    limpiarFormulario();
+                    await cargarHorarios();
+                } catch (err) {
+                    console.error('Error:', err);
+                    showToast('❌ Error al guardar', true);
+                }
             } catch (err) {
-                console.error('Error:', err);
-                showToast('❌ Error al guardar', true);
+                console.error('Error al cargar nombre completo:', err);
+                showToast('❌ Error al obtener datos del empleado', true);
             }
         }
 
