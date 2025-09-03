@@ -250,13 +250,13 @@
         // ✅ URLs de Firebase
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_AUSENCIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/ausencias.json';
-        const DB_HORARIOS_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_empleados.json';
+        const DB_HORARIO_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_empleados.json';
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
         const DB_FERIADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/feriados.json';
 
         let empleados = [];
         let ausencias = [];
-        let horariosEmpleados = [];
+        let horarioEmpleados = [];
         let locales = [];
 
         function showToast(msg, isError = false) {
@@ -273,7 +273,7 @@
                 const [resEmp, resAus, resHor, resLoc] = await Promise.all([
                     fetch(DB_EMPLEADOS),
                     fetch(DB_AUSENCIAS),
-                    fetch(DB_HORARIOS_EMPLEADOS),
+                    fetch(DB_HORARIO_EMPLEADOS),
                     fetch(DB_LOCALES),
                     fetch(DB_FERIADOS)
                 ]);
@@ -337,7 +337,7 @@
 
         // ✅ Calcular horas trabajadas
         function calcularHorasTrabajadas(empleadoKey, mes, anio) {
-            const horario = horariosEmpleados.find(h => h.empleadoKey === empleadoKey);
+            const horario = horarioEmpleados.find(h => h.empleadoKey === empleadoKey);
             if (!horario) return 0;
 
             const diasEnMes = new Date(anio, mes, 0).getDate();
@@ -380,7 +380,7 @@
 
         // ✅ Calcular horas nocturnas (CORREGIDO)
         function calcularHorasNocturnas(empleadoKey, mes, anio) {
-            const horario = horariosEmpleados.find(h => h.empleadoKey === empleadoKey);
+            const horario = horarioEmpleados.find(h => h.empleadoKey === empleadoKey);
             if (!horario) return 0;
 
             const diasEnMes = new Date(anio, mes, 0).getDate();
@@ -420,7 +420,7 @@
 
         // ✅ Calcular feriados trabajados
         function calcularFeriadosTrabajados(empleadoKey, mes, anio) {
-            const horario = horariosEmpleados.find(h => h.empleadoKey === empleadoKey);
+            const horario = horarioEmpleados.find(h => h.empleadoKey === empleadoKey);
             if (!horario) return 0;
 
             // ✅ Buscar feriados en el mes y año seleccionado
@@ -445,7 +445,7 @@
 
         // ✅ Calcular domingos trabajados
         function calcularDomingosTrabajados(empleadoKey, mes, anio) {
-            const horario = horariosEmpleados.find(h => h.empleadoKey === empleadoKey);
+            const horario = horarioEmpleados.find(h => h.empleadoKey === empleadoKey);
             if (!horario) return 0;
 
             const diasEnMes = new Date(anio, mes, 0).getDate();
@@ -714,6 +714,7 @@
     </script>
 </body>
 </html>
+
 
 
 
