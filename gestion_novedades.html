@@ -250,14 +250,15 @@
         // ✅ URLs de Firebase
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_AUSENCIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/ausencias.json';
-        const DB_HORARIO_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_empleados.json';
+        const DB_HORARIOS_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_empleados.json';
         const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
         const DB_FERIADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/feriados.json';
-
+        
         let empleados = [];
         let ausencias = [];
-        let horarioEmpleados = [];
+        let horariosEmpleados = [];
         let locales = [];
+        let feriados = [];
 
         function showToast(msg, isError = false) {
             const sb = document.getElementById('snackbar');
@@ -273,38 +274,39 @@
                 const [resEmp, resAus, resHor, resLoc] = await Promise.all([
                     fetch(DB_EMPLEADOS),
                     fetch(DB_AUSENCIAS),
-                    fetch(DB_HORARIO_EMPLEADOS),
+                    fetch(DB_HORARIOS_EMPLEADOS),
                     fetch(DB_LOCALES),
                     fetch(DB_FERIADOS)
+                    
                 ]);
 
                 const dataEmp = await resEmp.json();
                 const dataAus = await resAus.json();
                 const dataHor = await resHor.json();
                 const dataLoc = await resLoc.json();
-                const dataFer = await resFer.json();
+                const dataLoc = await resFer.json();
 
                 empleados = Object.entries(dataEmp || {}).map(([key, value]) => ({ key, ...value }));
                 ausencias = Object.values(dataAus || {});
-                horarioEmpleados = Object.values(dataHor || {});
+                horariosEmpleados = Object.values(dataHor || {});
                 locales = Object.values(dataLoc || {});
-                feriados = Object.values(dataFer || {});
 
                 // ✅ Filtrar empleados por local del usuario
-        const localesUsuario = getLocalesUsuario();
-        if (localesUsuario) {
-            empleados = empleados.filter(e => localesUsuario.includes(e.local));
-        }
+                const localesUsuario = getLocalesUsuario();
+                if (localesUsuario) {
+                    empleados = empleados.filter(e => localesUsuario.includes(e.local));
+                }
 
-        // Cargar locales en filtro
-        cargarLocales();
-        cargarEmpleados();
-        cargarNovedades();
-    } catch (e) {
-        console.error('Error cargando datos:', e);
-        showToast('❌ Error al cargar datos', true);
-    }
-}
+                // Cargar locales en filtro
+                cargarLocales();
+                cargarEmpleados();
+                cargarNovedades();
+                cargarFeriados();
+            } catch (e) {
+                console.error('Error cargando datos:', e);
+                showToast('❌ Error al cargar datos', true);
+            }
+        }
 
         // ✅ Cargar locales
         function cargarLocales() {
@@ -337,7 +339,7 @@
 
         // ✅ Calcular horas trabajadas
         function calcularHorasTrabajadas(empleadoKey, mes, anio) {
-            const horario = horarioEmpleados.find(h => h.empleadoKey === empleadoKey);
+            const horario = horariosEmpleados.find(h => h.empleadoKey === empleadoKey);
             if (!horario) return 0;
 
             const diasEnMes = new Date(anio, mes, 0).getDate();
@@ -380,7 +382,7 @@
 
         // ✅ Calcular horas nocturnas (CORREGIDO)
         function calcularHorasNocturnas(empleadoKey, mes, anio) {
-            const horario = horarioEmpleados.find(h => h.empleadoKey === empleadoKey);
+            const horario = horariosEmpleados.find(h => h.empleadoKey === empleadoKey);
             if (!horario) return 0;
 
             const diasEnMes = new Date(anio, mes, 0).getDate();
@@ -420,15 +422,14 @@
 
         // ✅ Calcular feriados trabajados
         function calcularFeriadosTrabajados(empleadoKey, mes, anio) {
-            const horario = horarioEmpleados.find(h => h.empleadoKey === empleadoKey);
+            const horario = horariosEmpleados.find(h => h.empleadoKey === empleadoKey);
             if (!horario) return 0;
 
-            // ✅ Buscar feriados en el mes y año seleccionado
-    const feriadosMes = feriados.filter(feriado => 
-        feriado.local === horario.local && // Solo feriados del mismo local
-        new Date(feriado.fecha).getMonth() + 1 === mes &&
-        new Date(feriado.fecha).getFullYear() === anio
-    );
+            // Simulación: suponemos que hay 2 feriados en el mes
+            const feriadosMes = [
+                new Date(anio, mes - 1, 10),
+                new Date(anio, mes - 1, 25)
+            ];
 
             let feriadosTrabajados = 0;
             feriadosMes.forEach(feriado => {
@@ -445,7 +446,7 @@
 
         // ✅ Calcular domingos trabajados
         function calcularDomingosTrabajados(empleadoKey, mes, anio) {
-            const horario = horarioEmpleados.find(h => h.empleadoKey === empleadoKey);
+            const horario = horariosEmpleados.find(h => h.empleadoKey === empleadoKey);
             if (!horario) return 0;
 
             const diasEnMes = new Date(anio, mes, 0).getDate();
@@ -714,7 +715,3 @@
     </script>
 </body>
 </html>
-
-
-
-
