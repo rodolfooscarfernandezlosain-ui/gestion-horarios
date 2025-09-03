@@ -248,16 +248,16 @@
 
     <script>
         // ✅ URLs de Firebase
+        const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
         const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
         const DB_AUSENCIAS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/ausencias.json';
         const DB_HORARIOS_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_empleados.json';
-        const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
         const DB_FERIADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/feriados.json';
-        
+      
+        let locales = [];
         let empleados = [];
         let ausencias = [];
         let horariosEmpleados = [];
-        let locales = [];
         let feriados = [];
 
         function showToast(msg, isError = false) {
@@ -272,24 +272,25 @@
         async function cargarDatos() {
             try {
                 const [resEmp, resAus, resHor, resLoc] = await Promise.all([
+                    fetch(DB_LOCALES),
+                    fetch(DB_EMPLEADOS),
                     fetch(DB_EMPLEADOS),
                     fetch(DB_AUSENCIAS),
                     fetch(DB_HORARIOS_EMPLEADOS),
-                    fetch(DB_LOCALES),
                     fetch(DB_FERIADOS)
                     
                 ]);
-
+                const dataLoc = await resLoc.json();
                 const dataEmp = await resEmp.json();
                 const dataAus = await resAus.json();
                 const dataHor = await resHor.json();
-                const dataLoc = await resLoc.json();
-                const dataLoc = await resFer.json();
-
+                const dataLoc = await resFer.json(); 
+                
+                locales = Object.values(dataLoc || {}).map(([key, value]) => ({ key, ...value }));
                 empleados = Object.entries(dataEmp || {}).map(([key, value]) => ({ key, ...value }));
                 ausencias = Object.values(dataAus || {});
                 horariosEmpleados = Object.values(dataHor || {});
-                locales = Object.values(dataLoc || {});
+                feriados = Object.values(dataLoc || {});
 
                 // ✅ Filtrar empleados por local del usuario
                 const localesUsuario = getLocalesUsuario();
@@ -302,6 +303,7 @@
                 cargarEmpleados();
                 cargarNovedades();
                 cargarFeriados();
+                cargarAusencias();
             } catch (e) {
                 console.error('Error cargando datos:', e);
                 showToast('❌ Error al cargar datos', true);
@@ -715,3 +717,4 @@
     </script>
 </body>
 </html>
+
