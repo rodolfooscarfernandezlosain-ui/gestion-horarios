@@ -1,1 +1,640 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alta de Empleados</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Librería para PDF (cargada correctamente) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #f4f6f9; 
+            padding: 20px; 
+        }
+        .container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        h1 { 
+            color: #2c3e50; 
+            border-bottom: 2px solid #3498db; 
+            padding-bottom: 10px; 
+        }
+        .form-group { 
+            margin: 15px 0; 
+        }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: 600; 
+        }
+        input, select, textarea { 
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+        }
+        button { 
+            background: #3498db; 
+            color: white; 
+            border: none; 
+            padding: 10px 15px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin-right: 10px;
+            min-width: 90px; /* ✅ Todos los botones del mismo ancho */
+            text-align: center;
+        }
+        button.btn-danger { 
+            background: #e74c3c; 
+        }
+        button.btn-warning { 
+            background: #f39c12; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: left; 
+        }
+        th { 
+            background: #ecf0f1; 
+        }
+        .snackbar { 
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px; 
+            background: #27ae60; 
+            color: white; 
+            padding: 12px 20px; 
+            border-radius: 6px; 
+            z-index: 1000; 
+            opacity: 0; 
+            transition: opacity 0.3s; 
+        }
+        .snackbar.show { 
+            opacity: 1; 
+        }
+    </style>
+</head>
+<body>
 
+    <!-- ✅ 1. VERIFICAR ACCESO Y PERMISOS -->
+    <script>
+        // Verificar login
+        async function verificarLogin() {
+            const usuario = sessionStorage.getItem('usuario');
+            if (usuario) return JSON.parse(usuario);
+
+            const inputUsuario = prompt('🔐 Usuario:');
+            if (!inputUsuario) return location.reload();
+
+            const inputClave = prompt('🔐 Contraseña:');
+            if (!inputClave) return location.reload();
+
+            try {
+                const res = await fetch('https://gestion-personal-c9edd-default-rtdb.firebaseio.com/usuarios.json');
+                if (!res.ok) throw new Error('Error en conexión');
+
+                const usuarios = await res.json();
+                const user = Object.values(usuarios).find(u => 
+                    u.usuario === inputUsuario && u.clave === inputClave
+                );
+
+                if (user) {
+                    sessionStorage.setItem('usuario', JSON.stringify(user));
+                    return user;
+                } else {
+                    alert('❌ Usuario o clave incorrectos');
+                    location.reload();
+                    return null;
+                }
+            } catch (error) {
+                alert('❌ Error al conectar con la base de datos');
+                console.error(error);
+                return null;
+            }
+        }
+
+        // Verificar acceso
+        function verificarAcceso() {
+            const usuario = sessionStorage.getItem('usuario');
+            if (!usuario) {
+                alert('❌ Acceso denegado. Debe iniciar sesión.');
+                window.location.href = 'index.html';
+                return null;
+            }
+            return JSON.parse(usuario);
+        }
+
+        const usuarioGlobal = verificarAcceso();
+
+        // Obtener locales del usuario
+        function getLocalesUsuario() {
+            if (usuarioGlobal.rol === 'admin') return null;
+            return Array.isArray(usuarioGlobal.locales) 
+                ? usuarioGlobal.locales 
+                : [usuarioGlobal.locales].filter(l => l);
+        }
+    </script>
+
+    <div class="container">
+        <h1><i class="fas fa-user-plus"></i> Alta de Empleados</h1>
+
+        <form id="form-empleado">
+            <input type="hidden" id="edit-key" value="">
+
+            <div class="form-group">
+                <label>Local *</label>
+                <select id="local" required>
+                    <option value="">Seleccionar local</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Legajo *</label>
+                <input type="text" id="legajo" placeholder="Número de legajo" required>
+            </div>
+
+            <div class="form-group">
+                <label>Nombre *</label>
+                <input type="text" id="nombre" placeholder="Nombre completo" required>
+            </div>
+
+            <div class="form-group">
+                <label>Puesto *</label>
+                <input type="text" id="puesto" placeholder="Puesto del empleado" required>
+            </div>
+
+            <div class="form-group">
+                <label>Horas Semanales *</label>
+                <select id="horasSemanales" required>
+                    <option value="">Seleccionar horas</option>
+                    <option value="45">45 horas</option>
+                    <option value="28">28 horas</option>
+                    <option value="22.5">22.5 horas</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Estudios Cursados *</label>
+                <select id="estudios" required>
+                    <option value="">Seleccionar nivel</option>
+                    <option value="PRIMARIO">Primario</option>
+                    <option value="SECUNDARIO">Secundario</option>
+                    <option value="TERCIARIO">Terciario</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Fecha de Ingreso</label>
+                <input type="date" id="fechaIngreso">
+            </div>
+
+            <div class="form-group">
+                <label>DNI</label>
+                <input type="text" id="dni" placeholder="Solo números">
+            </div>
+
+            <div class="form-group">
+                <label>Teléfono</label>
+                <input type="text" id="telefono" placeholder="Con código de área">
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="email" placeholder="email@dominio.com">
+            </div>
+
+            <div class="form-group">
+                <label>Dirección</label>
+                <textarea id="direccion" rows="2" placeholder="Calle, número, piso, departamento"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Feriados</label>
+                <select id="feriados">
+                    <option value="true">Sí</option>
+                    <option value="false">No</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Domingos</label>
+                <select id="domingos">
+                    <option value="true">Sí</option>
+                    <option value="false">No</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Rota</label>
+                <select id="rota">
+                    <option value="true">Sí</option>
+                    <option value="false">No</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Horas Extras</label>
+                <select id="horasExtras">
+                    <option value="true">Sí</option>
+                    <option value="false">No</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Puestos Adicionales</label>
+                <select id="reemplaza" multiple>
+                    <option value="Encargado">Encargado</option>
+                    <option value="Cajero">Cajero</option>
+                    <option value="Vendedor">Vendedor</option>
+                    <option value="Repositor">Repositor</option>
+                    <option value="Limpieza">Limpieza</option>
+                </select>
+                <small>Presiona Ctrl para seleccionar varios</small>
+            </div>
+
+            <div class="form-group">
+                <label>Observaciones</label>
+                <textarea id="observaciones" rows="3" placeholder="Información adicional"></textarea>
+            </div>
+
+            <button type="submit" class="btn-success">
+                <i class="fas fa-save"></i> <span id="btn-texto">Guardar Empleado</span>
+            </button>
+            <button type="button" onclick="limpiarFormulario()" style="background:#95a5a6;">
+                <i class="fas fa-eraser"></i> Limpiar
+            </button>
+        </form>
+
+        <table id="tabla-empleados">
+            <thead>
+                <tr>
+                    <th>Legajo</th>
+                    <th>Nombre</th>
+                    <th>Local</th>
+                    <th>Puesto</th>
+                    <th>Horas</th>
+                    <th>Estudios</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="snackbar" class="snackbar">Acción realizada</div>
+
+    <script>
+        // ✅ URLs de Firebase
+        const DB_EMPLEADOS = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json';
+        const DB_LOCALES = 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/locales.json';
+
+        let locales = [];
+
+        function showToast(msg, isError = false) {
+            const sb = document.getElementById('snackbar');
+            sb.textContent = msg;
+            sb.className = 'snackbar show';
+            if (isError) sb.classList.add('error');
+            setTimeout(() => sb.className = 'snackbar', 3000);
+        }
+
+        // ✅ Cargar locales
+        async function cargarLocales() {
+            try {
+                const res = await fetch(DB_LOCALES);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                
+                const data = await res.json();
+                if (!data) return;
+
+                const localesData = Object.values(data);
+                locales = localesData.map(loc => loc.nombre);
+
+                const select = document.getElementById('local');
+                select.innerHTML = '<option value="">Seleccionar local</option>';
+
+                // ✅ Filtrar locales por usuario
+                const localesUsuario = getLocalesUsuario();
+                const localesFiltrados = localesUsuario ? locales.filter(loc => localesUsuario.includes(loc)) : locales;
+
+                localesFiltrados.forEach(loc => {
+                    const opt = document.createElement('option');
+                    opt.value = loc;
+                    opt.textContent = loc;
+                    select.appendChild(opt);
+                });
+            } catch (e) {
+                console.error('Error cargando locales:', e);
+                showToast('Error al cargar locales', true);
+            }
+        }
+
+        // ✅ Cargar empleados
+        async function cargarEmpleados() {
+            try {
+                const res = await fetch(DB_EMPLEADOS);
+                const data = await res.json();
+                const empleados = data ? Object.entries(data).map(([key, value]) => ({ key, ...value })) : [];
+
+                const tbody = document.querySelector('#tabla-empleados tbody');
+                tbody.innerHTML = '';
+
+                if (empleados.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center">No hay empleados registrados</td></tr>`;
+                    return;
+                }
+
+                // ✅ Filtrar empleados por local del usuario
+                const localesUsuario = getLocalesUsuario();
+                const empleadosFiltrados = empleados.filter(emp => 
+                    !localesUsuario || localesUsuario.includes(emp.local)
+                );
+
+                if (empleadosFiltrados.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center">No hay empleados para tu local</td></tr>`;
+                    return;
+                }
+
+                empleadosFiltrados.forEach(emp => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${emp.legajo || '—'}</td>
+                        <td><strong>${emp.nombre}</strong></td>
+                        <td>${emp.local}</td>
+                        <td>${emp.puesto}</td>
+                        <td>${emp.horasSemanales || '—'}</td>
+                        <td>${emp.estudios || '—'}</td>
+                        <td style="text-align:center;">
+                            <button class="btn-warning" onclick="imprimirEmpleado('${emp.key}')">PDF</button>
+                            <button class="btn-warning" onclick="editarEmpleado('${emp.key}')">Editar</button>
+                            <button class="btn-danger" onclick="eliminarEmpleado('${emp.key}', '${emp.nombre}')">Eliminar</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error('Error cargando empleados:', e);
+                showToast('❌ Error al cargar', true);
+            }
+        }
+
+        // ✅ Exportar a PDF (corregido y funcional)
+        async function imprimirEmpleado(key) {
+            // Esperar a que jsPDF esté completamente cargado
+            if (typeof window.jspdf === 'undefined') {
+                showToast('❌ Cargando librería PDF...', true);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                if (typeof window.jspdf === 'undefined') {
+                    showToast('❌ Error al cargar librería PDF', true);
+                    return;
+                }
+            }
+
+            const emp = empleados.find(e => e.key === key);
+            if (!emp) {
+                showToast('❌ Empleado no encontrado', true);
+                return;
+            }
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+                
+                doc.setFontSize(16);
+                doc.text('FICHA DE EMPLEADO', 14, 10);
+                doc.setFontSize(12);
+                doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 18);
+
+                // Datos personales
+                doc.setFontSize(14);
+                doc.text('Datos Personales', 14, 30);
+                doc.setFontSize(10);
+                doc.text(`Legajo: ${emp.legajo || '—'}`, 14, 38);
+                doc.text(`Nombre: ${emp.nombre}`, 14, 44);
+                doc.text(`Local: ${emp.local}`, 14, 50);
+                doc.text(`Puesto: ${emp.puesto}`, 14, 56);
+                doc.text(`Fecha de Ingreso: ${emp.fechaIngreso || '—'}`, 14, 62);
+                doc.text(`DNI: ${emp.dni || '—'}`, 14, 68);
+                doc.text(`Teléfono: ${emp.telefono || '—'}`, 14, 74);
+                doc.text(`Email: ${emp.email || '—'}`, 14, 80);
+                doc.text(`Dirección: ${emp.direccion || '—'}`, 14, 86);
+
+                // Información laboral
+                doc.setFontSize(14);
+                doc.text('Información Laboral', 14, 100);
+                doc.setFontSize(10);
+                doc.text(`Horas Semanales: ${emp.horasSemanales || '—'}`, 14, 108);
+                doc.text(`Estudios: ${emp.estudios || '—'}`, 14, 114);
+                doc.text(`Feriados: ${emp.feriados ? 'Sí' : 'No'}`, 14, 120);
+                doc.text(`Domingos: ${emp.domingos ? 'Sí' : 'No'}`, 14, 126);
+                doc.text(`Rota: ${emp.rota ? 'Sí' : 'No'}`, 14, 132);
+                doc.text(`Horas Extras: ${emp.horasExtras ? 'Sí' : 'No'}`, 14, 138);
+                doc.text(`Reemplaza: ${emp.reemplaza?.length > 0 ? emp.reemplaza.join(', ') : 'Ninguno'}`, 14, 144);
+
+                // Observaciones
+                if (emp.observaciones) {
+                    doc.setFontSize(14);
+                    doc.text('Observaciones', 14, 158);
+                    doc.setFontSize(10);
+                    const obsLines = doc.splitTextToSize(emp.observaciones, 180);
+                    doc.text(obsLines, 14, 166);
+                }
+
+                doc.save(`empleado_${emp.legajo || emp.nombre}.pdf`);
+                showToast('✅ Ficha exportada a PDF');
+            } catch (err) {
+                console.error('Error al generar PDF:', err);
+                showToast('❌ Error al generar PDF', true);
+            }
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('form-empleado').reset();
+            document.getElementById('edit-key').value = '';
+            document.getElementById('btn-texto').textContent = 'Guardar Empleado';
+        }
+
+        async function editarEmpleado(key) {
+            try {
+                const res = await fetch(`${DB_EMPLEADOS.replace('.json', `/${key}.json`)}`);
+                const emp = await res.json();
+                limpiarFormulario();
+
+                document.getElementById('local').value = emp.local;
+                document.getElementById('legajo').value = emp.legajo || '';
+                document.getElementById('nombre').value = emp.nombre;
+                document.getElementById('puesto').value = emp.puesto;
+                document.getElementById('horasSemanales').value = emp.horasSemanales || '';
+                document.getElementById('estudios').value = emp.estudios || '';
+                document.getElementById('fechaIngreso').value = emp.fechaIngreso || '';
+                document.getElementById('dni').value = emp.dni || '';
+                document.getElementById('telefono').value = emp.telefono || '';
+                document.getElementById('email').value = emp.email || '';
+                document.getElementById('direccion').value = emp.direccion || '';
+                document.getElementById('feriados').value = emp.feriados?.toString() || 'true';
+                document.getElementById('domingos').value = emp.domingos?.toString() || 'true';
+                document.getElementById('rota').value = emp.rota?.toString() || 'false';
+                document.getElementById('horasExtras').value = emp.horasExtras?.toString() || 'false';
+                
+                if (emp.reemplaza) {
+                    const select = document.getElementById('reemplaza');
+                    Array.from(select.options).forEach(option => {
+                        option.selected = emp.reemplaza.includes(option.value);
+                    });
+                }
+                
+                document.getElementById('observaciones').value = emp.observaciones || '';
+                document.getElementById('edit-key').value = key;
+                document.getElementById('btn-texto').textContent = 'Actualizar Empleado';
+            } catch (e) {
+                console.error('Error al editar:', e);
+                showToast('❌ Error al cargar empleado', true);
+            }
+        }
+
+        async function guardarEmpleado(e) {
+            e.preventDefault();
+            const local = document.getElementById('local').value;
+            const legajo = document.getElementById('legajo').value.trim();
+            const nombre = document.getElementById('nombre').value.trim();
+            const puesto = document.getElementById('puesto').value.trim();
+            const horasSemanales = document.getElementById('horasSemanales').value;
+            const estudios = document.getElementById('estudios').value;
+
+            if (!local || !legajo || !nombre || !puesto || !horasSemanales || !estudios) {
+                showToast('⚠️ Completa todos los campos obligatorios', true);
+                return;
+            }
+
+            // ✅ Verificar que el local pertenece al usuario
+            const localesUsuario = getLocalesUsuario();
+            if (localesUsuario && !localesUsuario.includes(local)) {
+                showToast('❌ No puedes registrar empleados en otro local', true);
+                return;
+            }
+
+            const key = document.getElementById('edit-key').value;
+            const empleado = {
+                legajo,
+                local,
+                nombre,
+                puesto,
+                horasSemanales,
+                estudios,
+                fechaIngreso: document.getElementById('fechaIngreso').value,
+                dni: document.getElementById('dni').value,
+                telefono: document.getElementById('telefono').value,
+                email: document.getElementById('email').value,
+                direccion: document.getElementById('direccion').value,
+                feriados: document.getElementById('feriados').value === 'true',
+                domingos: document.getElementById('domingos').value === 'true',
+                rota: document.getElementById('rota').value === 'true',
+                horasExtras: document.getElementById('horasExtras').value === 'true',
+                reemplaza: Array.from(document.getElementById('reemplaza').selectedOptions).map(o => o.value),
+                observaciones: document.getElementById('observaciones').value
+            };
+
+            try {
+                let url = DB_EMPLEADOS;
+                let method = 'POST';
+                let body = JSON.stringify(empleado);
+
+                if (key) {
+                    url = `${DB_EMPLEADOS.replace('.json', `/${key}.json`)}`;
+                    method = 'PUT';
+                }
+
+                const res = await fetch(url, { 
+                    method, 
+                    body, 
+                    headers: { 'Content-Type': 'application/json' } 
+                });
+
+                if (!res.ok) throw new Error('Error al guardar');
+
+                showToast('✅ Empleado guardado');
+                limpiarFormulario();
+                await cargarEmpleados();
+            } catch (err) {
+                console.error('Error:', err);
+                showToast('❌ Error al guardar', true);
+            }
+        }
+
+        async function eliminarEmpleado(key, nombre) {
+            if (!confirm(`¿Eliminar al empleado "${nombre}"?`)) return;
+
+            try {
+                const res = await fetch(`${DB_EMPLEADOS.replace('.json', `/${key}.json`)}`, {
+                    method: 'DELETE'
+                });
+
+                if (!res.ok) throw new Error('Error al eliminar');
+
+                showToast('🗑️ Empleado eliminado');
+                await cargarEmpleados();
+            } catch (err) {
+                console.error('Error:', err);
+                showToast('❌ Error al eliminar', true);
+            }
+        }
+
+        // Inicializar
+        window.onload = async function () {
+            await cargarLocales();
+            await cargarEmpleados();
+
+            document.getElementById('form-empleado').addEventListener('submit', guardarEmpleado);
+        };
+    </script>
+
+    <!-- ✅ Botón flotante -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (document.getElementById('btn-menu-flotante')) return;
+            const btn = document.createElement('button');
+            btn.id = 'btn-menu-flotante';
+            btn.textContent = '☰ Menú';
+            btn.title = 'Volver al menú principal';
+            btn.style.cssText = `
+                position: fixed !important;
+                top: 20px !important;
+                right: 20px !important;
+                z-index: 99999 !important;
+                padding: 12px 16px !important;
+                font-size: 14px !important;
+                font-weight: bold !important;
+                color: white !important;
+                background-color: #2980b9 !important;
+                border: none !important;
+                border-radius: 6px !important;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
+                cursor: pointer !important;
+                opacity: 1 !important;
+                display: block !important;
+                transition: all 0.2s ease !important;
+            `;
+            btn.onclick = () => {
+                window.location.href = 'index.html';
+            };
+            document.body.appendChild(btn);
+        });
+    </script>
+</body>
+</html>
