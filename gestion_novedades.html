@@ -40,7 +40,7 @@
   </table>
 
   <script>
-    let empleados = [], ausencias = [], horariosEmpleados = [], feriados = [];
+    let empleados = [], ausencias = [], horarioEmpleados = [], feriados = [];
     let usuarioGlobal = null;
 
     async function verificarLogin() {
@@ -92,14 +92,14 @@
       const [e, a, h, f] = await Promise.all([
         fetch(urls.empleados).then(r => r.json()),
         fetch(urls.ausencias).then(r => r.json()),
-        fetch(urls.horarios).then(r => r.json()),
+        fetch(urls.horarioEmpleados).then(r => r.json()),
         fetch(urls.feriados).then(r => r.json())
       ]);
 
       const localesPermitidos = getLocalesUsuario();
       empleados = Object.values(e).filter(emp => !localesPermitidos || localesPermitidos.includes(emp.local));
       ausencias = Object.values(a);
-      horariosEmpleados = Object.values(h);
+      horarioEmpleados = Object.values(h);
       feriados = Object.values(f);
 
       cargarFiltros();
@@ -147,7 +147,7 @@
       
       empleadosFiltrados.forEach(emp => {
         const ausenciasEmp = ausencias.filter(a => a.empleadoKey === emp.key);
-        const horariosEmp = horariosEmpleados.filter(h => {
+        const horariosEmp = horarioEmpleados.filter(h => {
           const fecha = new Date(h.fecha);
           return h.empleadoKey === emp.key &&
                  fecha.getMonth() + 1 === mes &&
@@ -155,7 +155,7 @@
         });
         const feriadosLocal = feriados.filter(f => f.local === emp.local);
 
-        const resumen = calcularResumen(emp, ausenciasEmp, horariosEmp, feriadosLocal);
+        const resumen = calcularResumen(emp, ausenciasEmp, horarioEmp, feriadosLocal);
 
         const fila = document.createElement("tr");
         fila.innerHTML = `
@@ -222,3 +222,4 @@
   </script>
 </body>
 </html>
+
