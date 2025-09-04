@@ -99,7 +99,7 @@
       const localesPermitidos = getLocalesUsuario();
       empleados = Object.values(e).filter(emp => !localesPermitidos || localesPermitidos.includes(emp.local));
       ausencias = Object.values(a);
-      horariosEmpleados = Object.values(h); // Se corrige el nombre de la variable aquí
+      horariosEmpleados = Object.values(h);
       feriados = Object.values(f);
 
       cargarFiltros();
@@ -117,20 +117,21 @@
         const anioActual = new Date().getFullYear();
         anioSelect.innerHTML = `<option>${anioActual}</option><option>${anioActual - 1}</option>`;
       }
-      
+      
+      // Se rellenan los filtros de Local y Empleado
       const locales = [...new Set(empleados.map(e => e.local))];
       localSelect.innerHTML = `<option value="">Todos</option>` + locales.map(l => `<option>${l}</option>`).join('');
       empleadoSelect.innerHTML = `<option value="">Todos</option>` + empleados.map(e => `<option value="${e.key}">${e.nombre}</option>`).join('');
 
-      // Se agregan event listeners para actualizar los filtros dinámicamente
       localSelect.addEventListener('change', actualizarFiltrosEmpleado);
     }
 
     function actualizarFiltrosEmpleado() {
       const localFiltro = document.getElementById("local").value;
       const empleadoSelect = document.getElementById("empleado");
-
-      const empleadosFiltrados = empleados.filter(emp => !localFiltro || emp.local === localFiltro);
+      
+      const empleadosFiltrados = localFiltro ? empleados.filter(emp => emp.local === localFiltro) : empleados;
+      
       empleadoSelect.innerHTML = `<option value="">Todos</option>` + empleadosFiltrados.map(e => `<option value="${e.key}">${e.nombre}</option>`).join('');
     }
 
@@ -147,13 +148,13 @@
 
       const tabla = document.getElementById("tablaNovedades");
       tabla.innerHTML = "";
-      
+      
       const empleadosFiltrados = empleados.filter(emp => {
         const cumpleLocal = !localFiltro || emp.local === localFiltro;
         const cumpleEmpleado = !empleadoFiltro || emp.key === empleadoFiltro;
         return cumpleLocal && cumpleEmpleado;
       });
-      
+      
       empleadosFiltrados.forEach(emp => {
         const ausenciasEmp = ausencias.filter(a => a.empleadoKey === emp.key);
         const horariosEmp = horariosEmpleados.filter(h => {
@@ -194,7 +195,12 @@
         horasTrabajadas += h.horas || 0;
         if (h.extra) horasExtras += h.horas;
         if (h.nocturno) horasNocturnas += h.horas;
-        if (h.dia === "domingo") domingosTrabajados += h.horas;
+        
+        // Corregido: Obtenemos el día de la semana a partir de la fecha
+        const diaDeLaSemana = new Date(h.fecha).getDay(); // 0 = Domingo, 1 = Lunes, etc.
+        if (diaDeLaSemana === 0) { // El 0 en JavaScript representa el domingo
+          domingosTrabajados += h.horas;
+        }
         if (feriados.some(f => f.fecha === h.fecha)) feriadosTrabajados += h.horas;
       });
 
