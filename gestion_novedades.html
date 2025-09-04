@@ -136,6 +136,11 @@
       const localFiltro = document.getElementById("local").value;
       const empleadoFiltro = document.getElementById("empleado").value;
 
+      if (!mes || !anio || isNaN(mes) || isNaN(anio)) {
+        alert("⚠️ Seleccioná mes y año válidos");
+        return;
+      }
+
       const tabla = document.getElementById("tablaNovedades");
       tabla.innerHTML = "";
 
@@ -159,6 +164,12 @@
         `;
         tabla.appendChild(fila);
       });
+
+      if (tabla.rows.length === 0) {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `<td colspan="13">⚠️ No se encontraron novedades para los filtros seleccionados</td>`;
+        tabla.appendChild(fila);
+      }
     }
 
     function calcularResumen(emp, ausencias, horarios, feriados) {
@@ -169,7 +180,4 @@
 
       horarios.forEach(h => {
         horasTrabajadas += h.horas || 0;
-        if (h.extra) horasExtras += h.horas;
-        if (h.nocturno) horasNocturnas += h.horas;
-        if (h.dia === "domingo") domingosTrabajados++;
-        if (feriados.some(f =>
+        if (h
