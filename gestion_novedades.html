@@ -139,14 +139,12 @@
       const tabla = document.getElementById("tablaNovedades");
       tabla.innerHTML = "";
       
-      // *** Aquí está el cambio clave: se crea una lista de empleados filtrada.
-      const empleadosFiltrados = empleados.filter(emp => {
+      const empleadosFiltrados = empleados.filter(emp => {
         const cumpleLocal = !localFiltro || emp.local === localFiltro;
         const cumpleEmpleado = !empleadoFiltro || emp.key === empleadoFiltro;
         return cumpleLocal && cumpleEmpleado;
       });
       
-      // Ahora se itera sobre la lista filtrada, no sobre todos los empleados.
       empleadosFiltrados.forEach(emp => {
         const ausenciasEmp = ausencias.filter(a => a.empleadoKey === emp.key);
         const horariosEmp = horariosEmpleados.filter(h => {
@@ -187,8 +185,9 @@
         horasTrabajadas += h.horas || 0;
         if (h.extra) horasExtras += h.horas;
         if (h.nocturno) horasNocturnas += h.horas;
-        if (h.dia === "domingo") domingosTrabajados++;
-        if (feriados.some(f => f.fecha === h.fecha)) feriadosTrabajados++;
+        // Corregido: Ahora suma las horas, no solo cuenta el día.
+        if (h.dia === "domingo") domingosTrabajados += h.horas;
+        if (feriados.some(f => f.fecha === h.fecha)) feriadosTrabajados += h.horas;
       });
 
       ausencias.forEach(a => {
