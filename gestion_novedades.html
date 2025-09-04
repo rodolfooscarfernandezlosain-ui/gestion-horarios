@@ -3,9 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <title>📋 Gestión de Novedades</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
     table { border-collapse: collapse; width: 100%; margin-top: 20px; }
@@ -27,8 +24,6 @@
     <label>Empleado:</label>
     <select id="empleado"></select>
     <button onclick="cargarNovedades()">🔄 Actualizar</button>
-    <button onclick="exportarExcel()">📤 Excel</button>
-    <button onclick="exportarPDF()">📄 PDF</button>
     <button onclick="cerrarSesion()">🔓 Cerrar sesión</button>
   </div>
 
@@ -60,8 +55,6 @@
 
       try {
         const res = await fetch('https://gestion-personal-c9edd-default-rtdb.firebaseio.com/usuarios.json');
-        if (!res.ok) throw new Error('Error en conexión');
-
         const usuarios = await res.json();
         const user = Object.values(usuarios).find(u => u.usuario === inputUsuario && u.clave === inputClave);
 
@@ -71,12 +64,10 @@
         } else {
           alert('❌ Usuario o clave incorrectos');
           location.reload();
-          return null;
         }
       } catch (error) {
         alert('❌ Error al conectar con la base de datos');
         console.error(error);
-        return null;
       }
     }
 
@@ -149,7 +140,12 @@
         if (empleadoFiltro && emp.key !== empleadoFiltro) return;
 
         const ausenciasEmp = ausencias.filter(a => a.empleadoKey === emp.key);
-        const horariosEmp = horariosEmpleados.filter(h => h.empleadoKey === emp.key && new Date(h.fecha).getMonth() + 1 === mes && new Date(h.fecha).getFullYear() === anio);
+        const horariosEmp = horariosEmpleados.filter(h => {
+          const fecha = new Date(h.fecha);
+          return h.empleadoKey === emp.key &&
+                 fecha.getMonth() + 1 === mes &&
+                 fecha.getFullYear() === anio;
+        });
         const feriadosLocal = feriados.filter(f => f.local === emp.local);
 
         const resumen = calcularResumen(emp, ausenciasEmp, horariosEmp, feriadosLocal);
@@ -180,4 +176,13 @@
 
       horarios.forEach(h => {
         horasTrabajadas += h.horas || 0;
-        if (h
+        if (h.extra) horasExtras += h.horas;
+        if (h.nocturno) horasNocturnas += h.horas;
+        if (h.dia === "domingo") domingosTrabajados++;
+        if (feriados.some(f => f.fecha === h.fecha)) feriadosTrabajados++;
+      });
+
+      ausencias.forEach(a => {
+        if (a.tipo === "vacaciones") vacacionesTomadas++;
+        if (a.tipo === "licencia") licencias++;
+        if (a.tipo === "
