@@ -1,188 +1,220 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>📋 Gestión de Novedades</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    th { background-color: #f2f2f2; }
-    select, button { margin: 5px; padding: 6px; }
-  </style>
+  <meta charset="UTF-8" />
+  <title>📋 Gestión de Novedades</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #f2f2f2; }
+    select, button { margin: 5px; padding: 6px; }
+  </style>
 </head>
 <body>
-  <h2>📋 Novedades del Personal</h2>
+  <h2>📋 Novedades del Personal</h2>
 
-  <div>
-    <label>Mes:</label>
-    <select id="mes"></select>
-    <label>Año:</label>
-    <select id="anio"></select>
-    <label>Local:</label>
-    <select id="local"></select>
-    <label>Empleado:</label>
-    <select id="empleado"></select>
-    <button onclick="cargarNovedades()">🔄 Actualizar</button>
-    <button onclick="cerrarSesion()">🔓 Cerrar sesión</button>
-  </div>
+  <div>
+    <label>Mes:</label>
+    <select id="mes"></select>
+    <label>Año:</label>
+    <select id="anio"></select>
+    <label>Local:</label>
+    <select id="local"></select>
+    <label>Empleado:</label>
+    <select id="empleado"></select>
+    <button onclick="cargarNovedades()">🔄 Actualizar</button>
+    <button onclick="cerrarSesion()">🔓 Cerrar sesión</button>
+  </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Empleado</th><th>Local</th><th>Horas Semanales</th><th>Horas Trabajadas</th>
-        <th>Extras</th><th>Nocturnas</th><th>Feriados</th><th>Domingos</th>
-        <th>Vacaciones Tomadas</th><th>Disponibles</th><th>Restantes</th>
-        <th>Licencias</th><th>Enfermedad</th>
-      </tr>
-    </thead>
-    <tbody id="tablaNovedades"></tbody>
-  </table>
+  <table>
+    <thead>
+      <tr>
+        <th>Empleado</th><th>Local</th><th>Horas Semanales</th><th>Horas Trabajadas</th>
+        <th>Extras</th><th>Nocturnas</th><th>Feriados</th><th>Domingos</th>
+        <th>Vacaciones Tomadas</th><th>Disponibles</th><th>Restantes</th>
+        <th>Licencias</th><th>Enfermedad</th>
+      </tr>
+    </thead>
+    <tbody id="tablaNovedades"></tbody>
+  </table>
 
-  <script>
-    let empleados = [], ausencias = [], horariosEmpleados = [], feriados = [];
-    let usuarioGlobal = null;
+  <script>
+    let empleados = [], ausencias = [], horariosEmpleados = [], feriados = [];
+    let usuarioGlobal = null;
 
-    async function verificarLogin() {
-      const usuario = sessionStorage.getItem('usuario');
-      if (usuario) return JSON.parse(usuario);
+    async function verificarLogin() {
+      const usuario = sessionStorage.getItem('usuario');
+      if (usuario) return JSON.parse(usuario);
 
-      const inputUsuario = prompt('🔐 Usuario:');
-      if (!inputUsuario) return location.reload();
+      const inputUsuario = prompt('🔐 Usuario:');
+      if (!inputUsuario) return location.reload();
 
-      const inputClave = prompt('🔐 Contraseña:');
-      if (!inputClave) return location.reload();
+      const inputClave = prompt('🔐 Contraseña:');
+      if (!inputClave) return location.reload();
 
-      try {
-        const res = await fetch('https://gestion-personal-c9edd-default-rtdb.firebaseio.com/usuarios.json');
-        const usuarios = await res.json();
-        const user = Object.values(usuarios).find(u => u.usuario === inputUsuario && u.clave === inputClave);
+      try {
+        const res = await fetch('https://gestion-personal-c9edd-default-rtdb.firebaseio.com/usuarios.json');
+        const usuarios = await res.json();
+        const user = Object.values(usuarios).find(u => u.usuario === inputUsuario && u.clave === inputClave);
 
-        if (user) {
-          sessionStorage.setItem('usuario', JSON.stringify(user));
-          return user;
-        } else {
-          alert('❌ Usuario o clave incorrectos');
-          location.reload();
-        }
-      } catch (error) {
-        alert('❌ Error al conectar con la base de datos');
-        console.error(error);
-      }
-    }
+        if (user) {
+          sessionStorage.setItem('usuario', JSON.stringify(user));
+          return user;
+        } else {
+          alert('❌ Usuario o clave incorrectos');
+          location.reload();
+        }
+      } catch (error) {
+        alert('❌ Error al conectar con la base de datos');
+        console.error(error);
+      }
+    }
 
-    function cerrarSesion() {
-      sessionStorage.removeItem('usuario');
-      location.reload();
-    }
+    function cerrarSesion() {
+      sessionStorage.removeItem('usuario');
+      location.reload();
+    }
 
-    function getLocalesUsuario() {
-      if (usuarioGlobal.rol === 'admin') return null;
-      return Array.isArray(usuarioGlobal.locales) ? usuarioGlobal.locales : [usuarioGlobal.locales].filter(l => l);
-    }
+    function getLocalesUsuario() {
+      if (usuarioGlobal.rol === 'admin') return null;
+      return Array.isArray(usuarioGlobal.locales) ? usuarioGlobal.locales : [usuarioGlobal.locales].filter(l => l);
+    }
 
-    async function cargarDatos() {
-      const urls = {
-        empleados: 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json',
-        ausencias: 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/ausencias.json',
-        horarios: 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_empleados.json',
-        feriados: 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/feriados.json'
-      };
+    async function cargarDatos() {
+      const urls = {
+        empleados: 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/empleados.json',
+        ausencias: 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/ausencias.json',
+        horarios: 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/horario_empleados.json',
+        feriados: 'https://gestion-personal-c9edd-default-rtdb.firebaseio.com/feriados.json'
+      };
 
-      const [e, a, h, f] = await Promise.all([
-        fetch(urls.empleados).then(r => r.json()),
-        fetch(urls.ausencias).then(r => r.json()),
-        fetch(urls.horarios).then(r => r.json()),
-        fetch(urls.feriados).then(r => r.json())
-      ]);
+      const [e, a, h, f] = await Promise.all([
+        fetch(urls.empleados).then(r => r.json()),
+        fetch(urls.ausencias).then(r => r.json()),
+        fetch(urls.horarios).then(r => r.json()),
+        fetch(urls.feriados).then(r => r.json())
+      ]);
 
-      const localesPermitidos = getLocalesUsuario();
-      empleados = Object.values(e).filter(emp => !localesPermitidos || localesPermitidos.includes(emp.local));
-      ausencias = Object.values(a);
-      horariosEmpleados = Object.values(h);
-      feriados = Object.values(f);
+      const localesPermitidos = getLocalesUsuario();
+      empleados = Object.values(e).filter(emp => !localesPermitidos || localesPermitidos.includes(emp.local));
+      ausencias = Object.values(a);
+      horariosEmpleados = Object.values(h);
+      feriados = Object.values(f);
 
-      cargarFiltros();
-    }
+      cargarFiltros();
+    }
 
-    function cargarFiltros() {
-      const mesSelect = document.getElementById("mes");
-      const anioSelect = document.getElementById("anio");
-      const localSelect = document.getElementById("local");
-      const empleadoSelect = document.getElementById("empleado");
+    function cargarFiltros() {
+      const mesSelect = document.getElementById("mes");
+      const anioSelect = document.getElementById("anio");
+      const localSelect = document.getElementById("local");
+      const empleadoSelect = document.getElementById("empleado");
 
-      mesSelect.innerHTML = [...Array(12).keys()].map(m => `<option value="${m+1}">${m+1}</option>`).join('');
-      const anioActual = new Date().getFullYear();
-      anioSelect.innerHTML = `<option>${anioActual}</option><option>${anioActual - 1}</option>`;
+      // Solo cargar Mes y Año la primera vez
+      if (mesSelect.options.length === 0) {
+        mesSelect.innerHTML = [...Array(12).keys()].map(m => `<option value="${m+1}">${m+1}</option>`).join('');
+        const anioActual = new Date().getFullYear();
+        anioSelect.innerHTML = `<option>${anioActual}</option><option>${anioActual - 1}</option>`;
+      }
+      
+      // Se rellenan los filtros de Local y Empleado
+      const locales = [...new Set(empleados.map(e => e.local))];
+      localSelect.innerHTML = `<option value="">Todos</option>` + locales.map(l => `<option>${l}</option>`).join('');
 
-      const locales = [...new Set(empleados.map(e => e.local))];
-      localSelect.innerHTML = `<option value="">Todos</option>` + locales.map(l => `<option>${l}</option>`).join('');
+      empleadoSelect.innerHTML = `<option value="">Todos</option>` + empleados.map(e => `<option value="${e.key}">${e.nombre}</option>`).join('');
+    }
 
-      empleadoSelect.innerHTML = `<option value="">Todos</option>` + empleados.map(e => `<option value="${e.key}">${e.nombre}</option>`).join('');
-    }
+    function cargarNovedades() {
+      const mes = parseInt(document.getElementById("mes").value);
+      const anio = parseInt(document.getElementById("anio").value);
+      const localFiltro = document.getElementById("local").value;
+      const empleadoFiltro = document.getElementById("empleado").value;
 
-    function cargarNovedades() {
-      const mes = parseInt(document.getElementById("mes").value);
-      const anio = parseInt(document.getElementById("anio").value);
-      const localFiltro = document.getElementById("local").value;
-      const empleadoFiltro = document.getElementById("empleado").value;
+      if (!mes || !anio || isNaN(mes) || isNaN(anio)) {
+        alert("⚠️ Seleccioná mes y año válidos");
+        return;
+      }
 
-      if (!mes || !anio || isNaN(mes) || isNaN(anio)) {
-        alert("⚠️ Seleccioná mes y año válidos");
-        return;
-      }
+      const tabla = document.getElementById("tablaNovedades");
+      tabla.innerHTML = "";
 
-      const tabla = document.getElementById("tablaNovedades");
-      tabla.innerHTML = "";
+      empleados.forEach(emp => {
+        if (localFiltro && emp.local !== localFiltro) return;
+        if (empleadoFiltro && emp.key !== empleadoFiltro) return;
 
-      empleados.forEach(emp => {
-        if (localFiltro && emp.local !== localFiltro) return;
-        if (empleadoFiltro && emp.key !== empleadoFiltro) return;
+        const ausenciasEmp = ausencias.filter(a => a.empleadoKey === emp.key);
+        const horariosEmp = horariosEmpleados.filter(h => {
+          const fecha = new Date(h.fecha);
+          return h.empleadoKey === emp.key &&
+                 fecha.getMonth() + 1 === mes &&
+                 fecha.getFullYear() === anio;
+        });
+        const feriadosLocal = feriados.filter(f => f.local === emp.local);
 
-        const ausenciasEmp = ausencias.filter(a => a.empleadoKey === emp.key);
-        const horariosEmp = horariosEmpleados.filter(h => {
-          const fecha = new Date(h.fecha);
-          return h.empleadoKey === emp.key &&
-                 fecha.getMonth() + 1 === mes &&
-                 fecha.getFullYear() === anio;
-        });
-        const feriadosLocal = feriados.filter(f => f.local === emp.local);
+        const resumen = calcularResumen(emp, ausenciasEmp, horariosEmp, feriadosLocal);
 
-        const resumen = calcularResumen(emp, ausenciasEmp, horariosEmp, feriadosLocal);
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${emp.nombre}</td><td>${emp.local}</td><td>${emp.horasSemanales || 0}</td>
+          <td>${resumen.horasTrabajadas}</td><td>${resumen.horasExtras}</td><td>${resumen.horasNocturnas}</td>
+          <td>${resumen.feriadosTrabajados}</td><td>${resumen.domingosTrabajados}</td>
+          <td>${resumen.vacacionesTomadas}</td><td>${resumen.vacacionesDisponibles}</td><td>${resumen.vacacionesRestantes}</td>
+          <td>${resumen.licencias}</td><td>${resumen.enfermedad}</td>
+        `;
+        tabla.appendChild(fila);
+      });
 
-        const fila = document.createElement("tr");
-        fila.innerHTML = `
-          <td>${emp.nombre}</td><td>${emp.local}</td><td>${emp.horasSemanales || 0}</td>
-          <td>${resumen.horasTrabajadas}</td><td>${resumen.horasExtras}</td><td>${resumen.horasNocturnas}</td>
-          <td>${resumen.feriadosTrabajados}</td><td>${resumen.domingosTrabajados}</td>
-          <td>${resumen.vacacionesTomadas}</td><td>${resumen.vacacionesDisponibles}</td><td>${resumen.vacacionesRestantes}</td>
-          <td>${resumen.licencias}</td><td>${resumen.enfermedad}</td>
-        `;
-        tabla.appendChild(fila);
-      });
+      if (tabla.rows.length === 0) {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `<td colspan="13">⚠️ No se encontraron novedades para los filtros seleccionados</td>`;
+        tabla.appendChild(fila);
+      }
+    }
 
-      if (tabla.rows.length === 0) {
-        const fila = document.createElement("tr");
-        fila.innerHTML = `<td colspan="13">⚠️ No se encontraron novedades para los filtros seleccionados</td>`;
-        tabla.appendChild(fila);
-      }
-    }
+    function calcularResumen(emp, ausencias, horarios, feriados) {
+      let horasTrabajadas = 0, horasExtras = 0, horasNocturnas = 0;
+      let feriadosTrabajados = 0, domingosTrabajados = 0;
+      let vacacionesTomadas = 0, vacacionesDisponibles = emp.vacaciones || 14;
+      let licencias = 0, enfermedad = 0;
 
-    function calcularResumen(emp, ausencias, horarios, feriados) {
-      let horasTrabajadas = 0, horasExtras = 0, horasNocturnas = 0;
-      let feriadosTrabajados = 0, domingosTrabajados = 0;
-      let vacacionesTomadas = 0, vacacionesDisponibles = emp.vacaciones || 14;
-      let licencias = 0, enfermedad = 0;
+      horarios.forEach(h => {
+        horasTrabajadas += h.horas || 0;
+        if (h.extra) horasExtras += h.horas;
+        if (h.nocturno) horasNocturnas += h.horas;
+        if (h.dia === "domingo") domingosTrabajados++;
+        if (feriados.some(f => f.fecha === h.fecha)) feriadosTrabajados++;
+      });
 
-      horarios.forEach(h => {
-        horasTrabajadas += h.horas || 0;
-        if (h.extra) horasExtras += h.horas;
-        if (h.nocturno) horasNocturnas += h.horas;
-        if (h.dia === "domingo") domingosTrabajados++;
-        if (feriados.some(f => f.fecha === h.fecha)) feriadosTrabajados++;
-      });
+      ausencias.forEach(a => {
+        if (a.tipo === "vacaciones") vacacionesTomadas++;
+        if (a.tipo === "licencia") licencias++;
+        if (a.tipo === "enfermedad") enfermedad++;
+      });
 
-      ausencias.forEach(a => {
-        if (a.tipo === "vacaciones") vacacionesTomadas++;
-        if (a.tipo === "licencia") licencias++;
-        if (a.tipo === "
+      const vacacionesRestantes = vacacionesDisponibles - vacacionesTomadas;
+
+      return {
+        horasTrabajadas,
+        horasExtras,
+        horasNocturnas,
+        feriadosTrabajados,
+        domingosTrabajados,
+        vacacionesTomadas,
+        vacacionesDisponibles,
+        vacacionesRestantes,
+        licencias,
+        enfermedad
+      };
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      usuarioGlobal = await verificarLogin();
+      if (usuarioGlobal) {
+        await cargarDatos();
+        cargarNovedades(); // Carga inicial con los filtros por defecto
+      }
+    });
+  </script>
+</body>
+</html>
