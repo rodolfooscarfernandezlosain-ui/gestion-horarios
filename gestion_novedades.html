@@ -92,7 +92,7 @@
       const [e, a, h, f] = await Promise.all([
         fetch(urls.empleados).then(r => r.json()),
         fetch(urls.ausencias).then(r => r.json()),
-        fetch(urls.horarioEmpleados).then(r => r.json()),
+        fetch(urls.horarios).then(r => r.json()),
         fetch(urls.feriados).then(r => r.json())
       ]);
 
@@ -222,4 +222,5 @@
   </script>
 </body>
 </html>
+
 
