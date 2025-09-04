@@ -118,7 +118,6 @@
         anioSelect.innerHTML = `<option>${anioActual}</option><option>${anioActual - 1}</option>`;
       }
       
-      // Se rellenan los filtros de Local y Empleado
       const locales = [...new Set(empleados.map(e => e.local))];
       localSelect.innerHTML = `<option value="">Todos</option>` + locales.map(l => `<option>${l}</option>`).join('');
       empleadoSelect.innerHTML = `<option value="">Todos</option>` + empleados.map(e => `<option value="${e.key}">${e.nombre}</option>`).join('');
