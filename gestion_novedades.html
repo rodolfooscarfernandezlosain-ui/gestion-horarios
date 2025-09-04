@@ -138,11 +138,16 @@
 
       const tabla = document.getElementById("tablaNovedades");
       tabla.innerHTML = "";
-
-      empleados.forEach(emp => {
-        if (localFiltro && emp.local !== localFiltro) return;
-        if (empleadoFiltro && emp.key !== empleadoFiltro) return;
-
+      
+      // *** Aquí está el cambio clave: se crea una lista de empleados filtrada.
+      const empleadosFiltrados = empleados.filter(emp => {
+        const cumpleLocal = !localFiltro || emp.local === localFiltro;
+        const cumpleEmpleado = !empleadoFiltro || emp.key === empleadoFiltro;
+        return cumpleLocal && cumpleEmpleado;
+      });
+      
+      // Ahora se itera sobre la lista filtrada, no sobre todos los empleados.
+      empleadosFiltrados.forEach(emp => {
         const ausenciasEmp = ausencias.filter(a => a.empleadoKey === emp.key);
         const horariosEmp = horariosEmpleados.filter(h => {
           const fecha = new Date(h.fecha);
