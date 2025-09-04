@@ -185,22 +185,23 @@
     }
 
     function calcularResumen(emp, ausencias, horarios, feriados) {
-    let horasTrabajadas = 0, horasExtras = 0, horasNocturnas = 0;
-    let feriadosTrabajados = 0, domingosTrabajados = 0;
-    let vacacionesTomadas = 0, vacacionesDisponibles = emp.vacaciones || 14;
-    let licencias = 0, enfermedad = 0;
+      let horasTrabajadas = 0, horasExtras = 0, horasNocturnas = 0;
+      let feriadosTrabajados = 0, domingosTrabajados = 0;
+      let vacacionesTomadas = 0, vacacionesDisponibles = emp.vacaciones || 14;
+      let licencias = 0, enfermedad = 0;
 
-    horarios.forEach(h => {
-      horasTrabajadas += h.horas || 0;
-      if (h.extra) horasExtras += h.horas;
-      if (h.nocturno) horasNocturnas += h.horas;
-      
-      // Corregido: Ahora chequea si existe la clave 'domingo' dentro de 'dias'
-      if (h.dias && h.dias.domingo) { 
-        domingosTrabajados += h.horas;
-      }
-
-      if (feriados.some(f => f.fecha === h.fecha)) feriadosTrabajados += h.horas;
+      horarios.forEach(h => {
+        console.log(h); // <-- ¡NUEVO! Mira lo que se imprime aquí en la consola
+        horasTrabajadas += h.horas || 0;
+        if (h.extra) horasExtras += h.horas;
+        if (h.nocturno) horasNocturnas += h.horas;
+        
+        // Corregido: Obtenemos el día de la semana a partir de la fecha
+        const diaDeLaSemana = new Date(h.fecha).getDay(); // 0 = Domingo, 1 = Lunes, etc.
+        if (diaDeLaSemana === 0) { // El 0 en JavaScript representa el domingo
+          domingosTrabajados += h.horas;
+        }
+        if (feriados.some(f => f.fecha === h.fecha)) feriadosTrabajados += h.horas;
     });
 
     ausencias.forEach(a => {
@@ -223,7 +224,8 @@
       licencias,
       enfermedad
     };
-}
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
       usuarioGlobal = await verificarLogin();
       if (usuarioGlobal) {
@@ -234,4 +236,3 @@
   </script>
 </body>
 </html>
-
