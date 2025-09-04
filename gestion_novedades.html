@@ -40,7 +40,7 @@
   </table>
 
   <script>
-    let empleados = [], ausencias = [], horarioEmpleados = [], feriados = [];
+    let empleados = [], ausencias = [], horariosEmpleados = [], feriados = [];
     let usuarioGlobal = null;
 
     async function verificarLogin() {
@@ -99,7 +99,7 @@
       const localesPermitidos = getLocalesUsuario();
       empleados = Object.values(e).filter(emp => !localesPermitidos || localesPermitidos.includes(emp.local));
       ausencias = Object.values(a);
-      horarioEmpleados = Object.values(h);
+      horariosEmpleados = Object.values(h); // Se corrige el nombre de la variable aquí
       feriados = Object.values(f);
 
       cargarFiltros();
@@ -117,12 +117,21 @@
         const anioActual = new Date().getFullYear();
         anioSelect.innerHTML = `<option>${anioActual}</option><option>${anioActual - 1}</option>`;
       }
-      
-      // Se rellenan los filtros de Local y Empleado
+      
       const locales = [...new Set(empleados.map(e => e.local))];
       localSelect.innerHTML = `<option value="">Todos</option>` + locales.map(l => `<option>${l}</option>`).join('');
-
       empleadoSelect.innerHTML = `<option value="">Todos</option>` + empleados.map(e => `<option value="${e.key}">${e.nombre}</option>`).join('');
+
+      // Se agregan event listeners para actualizar los filtros dinámicamente
+      localSelect.addEventListener('change', actualizarFiltrosEmpleado);
+    }
+
+    function actualizarFiltrosEmpleado() {
+      const localFiltro = document.getElementById("local").value;
+      const empleadoSelect = document.getElementById("empleado");
+
+      const empleadosFiltrados = empleados.filter(emp => !localFiltro || emp.local === localFiltro);
+      empleadoSelect.innerHTML = `<option value="">Todos</option>` + empleadosFiltrados.map(e => `<option value="${e.key}">${e.nombre}</option>`).join('');
     }
 
     function cargarNovedades() {
@@ -138,16 +147,16 @@
 
       const tabla = document.getElementById("tablaNovedades");
       tabla.innerHTML = "";
-      
-      const empleadosFiltrados = empleados.filter(emp => {
+      
+      const empleadosFiltrados = empleados.filter(emp => {
         const cumpleLocal = !localFiltro || emp.local === localFiltro;
         const cumpleEmpleado = !empleadoFiltro || emp.key === empleadoFiltro;
         return cumpleLocal && cumpleEmpleado;
       });
-      
+      
       empleadosFiltrados.forEach(emp => {
         const ausenciasEmp = ausencias.filter(a => a.empleadoKey === emp.key);
-        const horariosEmp = horarioEmpleados.filter(h => {
+        const horariosEmp = horariosEmpleados.filter(h => {
           const fecha = new Date(h.fecha);
           return h.empleadoKey === emp.key &&
                  fecha.getMonth() + 1 === mes &&
@@ -155,7 +164,7 @@
         });
         const feriadosLocal = feriados.filter(f => f.local === emp.local);
 
-        const resumen = calcularResumen(emp, ausenciasEmp, horarioEmp, feriadosLocal);
+        const resumen = calcularResumen(emp, ausenciasEmp, horariosEmp, feriadosLocal);
 
         const fila = document.createElement("tr");
         fila.innerHTML = `
@@ -185,7 +194,6 @@
         horasTrabajadas += h.horas || 0;
         if (h.extra) horasExtras += h.horas;
         if (h.nocturno) horasNocturnas += h.horas;
-        // Corregido: Ahora suma las horas, no solo cuenta el día.
         if (h.dia === "domingo") domingosTrabajados += h.horas;
         if (feriados.some(f => f.fecha === h.fecha)) feriadosTrabajados += h.horas;
       });
@@ -222,5 +230,3 @@
   </script>
 </body>
 </html>
-
-
